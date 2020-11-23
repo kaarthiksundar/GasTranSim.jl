@@ -11,7 +11,7 @@
     "Output nodal dt": 60.0,
     "Output pipe data (1 = yes, 0 = no)": 5.0,
     "Output pipe dt": 3600.0,
-    "Output Pipe dx": 1000.0
+    "Output pipe dx": 1000.0
   },
   "nodes": {
     "1": {

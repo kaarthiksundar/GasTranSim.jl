@@ -1,7 +1,11 @@
-using GasModels 
+using JSON 
+using Dierckx
 
-data_file = "../data/model6.m"
+include("io/json.jl")
+include("io/data_utils.jl")
 
-data = parse_file(data_file)
+file = "./data/model8ts_3d.json";
 
-ref = build_ref(data)
+data = parse_json(file)
+
+params, nominal_values = process_data!(data)
