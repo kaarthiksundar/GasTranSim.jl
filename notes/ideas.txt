@@ -1,0 +1,33 @@
+
+# what are data units ? nondim is best
+# choose dt. Is every time step of size dt ? If not more work.
+# func that gives dx for each pipe when supplied with dt based on CFL cond f1
+# func to convert density to pressure p = p(rho) f2
+# func for time marching for phi internal (first step) f3 (BOLM)
+# func for time marching for phi internal (after first step) f4 (BOLM)
+# func for p at slack node (f5a)
+# func for p at node with no compressor (f5b)
+# func for p at node with  compressor delivery given (f5c)
+# func for phi at ghostpoints of pipe f6 (BOM) (to get entry and exit fluxes for an edge)
+
+# func for time marching for rho internal f7 (BOM)
+
+
+
+# Load pipeline network
+# visit each node. load initial condition, set update flag false
+# visit each edge. 
+  # if edge  is a pipe
+       # call f1, discretize with grid spacing dx (attach vec of p, rho to edge)
+       ##Note that if dt varies, dx for pipe will vary, and need to grid again at each time step
+       # also discretize for phi grid including ghost pts, attach vec of phi to edge
+       # create phi_minus as a field that points to penultimate flux grid point 
+       # create phi at entry and exit linked to ghost points
+
+ # for a time step
+    # for every pipe, call f3 or f4
+    # for every node, if update flag false, calc pressure with f5(a, b, or c) and toggle flag;  
+    #else continue;     
+    # for every pipe, call f6, then f7
+  # end time step  
+
