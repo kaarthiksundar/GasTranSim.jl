@@ -31,16 +31,23 @@ function process_data!(data::Dict{String,Any})
             if haskey(key_map, param)
                 value = Int(input_params[key_map[param]])
                 if (value == 0) 
+                    params[:units] = 0
                     params[:is_si_units] = 1 
                     params[:is_english_units] = 0
+                    params[:is_per_unit] = 0
                 else 
+                    params[:units] = 0
                     params[:is_is_units] = 0 
                     params[:is_english_units] = 1
+                    params[:is_per_unit] = 0
                 end 
             else 
+                params[:units] = 0
                 params[:is_si_units] = 1 
                 params[:is_english_units] = 0
+                params[:is_per_unit] = 0
             end 
+            continue
         end 
         key = get(key_map, param, false)
         if key != false
@@ -59,7 +66,7 @@ function process_data!(data::Dict{String,Any})
     # sound speed (m/s): v = sqrt(R_g * T); R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
     params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass]) 
     
-    nominal_values[:length] = 1000.0
+    nominal_values[:length] = 5000.0
     nominal_values[:pressure] = 3500000.0 # 507.63 psi 
     nominal_values[:density] = nominal_values[:pressure] / params[:sound_speed] / params[:sound_speed] 
     nominal_values[:mass_flux] = nominal_values[:density] * params[:sound_speed]
