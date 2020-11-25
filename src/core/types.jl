@@ -5,6 +5,8 @@ struct TransientSimulator
     nominal_values::Dict{Symbol,Any}
     params::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
+    pu_pressure_to_pu_density::Function 
+    pu_density_to_pu_pressure::Function
 end 
 
 ref(ts::TransientSimulator) = ts.ref 
@@ -26,10 +28,13 @@ function control(ts::TransientSimulator,
     return CONTROL_TYPE::unknown, 0.0
 end 
 
+get_pressure(ts::TransientSimulator, density::Real) = ts.pu_density_to_pu_pressure(density)
+get_density(ts::TransientSimulator, pressure::Real) = ts.pu_pressure_to_pu_density(pressure)
+
 function get_nodal_control(ts::TransientSimulator, 
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     if !haskey(ts.boundary_conditions[:node], id)
-        return CONTROL_TYPE::flow, 0.0
+        return flow, 0.0
     end 
     val = ts.boundary_conditions[:node][id]["spl"](t)
     control_type = ts.boundary_conditions[:node][id]["control_type"]

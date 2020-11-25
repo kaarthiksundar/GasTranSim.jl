@@ -8,12 +8,15 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(data)
     bc = build_bc(data)
+    pu_pressure_to_pu_density = x -> x 
+    pu_density_to_pu_pressure = x -> x 
 
     return TransientSimulator(data, 
         ref, 
         Dict{String,Any}(), 
         nominal_values, 
         params, 
-        bc) 
-    
+        bc, 
+        pu_pressure_to_pu_density, 
+        pu_density_to_pu_pressure) 
 end 
