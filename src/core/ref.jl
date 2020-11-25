@@ -8,6 +8,9 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         @assert id == node["node_id"]
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]
+        ref[name][id]["is_updated"] = false
+        ref[name][id]["pressure"] = NaN
+        ref[name][id]["injection"] = NaN
     end 
 
     for (i, pipe) in get(data, "pipes", [])
@@ -24,6 +27,10 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["length"] = pipe["length"]
         ref[name][id]["friction_factor"] = pipe["friction_factor"]
         ref[name][id]["num_discretization_points"] = 0
+        ref[name][id]["fr_mass_flux"] = NaN 
+        ref[name][id]["to_mass_flux"] = NaN 
+        ref[name][id]["fr_minus_mass_flux"] = NaN 
+        ref[name][id]["to_minus_mass_flux"] = NaN
     end 
 
     for (i, compressor) in get(data, "compressors", [])
@@ -35,6 +42,10 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = compressor["from_node"]
         ref[name][id]["to_node"] = compressor["to_node"]
+        ref[name][id]["control_type"] = unknown
+        ref[name][id]["c_ratio"] = NaN 
+        ref[name][id]["discharge_pressure"] = NaN 
+        ref[name][id]["flow"] = NaN 
     end 
 end 
 
@@ -55,7 +66,6 @@ function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String
     for (i, value) in get(data, "initial_pipe_flow", [])
         id = parse(Int64, i)
         @assert id in keys(ref[:pipe])
-        ref[:pipe][id]["initial_mass_flow"] = value 
         ref[:pipe][id]["initial_mass_flux"] = value / ref[:pipe][id]["area"]
     end 
 
@@ -94,14 +104,9 @@ function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String
     for (i, value) in get(data, "initial_compressor_ratio", [])
         id = parse(Int64, i)
         @assert id in keys(ref[:compressor])
-        ref[:compressor][id]["initial_compressor_ratio"] = value 
+        ref[:compressor][id]["initial_c_ratio"] = value 
     end
 end 
-
-function add_boundary_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
-end 
-
 
 function build_ref(data::Dict{String,Any};
     ref_extensions=[])::Dict{Symbol,Any}
@@ -109,8 +114,7 @@ function build_ref(data::Dict{String,Any};
     ref = Dict{Symbol,Any}()
     add_components_to_ref!(ref, data) 
     add_initial_conditions_to_ref!(ref, data)
-    add_boundary_conditions_to_ref!(ref, data)
-
+    
     for extension in ref_extensions 
         extension(ref, data)
     end 

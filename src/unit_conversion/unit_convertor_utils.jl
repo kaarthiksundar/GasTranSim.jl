@@ -85,7 +85,7 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     )
 
     boundary_flow_units = Dict{String,Function}(
-        "boundary_non_slack_flow" => rescale_mass_flow 
+        "boundary_nonslack_flow" => rescale_mass_flow 
     )
 
     boundary_pressure_units = Dict{String,Function}(
