@@ -10,6 +10,7 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
     bc = build_bc(data)
     pu_pressure_to_pu_density = x -> x 
     pu_density_to_pu_pressure = x -> x 
+    pu_dp_drho = x-> x^0
 
     return TransientSimulator(data, 
         ref, 
@@ -18,5 +19,6 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
         params, 
         bc, 
         pu_pressure_to_pu_density, 
-        pu_density_to_pu_pressure) 
+        pu_density_to_pu_pressure,
+        pu_dp_drho) 
 end 

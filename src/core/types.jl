@@ -7,6 +7,7 @@ struct TransientSimulator
     boundary_conditions::Dict{Symbol,Any}
     pu_pressure_to_pu_density::Function 
     pu_density_to_pu_pressure::Function
+    pu_dp_drho::Function
 end 
 
 ref(ts::TransientSimulator) = ts.ref 
@@ -30,6 +31,7 @@ end
 
 get_pressure(ts::TransientSimulator, density::Real) = ts.pu_density_to_pu_pressure(density)
 get_density(ts::TransientSimulator, pressure::Real) = ts.pu_pressure_to_pu_density(pressure)
+get_sound_speed(ts::TransientSimulator, density::Real) = sqrt(ts.pu_dp_drho(density))
 
 function get_nodal_control(ts::TransientSimulator, 
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
@@ -89,3 +91,18 @@ end
     pressure = 10
     unknown = 100 
 end 
+
+# struct ExplicitStaggeredSpaceTimeIntegrator
+#     pipe_edge::Dict{Symbol,Any}
+#     CFL_condition::Function
+#     advance_phi_internal::Function
+#     advance_p_vertex_slack::Function
+#     advance_p_vertex_no_compressor::Function
+#     advance_p_vertex_with_compressor::Function
+#     advance_rho_internal::Function
+#     advance_phi_ends::Function
+
+
+#     #ref[name][id]["num_discretization_points"] = 0
+
+# end 
