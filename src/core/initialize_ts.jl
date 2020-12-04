@@ -167,3 +167,8 @@ function advance_pressure_vertex!(ts::TransientSimulator)
  
 end
 
+
+# 3 conditions that network must satisfy
+# 1. If node A, node B each have more than one compressor, edge A-B cannot be a compressor
+# 2. At node A, there can be at most one incoming compressor with delivery pressure control (specified at A). However, other compressors with different controls are permitted.
+# 3. node A cannot be both  slack node and delivery pressure specified by compressor
