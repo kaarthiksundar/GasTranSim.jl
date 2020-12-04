@@ -2,7 +2,7 @@
 # what are data units ? nondim is best
 # choose dt. Is every time step of size dt ? If not more work.
 # func that gives dx for each pipe when supplied with dt based on CFL cond f1
-# func to convert density to pressure p = p(rho) f2
+  # func to convert density to pressure p = p(rho) f2
 # func for time marching for phi internal (first step) f3 (BOLM)
 # func for time marching for phi internal (after first step) f4 (BOLM)
 # func for p at slack node (f5a)

@@ -2,7 +2,7 @@ function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
     params = Dict{Symbol,Any}()
 
-    params_exhasustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
+    params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
         "units", "t_0", "t_f", "dt", "courant_number", "nodal_output_dt", 
         "pipe_output_flag", "pipe_output_dt", "pipe_output_dx"]
     defaults_exhaustive = [288.706, 0.6, 1.4, 0, 0.0, 3600.0, 0.25, 0.95, 600.0, 0, 3600.0, 1000.0]
@@ -24,8 +24,8 @@ function process_data!(data::Dict{String,Any})
 
     end 
     # populating parameters 
-    for i in 1:length(params_exhasustive)
-        param = params_exhasustive[i]
+    for i in 1:length(params_exhaustive)
+        param = params_exhaustive[i]
         default = defaults_exhaustive[i]
         if param == "units"
             if haskey(key_map, param)

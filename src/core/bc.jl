@@ -10,7 +10,7 @@ function build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
         values = value["value"]
         bc[:node][id] = Dict( 
             "spl" => Spline1D(time, values, k=1), 
-            "control_type" => pressure
+            "control_type" => pressure_control
         )
     end 
 
@@ -20,7 +20,7 @@ function build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
         values = value["value"]
         bc[:node][id] = Dict(
             "spl" => Spline1D(time, values, k=1),
-            "control_type" => flow
+            "control_type" => flow_control
         )
     end 
 

@@ -40,9 +40,9 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id] = Dict()
         @assert id == compressor["comp_id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = compressor["from_node"]
         ref[name][id]["to_node"] = compressor["to_node"]
-        ref[name][id]["control_type"] = unknown
+        ref[name][id]["fr_node"] = compressor["from_node"]
+        ref[name][id]["control_type"] = unknown_control
         ref[name][id]["c_ratio"] = NaN 
         ref[name][id]["discharge_pressure"] = NaN 
         ref[name][id]["flow"] = NaN 
@@ -108,6 +108,47 @@ function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String
     end
 end 
 
+function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+
+    
+    ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
+    ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}()
+
+    for (i, val) in ref[:node]
+        ref[:incoming_pipes][i] = []
+        ref[:outgoing_pipes][i] = []
+    end
+
+    for (id, pipe) in ref[:pipe]
+        push!(ref[:incoming_pipes][pipe["to_node"]], id) 
+        push!(ref[:outgoing_pipes][pipe["fr_node"]], id) 
+    end
+end    
+
+function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+
+    
+    ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
+    ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()
+
+    for (i, val) in ref[:node]
+        ref[:incoming_compressors][i] = []
+        ref[:outgoing_compressors][i] = []
+    end
+
+    for (id, compressor) in ref[:compressor]
+        push!(ref[:incoming_compressors][compressor["to_node"]], id) 
+        push!(ref[:outgoing_compressors][compressor["fr_node"]], id) 
+    end
+end    
+
+function add_current_time_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+    ref[:current_time] = 0.0
+
+end
+
+
+
 function build_ref(data::Dict{String,Any};
     ref_extensions=[])::Dict{Symbol,Any}
 
@@ -121,3 +162,5 @@ function build_ref(data::Dict{String,Any};
 
     return ref
 end 
+
+

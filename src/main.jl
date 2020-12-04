@@ -18,4 +18,17 @@ include("core/initialize_ts.jl")
 
 file = "./data/model8ts_3d.json";
 
-ts = initialize_simulator(file);
+ts = initialize_simulator(file)
+add_grid_to_ref!(ts)
+dt = ts.params[:dt]
+@show ts.ref[:current_time]
+advance_current_time!(ts, dt)
+advance_mass_flux_internal!(ts)
+advance_density_internal!(ts)
+advance_density_vertex!(ts)
+
+# while ts.current_time < ts.paramst[:t_f]
+
+	#dt = min(ts.params[:dt], ts.params[:t_f] - t)
+
+# end

@@ -26,17 +26,23 @@ function control(ts::TransientSimulator,
     (key == :node) && (return get_nodal_control(ts, id, t))
     (key == :compressor) && (return get_compressor_control(ts, id, t))
     @error "control available only for nodes and compressors"
-    return CONTROL_TYPE::unknown, 0.0
+    return CONTROL_TYPE::unknown_control, 0.0
 end 
 
 get_pressure(ts::TransientSimulator, density::Real) = ts.pu_density_to_pu_pressure(density)
+get_pressure(ts::TransientSimulator, density::Vector{<:Real}) = ts.pu_density_to_pu_pressure.(density)
+
 get_density(ts::TransientSimulator, pressure::Real) = ts.pu_pressure_to_pu_density(pressure)
+get_density(ts::TransientSimulator, pressure::Vector{<:Real}) = ts.pu_pressure_to_pu_density.(pressure)
+
 get_sound_speed(ts::TransientSimulator, density::Real) = sqrt(ts.pu_dp_drho(density))
+get_sound_speed(ts::TransientSimulator, density::Vector{<:Real}) = sqrt.(ts.pu_dp_drho.(density))
+
 
 function get_nodal_control(ts::TransientSimulator, 
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     if !haskey(ts.boundary_conditions[:node], id)
-        return flow, 0.0
+        return flow_control, 0.0
     end 
     val = ts.boundary_conditions[:node][id]["spl"](t)
     control_type = ts.boundary_conditions[:node][id]["control_type"]
@@ -85,24 +91,10 @@ end
 
 
 @enum CONTROL_TYPE begin 
-    c_ratio = 0 
-    discharge_pressure = 1 
-    flow = 2
-    pressure = 10
-    unknown = 100 
+    c_ratio_control = 0 
+    discharge_pressure_control = 1 
+    flow_control = 2
+    pressure_control = 10
+    unknown_control = 100 
 end 
 
-# struct ExplicitStaggeredSpaceTimeIntegrator
-#     pipe_edge::Dict{Symbol,Any}
-#     CFL_condition::Function
-#     advance_phi_internal::Function
-#     advance_p_vertex_slack::Function
-#     advance_p_vertex_no_compressor::Function
-#     advance_p_vertex_with_compressor::Function
-#     advance_rho_internal::Function
-#     advance_phi_ends::Function
-
-
-#     #ref[name][id]["num_discretization_points"] = 0
-
-# end 
