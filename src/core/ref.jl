@@ -10,6 +10,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["is_slack"] = node["slack_bool"]
         ref[name][id]["is_updated"] = false
         ref[name][id]["pressure"] = NaN
+        ref[name][id]["pressure_previous"] = NaN
         ref[name][id]["injection"] = NaN
     end 
 
@@ -47,6 +48,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["discharge_pressure"] = NaN 
         ref[name][id]["flow"] = NaN 
     end 
+    return
 end 
 
 function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
@@ -106,6 +108,7 @@ function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String
         @assert id in keys(ref[:compressor])
         ref[:compressor][id]["initial_c_ratio"] = value 
     end
+    return
 end 
 
 function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
@@ -123,6 +126,7 @@ function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         push!(ref[:incoming_pipes][pipe["to_node"]], id) 
         push!(ref[:outgoing_pipes][pipe["fr_node"]], id) 
     end
+    return
 end    
 
 function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
@@ -140,11 +144,12 @@ function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,
         push!(ref[:incoming_compressors][compressor["to_node"]], id) 
         push!(ref[:outgoing_compressors][compressor["fr_node"]], id) 
     end
+    return
 end    
 
 function add_current_time_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:current_time] = 0.0
-
+    return
 end
 
 

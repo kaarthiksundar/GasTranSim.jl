@@ -36,139 +36,39 @@ function add_grid_to_ref!(ts::TransientSimulator)
         ts.ref[:pipe][key]["density_profile"] = zeros(Float64, n)
         ts.ref[:pipe][key]["mass_flux_profile"] = zeros(Float64, n+1)
     end
+    return
 end
 
-
-function advance_current_time!(ts::TransientSimulator, t::Real)
-    ts.ref[:current_time] += t
-end
-
-##pipes
-function advance_mass_flux_internal!(ts::TransientSimulator)
-    fun(a::Real, y::Real) = sign(y)  * ( -1 + sqrt( 1 + 4*a*abs(y) ) )/ (2*a)
-
-    for (key, pipe) in ts.ref[:pipe]
-        rho = ts.ref[:pipe][key]["density_profile"]
-        phi = ts.ref[:pipe][key]["mass_flux_profile"]
-        n = ts.ref[:pipe][key]["num_discretization_points"]
-
-        for i = 2:n
-            a = ts.params[:dt] * ts.ref[:pipe][key]["friction_factor"] / (rho[i] + rho[i-1])
-            y = phi[i] - ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) * (get_pressure(ts, rho[i]) - get_pressure(ts, rho[i-1])) - a * phi[i] * abs(phi[i])
-            phi[i] = fun(a, y)
-        end
-        
-        # update field. Can also loop over all pipes again instead using function below
-        ts.ref[:pipe][key]["from_minus_mass_flux"] = phi[2]
-        ts.ref[:pipe][key]["to_minus_mass_flux"] = phi[n]
-    end
-
-end
-
-function update_field_mass_flux_minus!(ts::TransientSimulator)
-    for (key, pipe) in ts.ref[:pipe]
-        ts.ref[:pipe][key]["from_minus_mass_flux"] = ts.ref[:pipe][key]["density_profile"][2]
-        ts.ref[:pipe][key]["to_minus_mass_flux"] = ts.ref[:pipe][key]["density_profile"][ts.ref[:pipe][key]["num_discretization_points"]]        
-    end
-end
-
-function advance_density_internal!(ts::TransientSimulator)
-
-    for (key, pipe) in ts.ref[:pipe]
-        rho = ts.ref[:pipe][key]["density_profile"]
-        phi = ts.ref[:pipe][key]["mass_flux_profile"]
-        n = ts.ref[:pipe][key]["num_discretization_points"]
-
-        for i = 2:n-1
-        rho[i] += ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) *  (phi[i] - phi[i+1])
-        end
-
-    end
-
-end
-
-
-
-## Nodes
-function _set_pressure_at_vertex!(vertex_key::Int64, val::Float64, ts::TransientSimulator)
-     if ts.ref[:nodes][vertex_key]["is_updated"] == False
-        ts.ref[:nodes][vertex_key]["pressure"] = val
-        ts.ref[:nodes][vertex_key]["is_updated"] = True
-    end
-end
-
-function _set_pressure_at_vertex_across_compressors!(vertex_key::Int64, prs::Float64, ts::TransientSimulator)
-    
-    if !isempty(ts.ref[:incoming_compressors][vertex_key])
-        for ci in ts.ref[:incoming_compressors][vertex_key]
-            ctrl_type, val = control(ts, :compressor, ci, ts.ref[:current_time])           
-            i = ts.ref[:compressors][ci]["fr_node"]
-
-            if ctrl_type == c_ratio_control              
-                _set_pressure_at_vertex!(i, prs/val, ts)
-                # do an update for all compressors together instead of now
-                # ts.ref[:compressors][ci]["discharge_pressure"] = prs
-            else if ctrl_type == discharge_pressure_control
-                @error "compressor discharge pressure control coincides with nodal pressure control"
-            end
-        end
-    end
-
-    if !isempty(ts.ref[:outgoing_compressors][vertex_key])
-        for ci in ts.ref[:outgoing_compressors][vertex_key]
-            ctrl_type, val = control(ts, :compressor, ci, ts.ref[:current_time])       
-            i = ts.ref[:compressors][ci]["to_node"]
-
-            if ctrl_type == c_ratio_control            
-                _set_pressure_at_vertex!(i, prs * val, ts)
-                # ts.ref[:compressors][ci]["discharge_pressure"] = prs * val
-            else if ctrl_type == discharge_pressure_control
-                _set_pressure_at_vertex!(i, val, ts)
-                # ts.ref[:compressors][ci]["c_ratio"] = val/prs
-            end
-        end
-    end
-
-end
-
-
-function _solve_for_pressure_at_vertex!(vertex_key::Int64, val::Float64, ts::TransientSimulator)
-
-
-
-end
-
-function advance_pressure_vertex!(ts::TransientSimulator)
+function initialize_vertex!(ts::TransientSimulator)
 
     for (key, junction) in ts.ref[:node]
-        
-        if ts.ref[:nodes][key]["is_updated"] == True
-            continue
-        end
-        
-        # p(t), but q(t - dt/2)
-        ctrl_type, val = control(ts, :node, key, ts.ref[:current_time])
-        
-        if ctrl_type == pressure_control
-            _set_pressure_at_vertex!(key, val, ts)
-            _set_pressure_at_vertex_across_compressors!(key, val, ts)
-            
-        else if ctrl_type == flow_control
-            _solve_for_pressure_at_vertex!(key, val, ts)
-            println(ctrl_type, typeof(ctrl_type))
-        end
+        ts.ref[:node][key]["pressure"] = ts.ref[:node][key]["initial_pressure"]
     end
+    return
+end
 
-# else 
- #loop over list of incoming pipes, outgoing pipes
- # loop over list of incoming compressors
-   # for each compressor, take action dependent on type of compressor
- # similarly loop over list of outgoing compressors
- 
+function initialize_pipes!(ts::TransientSimulator)
+    for (key, pipe) in ts.ref[:pipe]
+        fill!(pipe["mass_flux_profile"], pipe["initial_mass_flux"])
+        r1_sq = get_density(ts, pipe["initial_fr_pressure"]) ^ 2 
+        rn_sq = get_density(ts, pipe["initial_to_pressure"]) ^ 2
+        n = pipe["num_discretization_points"]
+        dx = pipe["dx"]
+        L = pipe["length"]
+        for i = 1: n
+            pipe["density_profile"][i] = sqrt( rn_sq * (i-1)* dx / L  + r1_sq *  (n - i) * dx / L )  
+        end
+        pipe["fr_minus_mass_flux"] = pipe["initial_mass_flux"]
+        pipe["to_minus_mass_flux"] = pipe["initial_mass_flux"]
+        pipe["fr_mass_flux"] = pipe["initial_mass_flux"]
+        pipe["to_mass_flux"] = pipe["initial_mass_flux"]
+    end
+    return
 end
 
 
 # 3 conditions that network must satisfy
-# 1. If node A, node B each have more than one compressor, edge A-B cannot be a compressor
-# 2. At node A, there can be at most one incoming compressor with delivery pressure control (specified at A). However, other compressors with different controls are permitted.
-# 3. node A cannot be both  slack node and delivery pressure specified by compressor
+# 1. if we visit each node of level 0/1 (assuming a star configuration) and update immediate neighbours, 
+ # all vertices should be eventually covered in finite steps. 
+# 2. Node A cannot be delivery end of two  compressors with delivery pressure controls
+# 3. node A cannot be both  slack node and delivery end of  compressor

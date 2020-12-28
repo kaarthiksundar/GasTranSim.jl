@@ -44,14 +44,27 @@ function get_nodal_control(ts::TransientSimulator,
     if !haskey(ts.boundary_conditions[:node], id)
         return flow_control, 0.0
     end 
-    val = ts.boundary_conditions[:node][id]["spl"](t)
+    
     control_type = ts.boundary_conditions[:node][id]["control_type"]
+
+    if control_type == flow_control
+        val = ts.boundary_conditions[:node][id]["spl"](t - ts.params[:dt]/2)
+    else
+        val = ts.boundary_conditions[:node][id]["spl"](t)
+    end
+
     return control_type, val
 end 
 
 function get_compressor_control(ts::TransientSimulator, 
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     control_type, val = ts.boundary_conditions[:compressor][id]["spl"](t)
+
+    if CONTROL_TYPE(control_type) == flow_control
+        control_type_prev, val = ts.boundary_conditions[:compressor][id]["spl"](t - ts.params[:dt]/2)
+        @assert control_type == control_type_prev
+    end    
+
     return CONTROL_TYPE(control_type), val
 end 
 
@@ -86,7 +99,7 @@ function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
     return NaN, NaN
 end 
 
-# call synomym for CompressorControl evaluation
+# call synonym for CompressorControl evaluation
 (spl::CompressorControl)(t::Real) = evaluate(spl, t)
 
 
