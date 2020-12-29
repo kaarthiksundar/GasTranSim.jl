@@ -23,6 +23,12 @@ function process_data!(data::Dict{String,Any})
         occursin("dx", k) && (key_map["pipe_output_dx"] = k)
 
     end 
+
+    # add "area" key to pipes in data
+    for (i, pipe) in get(data, "pipes", [])
+        pipe["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25
+    end
+
     # populating parameters 
     for i in 1:length(params_exhaustive)
         param = params_exhaustive[i]
@@ -67,11 +73,13 @@ function process_data!(data::Dict{String,Any})
     params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass]) 
     
     nominal_values[:length] = 5000.0
+    nominal_values[:area] = 1.0
     nominal_values[:pressure] = 3500000.0 # 507.63 psi 
     nominal_values[:density] = nominal_values[:pressure] / params[:sound_speed] / params[:sound_speed] 
     nominal_values[:mass_flux] = nominal_values[:density] * params[:sound_speed]
     nominal_values[:time] = nominal_values[:length] / params[:sound_speed]
-    nominal_values[:mass_flow] = nominal_values[:density] * params[:sound_speed]
+    nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
+
 
     return params, nominal_values
 end 

@@ -9,6 +9,8 @@
 @inline m_to_miles(m) = m / 1609.64
 @inline inches_to_m(inches) = inches * 0.0254
 @inline m_to_inches(m) = m / 0.0254
+@inline sq_inches_to_sq_m(sq_inches) = sq_inches * 0.0254 * 0.0254
+@inline sq_m_to_sq_inches(sq_m) = sq_m / (0.0254 * 0.0254)
 @inline get_universal_R() = 8.314
 @inline get_universal_R(params::Dict{Symbol,Any}) = get(params, :R, get_universal_R())
 @inline get_gas_specific_gravity(params::Dict{Symbol,Any}) = get(params, :gas_specific_gravity, 0.6)
@@ -45,7 +47,7 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     rescale_length = rescale_functions[5]
     rescale_density = rescale_functions[6]
     rescale_diameter = rescale_functions[7]
-    
+    rescale_area = rescale_functions[8]
     params_units = Dict{String,Function}(
         "t_0" => rescale_time,
         "t_f" => rescale_time, 
@@ -62,6 +64,7 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     pipe_units = Dict{String,Function}(
         "diameter" => rescale_diameter,
         "length" => rescale_length,
+        "area" => rescale_area,
     )
 
     compressor_units = Dict{String,Function}(
@@ -139,7 +142,8 @@ function _rescale_data!(data::Dict{String,Any},
     rescale_length = rescale_functions[5]
     rescale_density = rescale_functions[6]
     rescale_diameter = rescale_functions[7]
-    rescale_boundary_compressor = rescale_functions[8]
+    rescale_area = rescale_functions[8]
+    rescale_boundary_compressor = rescale_functions[9]
 
     for (param, f) in params_units         
         value = params[Symbol(param)]

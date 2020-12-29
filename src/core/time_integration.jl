@@ -1,10 +1,10 @@
 
 
 function _invert_quadratic(a::Float64, y::Float64)::Float64
-        # which is better, real or float
-    return sign(y)  * ( -1 + sqrt( 1 + 4*a*abs(y) ) ) / (2*a)
+    # which is better, real or float
+    #can also write as 2*y / (1 + sqrt( 1 + 4*a*abs(y) ) )
+    return   sign(y)  * ( -1 + sqrt( 1 + 4*a*abs(y) ) ) / (2*a)
 end
-# _invert_quadratic(a::Vector{<:Float64}, y::Vector{<:Float64})::Vector{<:Float64} = _invert_quadratic.(a, y)
 
 
 function advance_current_time!(ts::TransientSimulator, tau::Real)

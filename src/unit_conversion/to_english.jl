@@ -8,7 +8,7 @@ function si_to_english!(data::Dict{String,Any},
     rescale_length = x -> m_to_miles(x)
     rescale_density = x -> x
     rescale_diameter = x -> m_to_inches(x)
-
+    rescale_area = x -> sq_m_to_sq_inches(x)
     function rescale_compressor_boundary_conditions!(type, value)
         @assert length(type) == length(value)
         for i in 1:length(type)
@@ -19,7 +19,7 @@ function si_to_english!(data::Dict{String,Any},
 
     rescale_functions = [rescale_mass_flow, rescale_mass_flux, 
         rescale_time, rescale_pressure, rescale_length, rescale_density, 
-        rescale_diameter, rescale_compressor_boundary_conditions!]
+        rescale_diameter, rescale_area, rescale_compressor_boundary_conditions!]
     
     _rescale_data!(data, params, rescale_functions)
 end 
