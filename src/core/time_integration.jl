@@ -19,20 +19,23 @@ function advance_mass_flux_internal!(ts::TransientSimulator)
         rho = ts.ref[:pipe][key]["density_profile"]
         phi = ts.ref[:pipe][key]["mass_flux_profile"]
         n = ts.ref[:pipe][key]["num_discretization_points"]
+        beta = ts.ref[:pipe][key]["friction_factor"] / (2 * ts.ref[:pipe][key]["diameter"])
         
         # for i = 2:n
         #     # even if denom of a is effectively 0, this code does not give error
-        #     a = ts.params[:dt] * ts.ref[:pipe][key]["friction_factor"] / (rho[i] + rho[i-1])
+        #     a = ts.params[:dt] * beta / (rho[i] + rho[i-1])
         #     y = phi[i] - ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) * 
         #     (get_pressure(ts, rho[i]) - get_pressure(ts, rho[i-1])) - a * phi[i] * abs(phi[i])
         #     phi[i] = _invert_quadratic(a, y)
         # end
         # can vectorize this as
 
-        a_vec = ts.params[:dt] * ts.ref[:pipe][key]["friction_factor"] ./ (rho[2:n] + rho[1:n-1])
+        a_vec = ts.params[:dt] * beta  ./ (rho[2:n] + rho[1:n-1])
         y_vec = phi[2:n] - ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) * 
             (get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:n-1])) - a_vec .* phi[2:n] .* abs.(phi[2:n])
         phi[2:n] = _invert_quadratic.(a_vec, y_vec)
+
+        
 
         # update field
         ts.ref[:pipe][key]["fr_minus_mass_flux"] = phi[2]
@@ -169,7 +172,7 @@ function _set_pressure_at_vertex_across_compressors!(vertex_key::Int64, prs::Flo
         ctrl_type, val = control(ts, :compressor, ci, ts.ref[:current_time])       
         i = ts.ref[:compressor][ci]["to_node"]
 
-        if ctrl_type == c_ratio_control            
+        if ctrl_type == c_ratio_control 
             _set_pressure_at_vertex!(i, prs * val, ts)
         elseif ctrl_type == discharge_pressure_control
             _set_pressure_at_vertex!(i, val, ts)
@@ -199,6 +202,8 @@ function _assemble_vertex_contributions_pipes(vertex_key::Int64, val::Float64, m
         term1 += mult_factor * pipe[p]["dx"] * pipe[p]["area"] / ts.params[:dt]
         term2 += pipe[p]["to_minus_mass_flux"] * pipe[p]["area"] 
     end
+
+    
 
     return term1, term2
 end

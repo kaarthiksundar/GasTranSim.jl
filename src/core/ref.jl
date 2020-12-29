@@ -24,7 +24,8 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["fr_node"] = pipe["from_node"]
         ref[name][id]["to_node"] = pipe["to_node"]
         ref[name][id]["diameter"] = pipe["diameter"]
-        ref[name][id]["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25
+        # nominal area is 1.0, so need to adjust for scaled diameter
+        ref[name][id]["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25 * ts.nominal_values[:length] * ts.nominal_values[:length] 
         ref[name][id]["length"] = pipe["length"]
         ref[name][id]["friction_factor"] = pipe["friction_factor"]
         ref[name][id]["num_discretization_points"] = 0
