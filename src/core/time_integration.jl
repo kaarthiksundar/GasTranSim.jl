@@ -7,15 +7,34 @@ function _invert_quadratic(a::Float64, y::Float64)::Float64
 end
 
 
+function _execute_task!(task_func::Function, ts::TransientSimulator, key_array::Vector, run_type::Symbol)
+    num_jobs = length(key_array)
+    jobs = Channel{Any}(num_jobs)
+    @async begin
+        for key in key_array
+            put!(jobs, key)
+        end
+        close(jobs)
+    end
+    
+    if (run_type == :async)
+        @sync for key in jobs
+            @async task_func(ts, key)
+        end
+    else
+        for key in jobs
+            task_func(ts, key)
+        end
+    end
+    return
+end
+
 function advance_current_time!(ts::TransientSimulator, tau::Real)
     ts.ref[:current_time] +=  tau
     return
 end
 
-function advance_mass_flux_internal!(ts::TransientSimulator)
-    
-    # parallelize this
-    for (key, pipe) in ts.ref[:pipe]
+function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, key::Int64)
         rho = ts.ref[:pipe][key]["density_profile"]
         phi = ts.ref[:pipe][key]["mass_flux_profile"]
         n = ts.ref[:pipe][key]["num_discretization_points"]
@@ -35,40 +54,45 @@ function advance_mass_flux_internal!(ts::TransientSimulator)
             (get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:n-1])) - a_vec .* phi[2:n] .* abs.(phi[2:n])
         phi[2:n] = _invert_quadratic.(a_vec, y_vec)
 
-        
-
         # update field
         ts.ref[:pipe][key]["fr_minus_mass_flux"] = phi[2]
         ts.ref[:pipe][key]["to_minus_mass_flux"] = phi[n]
-    end
+        return
+end
 
+
+function _advance_pipe_density_internal(ts::TransientSimulator, key::Int64)
+    rho = ts.ref[:pipe][key]["density_profile"]
+    phi = ts.ref[:pipe][key]["mass_flux_profile"]
+    n = ts.ref[:pipe][key]["num_discretization_points"]
+
+    # for i = 2:n-1
+    # rho[i] += ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) *  (phi[i] - phi[i+1])
+    # end
+    # can vectorize this as
+    rho[2:n-1] = rho[2:n-1] + (ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) *  (phi[2:n-1] - phi[3:n])
     return
-
 end
 
 
 
-function advance_density_internal!(ts::TransientSimulator)
-
-    # parallelize this
-    for (key, pipe) in ts.ref[:pipe]
-        rho = ts.ref[:pipe][key]["density_profile"]
-        phi = ts.ref[:pipe][key]["mass_flux_profile"]
-        n = ts.ref[:pipe][key]["num_discretization_points"]
-
-        # for i = 2:n-1
-        # rho[i] += ( ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) *  (phi[i] - phi[i+1])
-        # end
-        # can vectorize this as
-
-        rho[2:n-1] = rho[2:n-1] + (ts.params[:dt] / ts.ref[:pipe][key]["dx"] ) *  (phi[2:n-1] - phi[3:n])
-
-    end
+function advance_mass_flux_internal!(ts::TransientSimulator, run_type::Symbol)
+    
+    key_array = collect(keys(ts.ref[:pipe]))
+    _execute_task!(_advance_pipe_mass_flux_internal!, ts, key_array, run_type)
     return
-
 end
 
-function advance_pressure_mass_flux_vertex!(ts::TransientSimulator)
+
+
+function advance_density_internal!(ts::TransientSimulator, run_type::Symbol)
+    
+    key_array = collect(keys(ts.ref[:pipe]))
+    _execute_task!(_advance_pipe_density_internal!, ts, key_array, run_type)
+    return
+end
+
+function advance_pressure_mass_flux_vertex!(ts::TransientSimulator, run_type::Symbol)
 
     # DO NOT parallelize this (race condition)
     for (key, junction) in ts.ref[:node]
@@ -89,18 +113,14 @@ function advance_pressure_mass_flux_vertex!(ts::TransientSimulator)
         end
     end
 
-    # parallelize this
-    for (key, pipe) in ts.ref[:pipe]
-        _compute_end_fluxes_densities!(key, ts)
-    end
 
-    # parallelize this
-    for (key, junction) in ts.ref[:node]
-        _reset_vertex_flag!(key, ts)
-    end
-
+    key_array = collect(keys(ts.ref[:pipe]))
+    _execute_task!(_compute_end_fluxes_densities!, ts, key_array, run_type)
+    
+    key_array = collect(keys(ts.ref[:node]))
+    _execute_task!(_reset_vertex_flag!, ts, key_array, run_type)
+    
     return
-
 end
 
 
@@ -407,7 +427,7 @@ function _calculate_pressure_for_vertex_with_incoming_discharge_pressure_control
     
 end
 
-function _compute_end_fluxes_densities!(pipe_id::Int64, ts::TransientSimulator)
+function _compute_end_fluxes_densities!(ts::TransientSimulator, pipe_id::Int64)
 
     dx = ts.ref[:pipe][pipe_id]["dx"]
     dt = ts.params[:dt]
@@ -432,7 +452,7 @@ function _compute_end_fluxes_densities!(pipe_id::Int64, ts::TransientSimulator)
 
 end
 
-function _reset_vertex_flag!(key::Int64, ts::TransientSimulator)
+function _reset_vertex_flag!(ts::TransientSimulator, key::Int64)
     @assert ts.ref[:node][key]["is_updated"] = true # ensures all vertices traversed
     ts.ref[:node][key]["is_updated"] = false
     return
