@@ -96,6 +96,7 @@ function advance_pressure_mass_flux_vertex!(ts::TransientSimulator, run_type::Sy
 
     # DO NOT parallelize this (race condition)
     for (key, junction) in ts.ref[:node]
+        
         if ts.ref[:node][key]["is_updated"] == true
             continue
         end
@@ -108,7 +109,7 @@ function advance_pressure_mass_flux_vertex!(ts::TransientSimulator, run_type::Sy
             _set_pressure_at_vertex_across_compressors!(key, val, ts)
             
         elseif ctrl_type == flow_control
-            _solve_for_pressure_at_vertex!(key, val, ts)
+            _solve_for_pressure_at_vertex_and_neighbours!(key, val, ts)
             
         end
     end
@@ -124,7 +125,7 @@ function advance_pressure_mass_flux_vertex!(ts::TransientSimulator, run_type::Sy
 end
 
 
-function _solve_for_pressure_at_vertex!(vertex_key::Int64, val::Float64, ts::TransientSimulator)
+function _solve_for_pressure_at_vertex_and_neighbours!(vertex_key::Int64, val::Float64, ts::TransientSimulator)
 
     
     in_c = ts.ref[:incoming_compressors][vertex_key]
@@ -157,8 +158,10 @@ function _calculate_pressure_for_vertex_without_incoming_discharge_pressure_cont
     
     rho_prev = get_density(ts, ts.ref[:node][vertex_key]["pressure"])      
     rho = rho_prev + (t2 + s2)/(t1 + s1) 
+    prs_val = get_pressure(ts, rho)
 
-    _set_pressure_at_vertex!(vertex_key, get_pressure(ts, rho), ts)
+    _set_pressure_at_vertex!(vertex_key, prs_val, ts)
+    _set_pressure_at_vertex_across_compressors!(vertex_key, prs_val, ts)
 
     return
     
@@ -321,8 +324,7 @@ function _assemble_vertex_contribution_compressors_with_incoming_discharge_press
 
     if ctrl_type == pressure_control
         _set_pressure_at_vertex!(vertex, val, ts)
-        _set_pressure_at_vertex!(base_vertex, pressure_del, ts)
-        #in calling function, check and set pressure across compressors
+        #in calling function, check and set pressure at base vertex and across compressors
         return
     end
 
@@ -398,7 +400,8 @@ function _calculate_pressure_for_vertex_with_incoming_discharge_pressure_control
 
     s = _assemble_vertex_contribution_compressors_with_incoming_discharge_pressure_control!(compressor_id, ts)
     if isa(s, Nothing)
-        #pressure for both ends of discharge compressor set 
+        #pressure at from end of discharge compressor already set 
+        _set_pressure_at_vertex!(base_vertex, pressure_del, ts)
         _set_pressure_at_vertex_across_compressors!(base_vertex, pressure_del, ts)
         return
     end
