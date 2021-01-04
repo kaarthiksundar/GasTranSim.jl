@@ -1,4 +1,4 @@
-using JSON 
+using JSON
 using Dierckx
 
 include("io/json.jl")
@@ -19,10 +19,14 @@ include("io/output.jl")
 
 
 
-# file = "./data/model8ts_3d.json";
-file = "./data/model30_ts.json";
+file = "./data/model8ts_3d.json";
+# file = "./data/model30_ts.json";
 
 ts = initialize_simulator(file)
+
+
+
+#=
 add_grid_to_ref!(ts)
 initialize_vertex!(ts)
 initialize_pipes!(ts)
@@ -35,14 +39,14 @@ dt = ts.params[:dt]
 run_type = :sync
 while ts.ref[:current_time] < 4*dt # ts.params[:t_f]
 
-	
+
 	advance_current_time!(ts, dt)
 
 
 	#  if current_time is where some disruption occurs, modify ts.ref now
-    
+
 	advance_density_internal!(ts, run_type) #(n+1) level
-	
+
 	advance_pressure_mass_flux_vertex!(ts, run_type) #pressure (n+1), flux (n+1/2)
 
 	advance_mass_flux_internal!(ts, run_type) # (n+1 + 1/2) level
@@ -52,9 +56,9 @@ while ts.ref[:current_time] < 4*dt # ts.params[:t_f]
 
 	 err_arr = []
 	 for key in collect(keys(ts.ref[:node]))
-		
+
 	 	push!(err_arr, abs(ts.ref[:node][key]["pressure_previous"] - ts.ref[:node][key]["pressure"]) )
-		
+
 	 end
 	 @show maximum(err_arr)
 
@@ -65,9 +69,4 @@ end
 # flux profile, density profiles saved to restart time marching
 #out = create_output(ts, out_int)
 
-
-
-
-
-
- 
+=#
