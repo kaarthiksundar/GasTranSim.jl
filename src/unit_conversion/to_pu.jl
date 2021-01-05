@@ -7,7 +7,8 @@ function si_to_pu!(data::Dict{String,Any},
     rescale_pressure = x -> x/nominal_values[:pressure]
     rescale_length = x -> x/nominal_values[:length]
     rescale_density = x -> x/nominal_values[:density]
-    rescale_diameter = x -> x
+    rescale_diameter = x -> x/nominal_values[:length]
+    rescale_area = x -> x/nominal_values[:area]
 
     function rescale_compressor_boundary_conditions!(type, value)
         @assert length(type) == length(value)
@@ -19,7 +20,7 @@ function si_to_pu!(data::Dict{String,Any},
 
     rescale_functions = [rescale_mass_flow, rescale_mass_flux, 
         rescale_time, rescale_pressure, rescale_length, rescale_density, 
-        rescale_diameter, rescale_compressor_boundary_conditions!]
+        rescale_diameter, rescale_area, rescale_compressor_boundary_conditions!]
     
     _rescale_data!(data, params, rescale_functions)
 end 

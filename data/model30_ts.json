@@ -6,7 +6,7 @@
     "units (SI = 0, standard = 1)": 0.0,
     "Initial time": 0.0,
     "Final time": 3600.0,
-    "Discretization time step": 0.25,
+    "Discretization time step": 1.0,
     "Courant number (must be between 0 and 1, recommended value is 0.9)": 0.95,
     "Output nodal dt": 60.0,
     "Output pipe data (1 = yes, 0 = no)": 5.0,
@@ -750,7 +750,7 @@
     "5": 1.0914139999999999
   },
   "initial_nodal_flow": {
-    "-1": -116.96813700000001,
+    "1": -116.96813700000001,
     "2": 0,
     "3": 0,
     "4": 0,
