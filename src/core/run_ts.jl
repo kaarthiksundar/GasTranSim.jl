@@ -13,7 +13,7 @@ function run_simulator!(ts::TransientSimulator; run_type = :sync)
     	update_output_struc!(ts, out_int)
     	 err_arr = []
     	 for key in collect(keys(ts.ref[:node]))
-    	 	push!(err_arr, abs(ts.ref[:node][key]["pressure_previous"] - ts.ref[:node][key]["pressure"]) )
+    	 	push!(err_arr, abs(ts.ref[:node][key]["pressure_previous"] - ts.ref[:node][key]["pressure"]))
     	 end
     	 # @show maximum(err_arr)
     end

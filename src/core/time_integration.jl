@@ -116,7 +116,7 @@ function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(
     r1, r2 = _assemble_pipe_contributions_to_node(base_node_id, withdrawal_2, 1.0, ts)
 
     discharge_rho = get_density(ts, discharge_pressure)
-    dischrage_pressure_prev = ref(ts, :node, base_node_id, "pressure")
+    discharge_pressure_prev = ref(ts, :node, base_node_id, "pressure")
     discharge_rho_prev = ref(ts, :node, base_node_id, "pressure")
 
     rho_prev = ref(ts, :node, node_id, "density")
