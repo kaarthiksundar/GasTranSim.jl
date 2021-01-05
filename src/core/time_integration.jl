@@ -17,7 +17,7 @@ end
 """
     Sets the pressure and density at a given node to a value
 """
-function _set_pressure_at_node!(node_id::Int64, pressure::Type{<:Real}, ts::TransientSimulator)
+function _set_pressure_at_node!(node_id::Int64, pressure::Real, ts::TransientSimulator)
     (ref(ts, :node, node_id)["is_updated"] == true) && (return)
     ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
     ref(ts, :node, node_id)["density_previous"] = ref(ts, :node, node_id)["density"]
@@ -30,7 +30,7 @@ end
 """
     Sets pressure and density at node across a compressor
 """
-function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Type{<:Real}, ts::TransientSimulator)
+function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Real, ts::TransientSimulator)
     t = ref(ts, :current_time)
     for ci in ref(ts,:incoming_compressors, node_id)
         ctrl_type, val = control(ts, :compressor, ci, t)
@@ -54,7 +54,7 @@ end
 """
     Solves for the pressure at the given node (with flow control) and its neighbors
 """
-function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal::Type{<:Real}, ts::TransientSimulator)
+function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal::Real, ts::TransientSimulator)
     t = ref(ts, :current_time)
     in_c = ref(ts, :incoming_compressors, node_id)
     index = findfirst(ci -> control(ts, :compressor, ci, t)[1] == discharge_pressure_control, in_c)
@@ -70,7 +70,7 @@ end
 """
     Calculate and update the pressures at nodes sans incoming discharge pressure-controlled compressor
 """
-function _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id::Int64, withdrawal::Type{<:Real}, ts::TransientSimulator)
+function _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id::Int64, withdrawal::Real, ts::TransientSimulator)
     s  = _assemble_compressor_contributions_to_node_without_incoming_discharge_pressure_control!(node_id, ts)
     if isa(s, Nothing)
         # means vertex pressure is already set
@@ -132,7 +132,7 @@ end
 """
     Assembles all pipe contributions to a node
 """
-function _assemble_pipe_contributions_to_node(node_id::Int64, withdrawal::Type{<:Real}, mult_factor::Float64, ts::TransientSimulator)::Tuple{<:Real, <:Real}
+function _assemble_pipe_contributions_to_node(node_id::Int64, withdrawal::Real, mult_factor::Float64, ts::TransientSimulator)::Tuple{<:Real, <:Real}
     out_p = ref(ts, :outgoing_pipes, node_id)
     in_p = ref(ts, :incoming_pipes, node_id)
     term1 = 0.0
@@ -267,7 +267,7 @@ end
 """
     Function to compute \$\\phi^t_i\$ using densities
 """
-function _invert_quadratic(a::Type{<:Real}, y::Type{<:Real})::Type{<:Real}
+function _invert_quadratic(a::Real, y::Real)::Real
     # can also write as 2 * y / (1 + sqrt( 1 + 4 * a * abs(y) ) )
     return sign(y) * (-1.0 + sqrt(1.0 + 4.0 * a * abs(y))) / (2.0 * a)
 end

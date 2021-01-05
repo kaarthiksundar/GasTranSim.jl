@@ -1,5 +1,6 @@
 using JSON
 using Dierckx
+using ProgressMeter
 
 include("io/json.jl")
 include("io/data_utils.jl")

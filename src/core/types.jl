@@ -38,6 +38,7 @@ get_density(ts::TransientSimulator, pressure::Vector{<:Real}) = ts.pu_pressure_t
 get_sound_speed(ts::TransientSimulator, density::Real) = sqrt(ts.pu_dpressure_to_pu_ddensity(density))
 get_sound_speed(ts::TransientSimulator, density::Vector{<:Real}) = sqrt.(ts.pu_dpressure_to_pu_ddensity.(density))
 
+TOL = 1e-6
 
 function get_nodal_control(ts::TransientSimulator,
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
@@ -75,7 +76,7 @@ struct CompressorControl
 end
 
 function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
-    @assert (t >= sp.time[1]) && (t <= sp.time[end])
+    @assert (t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL)
     time = sp.time
     control_type = sp.control_type
     value = sp.value

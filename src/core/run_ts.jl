@@ -1,7 +1,9 @@
 function run_simulator!(ts::TransientSimulator; run_type = :sync)
     out_int = initialize_output_struc(ts)
     dt = params(ts, :dt)
-    while ts.ref[:current_time] < params(ts, :t_f)
+    t_f = params(ts, :t_f)
+    num_steps = Int(ceil(t_f/dt))
+    @showprogress 1 "Simulation progress: " for i in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
@@ -19,7 +21,7 @@ function run_simulator!(ts::TransientSimulator; run_type = :sync)
     #out = create_output(ts, out_int)
 end
 
-function advance_current_time!(ts::TransientSimulator, tau::Type{<:Real})
+function advance_current_time!(ts::TransientSimulator, tau::Real)
     ts.ref[:current_time] += tau
     return
 end
