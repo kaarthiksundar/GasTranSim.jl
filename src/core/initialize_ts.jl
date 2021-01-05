@@ -19,7 +19,7 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
 
     ts = TransientSimulator(data,
         ref,
-        Dict{String,Any}(),
+        initialize_solution(data, params),
         nominal_values,
         params,
         bc,
