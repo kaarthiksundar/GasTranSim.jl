@@ -1,19 +1,19 @@
 function run_simulator!(ts::TransientSimulator; run_type = :sync)
     out_int = initialize_output_struc(ts)
     dt = params(ts, :dt)
-    while ts.ref[:current_time] < 4.0 * dt
+    while ts.ref[:current_time] < params(ts, :t_f)
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
-    	advance_pipe_density_internal!(ts, run_type) #(n+1) level
-    	advance_node_pressure_mass_flux!(ts, run_type) #pressure (n+1), flux (n+1/2)
-    	advance_mass_flux_internal!(ts, run_type) # (n+1 + 1/2) level
+    	advance_pipe_density_internal!(ts, run_type) # (n+1) level
+    	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
+    	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
     	#  if current_time is one where output needs to be saved, check and do now
     	update_output_struc!(ts, out_int)
     	 err_arr = []
     	 for key in collect(keys(ts.ref[:node]))
     	 	push!(err_arr, abs(ts.ref[:node][key]["pressure_previous"] - ts.ref[:node][key]["pressure"]) )
     	 end
-    	 @show maximum(err_arr)
+    	 # @show maximum(err_arr)
     end
     # flux profile, density profiles saved to restart time marching
     #out = create_output(ts, out_int)
@@ -48,13 +48,13 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
     end
 
     key_array = collect(keys(ref(ts, :pipe)))
-    _execute_task!(_compute_end_fluxes_densities!, ts, key_array, run_type)
+    _execute_task!(_compute_pipe_end_fluxes_densities!, ts, key_array, run_type)
     key_array = collect(keys(ref(ts, :node)))
-    _execute_task!(_reset_vertex_flag!, ts, key_array, run_type)
+    _execute_task!(_reset_node_flag!, ts, key_array, run_type)
     return
 end
 
-function advance_mass_flux_internal!(ts::TransientSimulator, run_type::Symbol)
+function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symbol)
     key_array = collect(keys(ref(ts, :pipe)))
     _execute_task!(_advance_pipe_mass_flux_internal!, ts, key_array, run_type)
     return
