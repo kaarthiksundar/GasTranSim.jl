@@ -29,6 +29,7 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
     )
 
     add_pipe_grid_to_ref!(ts)
+    add_node_level_flag!(ts)
     initialize_nodal_state!(ts)
     initialize_pipe_state!(ts)
     return ts
@@ -79,9 +80,40 @@ function initialize_pipe_state!(ts::TransientSimulator)
     return
 end
 
+function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
+        
+        if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
+            ref(ts, :node, node_id)["is_Level_2"] = false
+            return
+        end
 
-# 3 conditions that network must satisfy
-# 1. if we visit each node of level 0/1 (assuming a star configuration) and update immediate neighbours,
-# all vertices should be eventually covered in finite steps.
-# 2. Node A cannot be delivery end of two  compressors with delivery pressure controls
-# 3. node A cannot be both  slack node and delivery end of  compressor
+        for ci in ref(ts, :incoming_compressors, node_id)
+            node_across_ci = ref(ts, :compressor, ci, "fr_node")
+            if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
+                ref(ts, :node, node_id)["is_Level_2"] = true
+                return
+            end
+        end
+
+        for ci in ref(ts, :outgoing_compressors, node_id)
+            node_across_ci = ref(ts, :compressor, ci, "to_node")
+            if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
+                ref(ts, :node, node_id)["is_Level_2"] = true
+                return
+            end
+        end
+
+        ref(ts, :node, node_id)["is_Level_2"] = false
+        return
+end
+
+function add_node_level_flag!(ts::TransientSimulator)
+    for (node_id, node) in ref(ts, :node)
+        _evaluate_level_of_node!(ts, node_id)
+    end
+    return
+end
+
+
+
+

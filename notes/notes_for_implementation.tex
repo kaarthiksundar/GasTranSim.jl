@@ -1,6 +1,13 @@
 \documentclass{amsart}
 
 \usepackage{fullpage,amsmath,amssymb,graphicx}
+% \usepackage[caption=true]{subfig}
+% \usepackage{caption}
+\usepackage{caption,subcaption}
+\usepackage{hyperref}
+\captionsetup[subfigure]{margin=0pt, parskip=0pt, hangindent=0pt, indention=0pt, 
+    labelformat=parens, labelfont=rm}
+
 
 \DeclareMathOperator{\sgn}{sgn}
 
@@ -27,7 +34,7 @@ For a single pipe, the scheme is easy to understand and implement when given the
 
 To start with, for each pipe, assume a base grid  of  pressure/density $(p/\rho)$ that matches the end-points, so that the grid for flux $\phi$ is staggered.  
 
-Given initial conditions for both variables (pressure/density and flux), it is possible to advance all the internal nodes for flux to the next time instant (here $\Delta t/2$) by using the discretized equation of balance of mass.  The pressure at the nodes at $\Delta t$ however, cannot be calculated independently, and we need to satisfy the nodal balance, get the nodal pressures, before one can advance the internal pressure nodes to the next time level $\Delta t$.
+Given initial conditions for both variables (pressure/density at $t_0$ and flux at $t_0 + \Delta t/2$), it is possible to advance all the internal nodes for density to the next time instant ($t_0 + \Delta t$) by using the discretized equation of balance of mass.  The pressure at the junctions however, cannot be calculated independently, and we need to satisfy the nodal balance to get the junction pressures for $t_0 + \Delta t$.
 
 For this we shall use the flux at the end points, corresponding to the values at the ghost points, given by
 \begin{align}
@@ -36,8 +43,9 @@ For this we shall use the flux at the end points, corresponding to the values at
 \end{align}
 where $\phi_R^{-}, \phi_L^{-1}$ are the internal nodes for flux closest to the ghost points. 
 We use the letters $L, R$ to denote the left and right ends, where flow is assumed to be from left to right.
+Substituting these equations into a nodal balance for the fluxes converts them into equations for junction pressure which can then be solved for.
 
-\section{Network without compressors}
+\section{Junction without compressors}
 
 At a node, say $i_0$, suppose there are incoming pipes $i_1, i_2, i_3, \dotsc$, outgoing pipes $o_1, o_2, o_3, ...$, and supply $q_{i_0}(t)$. We assume that for pipe $i$, $\sgn(i) = +1$ if incoming, and $-1$ if outgoing, and supply is positive, withdrawal is negative. The notation $u \in e(i_0)$ will be used to denote a pipe $u$ that has node $i_0$ as one end. 
 
@@ -60,7 +68,7 @@ Thus the algorithm may be understood as the sequence of steps:
 Note that if the node $i_0$ is a \emph{slack node}, then the pressure $p(i_0)$ is always known and there is nothing to do.
 
 
-\section{Network with compressors}
+\section{Junction with compressors}
 For a compressor $c$ between nodes $i$ and $j$, it is assumed that the flow is unidirectional only. That is, \emph{we do not deal with flows wherein $\alpha \geq 1$ in one flow direction and $\alpha=1$  if  flow is in the reverse direction.} 
 Moreover, one of the following \emph{must} be known/given: \\
 (a) mass flow through compressor $f_c(t)$ \\
@@ -75,7 +83,7 @@ Same process is followed if we have multiple compressors at a node $i_0$ with co
 \subsection{Compressor ratios given}
 
 For reasons that will become clear subsequently, we assume that our network is such that if a compressor $c$ has nodes $i$ and $j$, at least one of $i$ or $j$  must be such that $c$ is the only compressor attached to that node. Let us record the implication of this statement  carefully.
-This statement \emph{does not} rule out nodes where multiple compressors connect. Neither does it prohibit  such nodes from being neighbours. It only prevents the connecting edge between two such nodes from being a compressor. Stated another way, if nodes $i, j$ have multiple compressors, our assumption rules out a compressor connecting $i,j$. 
+This statement \emph{does not} rule out nodes where multiple compressors connect. Neither does it prohibit  such nodes from being neighbours. It only prevents the connecting edge between two such nodes from being a compressor. Stated another way, if nodes $i, j$ have multiple compressors, our assumption rules out a compressor connecting $i,j$, but a pipe may still connect $i, j$. 
 
 Given a network satisfying the restriction, let us start by considering all \emph{slack} nodes first.
 At a slack node $i_0$, if there is a compressor $c$ with compressor ratio $\alpha_c$, then the density at the node lying at other end of  the compressor is given by multiplying factor $\alpha_c$ if compressor is outgoing at $i_0 \; (\sgn(c) = -1$, but the factor is $1/\alpha_c$ when $\sgn(c) = +1$, i.e., incoming at $i_0$.
@@ -125,15 +133,38 @@ Note that if there are two compressors delivering to same node with a given deli
 \emph{we shall not consider networks where, at a node more than one compressor delivers with specified pressure.}
 
 \subsection{Combination of above given}
-Let us introduce the terms Level 0 and Level 1 vertices first. At a Level 0 vertex there are no incoming or outgoing compressors. At a Level 1 vertex, there can be compressors attached, but the vertex at the other end of each compressor has no other compressors incoming or outgoing. 
-We shall write down the equations for the pressure of a  general Level 1 vertex in two common configurations, and this will ensure that once all Level 1 vertices of the network have been updated, no vertices remain untouched. 
+Let us introduce the terms Level 0 and Level 1 vertices to formalize the network restrictions alluded to in the previous section. At a Level 0 vertex there are no incoming or outgoing compressors. At a Level 1 vertex, there can be compressors attached, but the vertex at the other end of each compressor has \emph{no other} compressors incoming or outgoing. If this is not true, then it is a Level 2 vertex.
+Thus, for compressors attached at a Level 1 vertex, the other ends are all Level 2 vertices. 
 
-\subsection{Configuration 1}
+The idea behind the classification is that to solve for pressure/density at a Level 0 vertex, information at that particular vertex alone is sufficient. At a Level 1 vertex, on the other hand, one needs information at that vertex, and information at the vertices that are the ends of the compressors incoming/outgoing. 
+
+
 \begin{figure}[htb]
-\includegraphics[scale=1]{fig1}
-\caption{Configuration 1: Landing at vertex $i$, and determining vertex densities at neighbours}
-\label{fig:config1}
+\centering
+\includegraphics[scale=1]{pathologies}
+\caption{Illustration of the three topologies that are explicitly forbidden. (a) Two incoming compressors at $i$ with discharge pressure control, (b) a slack node $i$ with incoming compressor that has discharge pressure control, and (c) connected Level 2 nodes due to three compressors in series.}
+\label{fig:pathologies}
 \end{figure}
+
+We shall assume that the network satisfies three conditions: \\
+(1) Two Level 2 vertices cannot be neighbours, i.e., Level 2 vertices can only have Level 1 neighbours. This condition can be stated  alternatively as: there can be at most two compressor elements in series in the network \\
+(2) A vertex cannot be the delivery end of two  compressors with delivery pressure controls \\
+(3) A vertex cannot be a  slack node and the delivery end of a  compressor simultaneously \\
+These conditions are not very restrictive in reality and are simply pathological cases we want to avoid (See Figure~\ref{fig:pathologies}).
+For networks that satisfy the above restrictions, we shall write down the equations for the pressure of a  general Level 1 vertex (and its Level 2 neighbours) in two common configurations (Figure~\ref{fig:configs}). Thus, if we can cycle through all Level 1 vertices of the network and calculate the densities, then all Level 2 neighbour vertices can be updated automatically, ensuring all vertices do get updated.
+
+
+
+\begin{figure}[htb]
+\centering
+\subfloat[Configuration 1]{\includegraphics[scale=1]{fig1} \label{fig:config1}}\\
+\subfloat[Configuration 2]{\includegraphics[scale=1]{fig2} \label{fig:config2}}
+\caption{Considering vertex $i$, which is a Level 1 vertex, we determine vertex densities at $i$ and its neighbours $j_2, j_3, j_4, j_5$  which are Level 2 vertices connected to $i$ by compressors. The network restrictions stated earlier imply that for these configurations, $c_4$ and $c_5$ can be outgoing compressors, but they cannot both be incoming compressors, and $p_5, p_4$ in Figure~\ref{fig:config1} and $p_5, p_i$ in
+Figure~\ref{fig:config2} cannot be slack nodes.}
+\label{fig:configs}
+\end{figure}
+
+
 
 The density at vertex $i$ in the configuration in Figure~\ref{fig:config1} is determined through
 
@@ -145,15 +176,9 @@ The density at vertex $i$ in the configuration in Figure~\ref{fig:config1} is de
 \end{align}
 
 Since $\rho^{(n+1)}(j_4), \rho^{(n+1)}(j_5)$ are already known, once $\rho^{(n+1)}(i)$ is determined from \eqref{eqn:config1}, $\rho^{(n+1)}(j_2)$ is also found. 
-In this configuration (Figure~\ref{fig:config1}), we \emph{do not} solve for $\rho^{(n+1)}(j_3)$ but it will be determined separately when we land at vertex $j_3$. The treatment of vertex $j_3$ is different because the compressor $c_3$ has mass-flow specified, and thus it is treated similar to the injection $q(i)$  at the vertex $i$.
+In this configuration (Figure~\ref{fig:config1}), we \emph{do not} solve for $\rho^{(n+1)}(j_3)$ but it will be determined separately when we land at vertex $j_3$. The treatment of vertex $j_3$ is different because the compressor $c_3$ has mass-flow specified, and thus it is treated similar to the injection $q(i)$  at the vertex $i$. In practice, we will directly solve for $\rho^{(n+1)}(j_3)$ to ensure that all Level 2 neighbours of $i$ are updated. This is necessary because our strategy is built around visiting  Level 0/1 nodes alone, and simply skipping Level 2 nodes.
 
 
-\subsection{Configuration 2}
-\begin{figure}
-\includegraphics[scale=1]{fig2}
-\caption{Configuration 2: Landing at vertex $i$, and determining vertex densities at neighbours}
-\label{fig:config2}
-\end{figure}
 
 In this scenario (see Figure~\ref{fig:config2}, the density at the base vertex $i$ is already known, since we have now reversed the direction of compressor $c_4$. However, we develop the equations for density at vertex $j_4$ as 
 
@@ -168,18 +193,30 @@ It can be seen that equations \eqref{eqn:config1} and \eqref{eqn:config2}
 are identical; we have simply transposed terms to reflect the known and unknown terms.
 
 \begin{itemize}
-\item The case of multiple incoming/outgoing compressors such as $c_2$ with given compressor ratios, is easy to generalize. The compressor ratio will appear as $1/\alpha_c$ for incoming compressors in \eqref{eqn:config1}, \eqref{eqn:config2}. 
-\item Similarly multiple compressors with given massflux are handled in the same way as  $c_3$.
+\item The case of multiple incoming/outgoing compressors such as $c_2$ with given compressor ratios is easy to generalize. The compressor ratio will appear as $1/\alpha_c$ for incoming compressors in \eqref{eqn:config1}, \eqref{eqn:config2}. 
+\item Similarly multiple compressors with given massflux are handled in the same way as  $c_3$, i.e., the densities are solved for after determining the density at the Level 1 ``root" vertex $i$.
 \item Multiple outgoing compressors with discharge pressure control, such as $c_4$, $c_5$ in Figure~\ref{fig:config1} are no problem.
-\item However, if $c_4$ be incoming, it must be the sole incoming compressor with discharge pressure control. Else the vertex equations cannot be solved locally.
+\item However, if $c_4$ be incoming, it must be the sole incoming compressor with discharge pressure control. Else the vertex equations cannot be solved locally (since it violates condition (2) above)
 \end{itemize}
 
-\section{Data structures and order of operations}
+\subsection{Advantages of this formulation}
+In case of disruptive events, the network topology may change in the following ways:
+\begin{enumerate}
+\item A compressor may malfunction, leading to it blocking flow completely (in which case one can change its control to be a low value of mass flow)
+\item Opening and closing of valves correspond to control values of mass flow changing from one value to another in a specified time interval
+\item A compressor with given ratio may instead be operated to  deliver at a given pressure or vice versa
+\end{enumerate}
+This list is representative, and by no means exhaustive. However, the point to note is that, network changes of this kind are easy to handle, and it is reflected locally in the equations for the vertex associated with the component.
+
+Note that the time marching step for internal nodes associated with mass flux and density are inherently parallel operations and may be performed as such. However, one can go further and check if it is possible to reduce the set of junctions to the  smallest possible set such that each junction and its neighbours are disjoint from the rest thus ensuring that we can perform computations for each of these vertices in parallel too. In the absence of such a decomposition however,  one must visit each junction serially, 
+for parallel operations will result in a race condition.
+
+\section{Data structures and sequence of operations for junction equations}
 \begin{enumerate}
 \item For a pipe between nodes $i, j$, there will be a grid for $\rho, \phi$. Also, a field to access $\phi^-(i), \phi^-(j)$.
 \item For each node, a flag to indicate if its pressure value has been updated in this current step.
-\item For each node, a list of \emph{all} pipes and compressors that are going to be relevant to the computation, a flag to indicate incoming/outgoing, and a compressor ratio (set to 1 if pipe). Note that this might include information about pipes at neighbouring nodes if compressors with unknown fluxes are present.
-\item Then visit each node, check if pressure value update flag is true; if so, exit and go to next node. Else perform computations at node, and update pressure at neighbouring nodes if relevant.
+\item For each node, a list of \emph{all} pipes and compressors attached, a flag to indicate incoming/outgoing, and a compressor ratio (set to 1 if pipe). Note that this might include information about pipes at neighbouring nodes if compressors with unknown fluxes are present.
+\item Then visit each Level 0/1 node, check if pressure value update flag is true; if so, exit and go to next node. Else perform computations at node, and update pressure at neighbouring nodes if relevant.
 \item Once all nodes updated, reset pressure update flag to false
 \item Now update fluxes
 \item We can start with a steady-state solution of $\phi, \rho$ as initial conditions, where we will assume that the nodal injections of the steady-state problem are held constant for time interval $[0, \Delta t/2]$
@@ -187,7 +224,7 @@ are identical; we have simply transposed terms to reflect the known and unknown 
 
 \section{Global formulation}
 
-The fool-proof way to solve this problem without restrictions on network topology is to form the full matrix system and solve all together.
+The way to solve this problem without any restrictions on network topology is to form the full matrix system and solve the system simulataneously.
 \begin{enumerate}
 \item Proceed as follows to first calculate the numbers of dofs in the problem, given that there are $N$ nodes in total, of which $N_s$ are slack nodes, and there are $n_c$ compressors.
 \item The number of nodal pressure dofs would be $N - N_s$. 
@@ -197,7 +234,7 @@ The fool-proof way to solve this problem without restrictions on network topolog
 \item The dofs thus comprise of $p_i, f_c, 1/\alpha_c$. If all compressors have mass flow given, only $p_i$ to solve for. If all compressors have $\alpha_c$ given, then solve for $p_i, f_c$.
 \item Will need to have a node to dof map and vice versa for use in every time step.
 \item The system matrix will be sparse, but because $\alpha_c(t)$ and $\Delta t$ may change with every time step, will need to evaluate in each step. RHS depends on previous time step solution, hence obviously needs updating each step.
-
+However, this algorithm does not take advantage of the local nature  of jucntion computations, and will result in the computational overhead  of repeated calculation and assembly of the global matrix if there are topology changes.
 \end{enumerate}
 
 
