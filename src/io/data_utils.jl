@@ -1,3 +1,40 @@
+function parse_data(data_folder::AbstractString; 
+    case_name::AbstractString="", 
+    case_types::Vector{Symbol}=Symbol[])
+    network_file = data_folder * "network.json"
+    params_file = data_folder * "params"
+    disruptions_file = data_folder * "disruptions"
+    ic_file = data_folder * "ic" 
+    bc_file = data_folder * "bc"
+    if (:params in case_types)
+        params_file = params_file * "_" * case_name * ".json"
+    else 
+        params_file = params_file * ".json"
+    end 
+    if (:disruptions in case_types)
+        disruptions_file = disruptions_file * "_" * case_name * ".json"
+    else 
+        disruptions_file = disruptions_file * ".json"
+    end 
+    if (:ic in case_types)
+        ic_file = ic_file * "_" * case_name * ".json"
+    else 
+        ic_file = ic_file * ".json"
+    end 
+    if (:bc in case_types)
+        bc_file = bc_file * "_" * case_name * ".json"
+    else 
+        bc_file = bc_file * ".json"
+    end 
+    network_data = parse_json(network_file)
+    params_data = parse_json(params_file)
+    ic_data = parse_json(ic_file)
+    bc_data = parse_json(bc_file)
+    disruptions_data = parse_json(disruptions_file)
+    data = merge(network_data, params_data, ic_data, bc_data, disruptions_data)
+    return data
+end 
+
 function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
     params = Dict{Symbol,Any}()
@@ -10,9 +47,9 @@ function process_data!(data::Dict{String,Any})
     defaults_exhaustive = [288.706, 0.6, 1.4, 0, 0.0, 3600.0, 1.0, 0.95, 600.0,
         0, 3600.0, 1000.0
     ]
-    input_params = data["input_param"]
+    simulation_params = data["simulation_params"]
     key_map = Dict{String,String}()
-    for k in keys(input_params)
+    for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
         occursin("Gas", k) && (key_map["gas_specific_gravity"] = k)
         occursin("Specific heat", k) &&
@@ -40,7 +77,7 @@ function process_data!(data::Dict{String,Any})
         default = defaults_exhaustive[i]
         if param == "units"
             if haskey(key_map, param)
-                value = Int(input_params[key_map[param]])
+                value = Int(simulation_params[key_map[param]])
                 if (value == 0)
                     params[:units] = 0
                     params[:is_si_units] = 1
@@ -62,7 +99,7 @@ function process_data!(data::Dict{String,Any})
         end
         key = get(key_map, param, false)
         if key != false
-            value = input_params[key]
+            value = simulation_params[key]
             params[Symbol(param)] = value
         else
             params[Symbol(param)] = default
