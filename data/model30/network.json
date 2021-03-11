@@ -1,0 +1,710 @@
+{
+    "nodes": {
+        "1": {
+            "node_id": 1,
+            "node_name": "Node1",
+            "x_coord": 0.8714,
+            "y_coord": -0.755,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 200,
+            "slack_bool": 1
+        },
+        "2": {
+            "node_id": 2,
+            "node_name": "Node2",
+            "x_coord": 0.4018,
+            "y_coord": -0.2421,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "3": {
+            "node_id": 3,
+            "node_name": "Node3",
+            "x_coord": 0.3762,
+            "y_coord": 0.1248,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "4": {
+            "node_id": 4,
+            "node_name": "Node4",
+            "x_coord": 0.4099,
+            "y_coord": 0.2794,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "5": {
+            "node_id": 5,
+            "node_name": "Node5",
+            "x_coord": 0.6983,
+            "y_coord": 0.2794,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "6": {
+            "node_id": 6,
+            "node_name": "Node6",
+            "x_coord": 0.8161,
+            "y_coord": 0.139,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "7": {
+            "node_id": 7,
+            "node_name": "Node7",
+            "x_coord": 0.72,
+            "y_coord": 0.6232,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "8": {
+            "node_id": 8,
+            "node_name": "Node8",
+            "x_coord": 0.8401,
+            "y_coord": 0.7751,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "9": {
+            "node_id": 9,
+            "node_name": "Node9",
+            "x_coord": 0.1949,
+            "y_coord": -0.245,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "10": {
+            "node_id": 10,
+            "node_name": "Node10",
+            "x_coord": -0.1382,
+            "y_coord": -0.6576,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "11": {
+            "node_id": 11,
+            "node_name": "Node11",
+            "x_coord": -0.1502,
+            "y_coord": -0.8639,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "12": {
+            "node_id": 12,
+            "node_name": "Node12",
+            "x_coord": 0.0901,
+            "y_coord": -0.9126,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "13": {
+            "node_id": 13,
+            "node_name": "Node13",
+            "x_coord": -0.3377,
+            "y_coord": -0.9069,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "14": {
+            "node_id": 14,
+            "node_name": "Node14",
+            "x_coord": -0.2066,
+            "y_coord": -0.3064,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "15": {
+            "node_id": 15,
+            "node_name": "Node15",
+            "x_coord": -0.4555,
+            "y_coord": -0.2564,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "16": {
+            "node_id": 16,
+            "node_name": "Node16",
+            "x_coord": -0.7103,
+            "y_coord": -0.4456,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "17": {
+            "node_id": 17,
+            "node_name": "Node17",
+            "x_coord": -0.7656,
+            "y_coord": -0.6777,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "18": {
+            "node_id": 18,
+            "node_name": "Node18",
+            "x_coord": -0.8690000000000001,
+            "y_coord": -0.7092,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "19": {
+            "node_id": 19,
+            "node_name": "Node19",
+            "x_coord": -0.7993,
+            "y_coord": -0.2994,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "20": {
+            "node_id": 20,
+            "node_name": "Node20",
+            "x_coord": -0.1264,
+            "y_coord": 0.2909,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "21": {
+            "node_id": 21,
+            "node_name": "Node21",
+            "x_coord": -0.3353,
+            "y_coord": 0.3539,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "22": {
+            "node_id": 22,
+            "node_name": "Node22",
+            "x_coord": -0.4363,
+            "y_coord": 0.6117,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "23": {
+            "node_id": 23,
+            "node_name": "Node23",
+            "x_coord": -0.4531,
+            "y_coord": 0.7436,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "24": {
+            "node_id": 24,
+            "node_name": "Node24",
+            "x_coord": -0.9228,
+            "y_coord": 0.7019,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "25": {
+            "node_id": 25,
+            "node_name": "Node25",
+            "x_coord": -0.2656,
+            "y_coord": 0.6146,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": -200,
+            "max_injection": 100,
+            "slack_bool": 0
+        },
+        "26": {
+            "node_id": 26,
+            "node_name": "Node26",
+            "x_coord": 0.8014,
+            "y_coord": -0.685,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "27": {
+            "node_id": 27,
+            "node_name": "Node27",
+            "x_coord": 0.3218,
+            "y_coord": -0.2421,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "28": {
+            "node_id": 28,
+            "node_name": "Node28",
+            "x_coord": 0.3762,
+            "y_coord": 0.1848,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "29": {
+            "node_id": 29,
+            "node_name": "Node29",
+            "x_coord": -0.2866,
+            "y_coord": -0.3064,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        },
+        "30": {
+            "node_id": 30,
+            "node_name": "Node30",
+            "x_coord": -0.1764,
+            "y_coord": 0.3009,
+            "min_pressure": 3447378.645,
+            "max_pressure": 5515805.832,
+            "min_injection": 0,
+            "max_injection": 0,
+            "slack_bool": 0
+        }
+    },
+    "pipes": {
+        "1": {
+            "pipe_id": 1,
+            "pipe_name": "Pipe1",
+            "from_node": 26,
+            "to_node": 2,
+            "diameter": 0.9144,
+            "length": 100000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "2": {
+            "pipe_id": 2,
+            "pipe_name": "Pipe2",
+            "from_node": 2,
+            "to_node": 3,
+            "diameter": 0.635,
+            "length": 30000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "3": {
+            "pipe_id": 3,
+            "pipe_name": "Pipe3",
+            "from_node": 28,
+            "to_node": 4,
+            "diameter": 0.635,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "4": {
+            "pipe_id": 4,
+            "pipe_name": "Pipe4",
+            "from_node": 4,
+            "to_node": 5,
+            "diameter": 0.635,
+            "length": 15000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "5": {
+            "pipe_id": 5,
+            "pipe_name": "Pipe5",
+            "from_node": 5,
+            "to_node": 6,
+            "diameter": 0.635,
+            "length": 10000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "6": {
+            "pipe_id": 6,
+            "pipe_name": "Pipe6",
+            "from_node": 5,
+            "to_node": 7,
+            "diameter": 0.635,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "7": {
+            "pipe_id": 7,
+            "pipe_name": "Pipe7",
+            "from_node": 7,
+            "to_node": 8,
+            "diameter": 0.635,
+            "length": 10000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "8": {
+            "pipe_id": 8,
+            "pipe_name": "Pipe8",
+            "from_node": 27,
+            "to_node": 9,
+            "diameter": 0.9144,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "9": {
+            "pipe_id": 9,
+            "pipe_name": "Pipe9",
+            "from_node": 9,
+            "to_node": 10,
+            "diameter": 0.9144,
+            "length": 60000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "10": {
+            "pipe_id": 10,
+            "pipe_name": "Pipe10",
+            "from_node": 10,
+            "to_node": 11,
+            "diameter": 0.635,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "11": {
+            "pipe_id": 11,
+            "pipe_name": "Pipe11",
+            "from_node": 11,
+            "to_node": 12,
+            "diameter": 0.635,
+            "length": 8000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "12": {
+            "pipe_id": 12,
+            "pipe_name": "Pipe12",
+            "from_node": 11,
+            "to_node": 13,
+            "diameter": 0.635,
+            "length": 6000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "13": {
+            "pipe_id": 13,
+            "pipe_name": "Pipe13",
+            "from_node": 10,
+            "to_node": 14,
+            "diameter": 0.9144,
+            "length": 80000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "14": {
+            "pipe_id": 14,
+            "pipe_name": "Pipe14",
+            "from_node": 29,
+            "to_node": 15,
+            "diameter": 0.9144,
+            "length": 10000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "15": {
+            "pipe_id": 15,
+            "pipe_name": "Pipe15",
+            "from_node": 15,
+            "to_node": 16,
+            "diameter": 0.9144,
+            "length": 20000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "16": {
+            "pipe_id": 16,
+            "pipe_name": "Pipe16",
+            "from_node": 16,
+            "to_node": 17,
+            "diameter": 0.635,
+            "length": 3000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "17": {
+            "pipe_id": 17,
+            "pipe_name": "Pipe17",
+            "from_node": 17,
+            "to_node": 18,
+            "diameter": 0.635,
+            "length": 6000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "18": {
+            "pipe_id": 18,
+            "pipe_name": "Pipe18",
+            "from_node": 16,
+            "to_node": 19,
+            "diameter": 0.635,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "19": {
+            "pipe_id": 19,
+            "pipe_name": "Pipe19",
+            "from_node": 15,
+            "to_node": 20,
+            "diameter": 0.9144,
+            "length": 40000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "20": {
+            "pipe_id": 20,
+            "pipe_name": "Pipe20",
+            "from_node": 30,
+            "to_node": 21,
+            "diameter": 0.9144,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "21": {
+            "pipe_id": 21,
+            "pipe_name": "Pipe21",
+            "from_node": 21,
+            "to_node": 22,
+            "diameter": 0.9144,
+            "length": 20000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "22": {
+            "pipe_id": 22,
+            "pipe_name": "Pipe22",
+            "from_node": 22,
+            "to_node": 23,
+            "diameter": 0.9144,
+            "length": 5000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "23": {
+            "pipe_id": 23,
+            "pipe_name": "Pipe23",
+            "from_node": 23,
+            "to_node": 24,
+            "diameter": 0.9144,
+            "length": 16000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        },
+        "24": {
+            "pipe_id": 24,
+            "pipe_name": "Pipe24",
+            "from_node": 22,
+            "to_node": 25,
+            "diameter": 0.635,
+            "length": 8000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        }
+    },
+    "compressors": {
+        "1": {
+            "comp_id": 1,
+            "comp_name": "Comp1",
+            "from_node": 1,
+            "to_node": 26,
+            "c_min": 1,
+            "c_max": 1.4,
+            "max_power": 2609950,
+            "min_flow": 0,
+            "max_flow": 168.2844812
+        },
+        "2": {
+            "comp_id": 2,
+            "comp_name": "Comp2",
+            "from_node": 2,
+            "to_node": 27,
+            "c_min": 1,
+            "c_max": 1.4,
+            "max_power": 1864250,
+            "min_flow": 0,
+            "max_flow": 144.243841
+        },
+        "3": {
+            "comp_id": 3,
+            "comp_name": "Comp3",
+            "from_node": 3,
+            "to_node": 28,
+            "c_min": 1,
+            "c_max": 1.4,
+            "max_power": 1118550,
+            "min_flow": 0,
+            "max_flow": 96.16256068
+        },
+        "4": {
+            "comp_id": 4,
+            "comp_name": "Comp4",
+            "from_node": 14,
+            "to_node": 29,
+            "c_min": 1,
+            "c_max": 1.4,
+            "max_power": 745700,
+            "min_flow": 0,
+            "max_flow": 144.243841
+        },
+        "5": {
+            "comp_id": 5,
+            "comp_name": "Comp5",
+            "from_node": 20,
+            "to_node": 30,
+            "c_min": 1,
+            "c_max": 1.4,
+            "max_power": 745700,
+            "min_flow": 0,
+            "max_flow": 144.243841
+        }
+    },
+    "gnodes": {
+        "1": {
+            "gnode_id": 1,
+            "gnode_name": "LDC_A",
+            "node_id": 6
+        },
+        "2": {
+            "gnode_id": 2,
+            "gnode_name": "LDC_B",
+            "node_id": 8
+        },
+        "3": {
+            "gnode_id": 3,
+            "gnode_name": "LDC_C",
+            "node_id": 24
+        },
+        "4": {
+            "gnode_id": 4,
+            "gnode_name": "LDC_D",
+            "node_id": 25
+        },
+        "5": {
+            "gnode_id": 5,
+            "gnode_name": "LDC_E",
+            "node_id": 12
+        },
+        "6": {
+            "gnode_id": 6,
+            "gnode_name": "LDC_F",
+            "node_id": 13
+        },
+        "7": {
+            "gnode_id": 7,
+            "gnode_name": "LDC_G",
+            "node_id": 18
+        },
+        "8": {
+            "gnode_id": 8,
+            "gnode_name": "LDC_H",
+            "node_id": 19
+        },
+        "9": {
+            "gnode_id": 9,
+            "gnode_name": "LDC_I",
+            "node_id": 12
+        },
+        "10": {
+            "gnode_id": 10,
+            "gnode_name": "PP_A",
+            "node_id": 25
+        },
+        "11": {
+            "gnode_id": 11,
+            "gnode_name": "PP_B",
+            "node_id": 6
+        },
+        "12": {
+            "gnode_id": 12,
+            "gnode_name": "PP_C",
+            "node_id": 18
+        },
+        "13": {
+            "gnode_id": 13,
+            "gnode_name": "PP_D",
+            "node_id": 24
+        },
+        "14": {
+            "gnode_id": 14,
+            "gnode_name": "PP_E",
+            "node_id": 24
+        },
+        "15": {
+            "gnode_id": 15,
+            "gnode_name": "PP_F",
+            "node_id": 25
+        }
+    }
+}
