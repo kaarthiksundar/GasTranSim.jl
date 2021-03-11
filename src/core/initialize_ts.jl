@@ -1,3 +1,9 @@
+# function initialize_simulator(data_folder::AbstractString; 
+#     kwargs...)::TransientSimulator
+#     data = parse_data(data_folder; kwargs...)
+#     return initialize_simulator(data)
+# end 
+
 function initialize_simulator(file::AbstractString)::TransientSimulator
     data = parse_json(file)
     return initialize_simulator(data)

@@ -22,8 +22,9 @@ include("core/run_ts.jl")
 
 include("io/output.jl")
 
-# file = "./data/model8ts_3d.json";
-file = "./data/model30_ts.json"
+file = "./data/model8ts_3d.json";
+# file = "./data/model30_ts.json"
+# folder = "./data/model8/"
 
 ts = initialize_simulator(file)
 
