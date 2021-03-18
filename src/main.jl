@@ -23,7 +23,7 @@ include("core/run_ts.jl")
 include("io/output.jl")
 
 folder = "./data/model8/"
-folder = "./data/model30/"
+# folder = "./data/model30/"
 
 ts = initialize_simulator(folder)
 

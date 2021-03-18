@@ -10,7 +10,7 @@ function _advance_pipe_density_internal!(ts::TransientSimulator, pipe_id::Int64)
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     dx = ref(ts, :pipe, pipe_id)["dx"]
     dt = params(ts, :dt)
-    rho[2:n-1] = rho[2:n-1] + (dt / dx) *  (phi[2:n-1] - phi[3:n])
+    # rho[2:n-1] = rho[2:n-1] + (dt / dx) *  (phi[2:n-1] - phi[3:n])
     return
 end
 
@@ -20,9 +20,7 @@ end
 function _set_pressure_at_node!(node_id::Int64, pressure::Real, ts::TransientSimulator)
     (ref(ts, :node, node_id)["is_updated"] == true) && (return)
     ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
-    ref(ts, :node, node_id)["density_previous"] = ref(ts, :node, node_id)["density"]
     ref(ts, :node, node_id)["pressure"] = pressure
-    ref(ts, :node, node_id)["density"] = get_density(ts, pressure)
     ref(ts, :node, node_id)["is_updated"] = true
     return
 end
@@ -78,6 +76,7 @@ function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal:
     t = ref(ts, :current_time)
     in_c = ref(ts, :incoming_compressors, node_id)
     index = findfirst(ci -> control(ts, :compressor, ci, t)[1] == discharge_pressure_control, in_c)
+
     # we know there can be at most one such compressor
     if isa(index, Nothing)
         _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id, withdrawal, ts)
@@ -100,7 +99,7 @@ function _calculate_pressure_for_node_without_incoming_discharge_pressure_contro
     end
     s1, s2 = s
     t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
-    rho_prev = ref(ts, :node, node_id, "density")
+    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + (t2 + s2) / (t1 + s1)
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
@@ -113,8 +112,8 @@ end
     Calculate and update the pressure at vertex with single compressor with flow_control 
 """
 function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, net_withdrawal::Real, ts::TransientSimulator)
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, net_withdrawal, 1.0, ts)
-    rho_prev = ref(ts, :node, node_id, "density")
+    t1, t2 = _assemble_pipe_contributions_to_node(node_id, -net_withdrawal, 1.0, ts)
+    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + (t2  / t1)
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
@@ -151,9 +150,9 @@ function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(
 
     discharge_rho = get_density(ts, discharge_pressure)
     discharge_pressure_prev = ref(ts, :node, base_node_id, "pressure")
-    discharge_rho_prev = ref(ts, :node, base_node_id, "pressure")
+    discharge_rho_prev = get_density(ts, discharge_pressure_prev)
 
-    rho_prev = ref(ts, :node, node_id, "density")
+    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + (t2 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2) / t1
     pressure = get_pressure(ts, rho)
 
@@ -192,7 +191,7 @@ function _assemble_compressor_contributions_to_node_without_incoming_discharge_p
     term1 = 0.0
     term2 = 0.0
     p_prev = ref(ts, :node, node_id, "pressure")
-    rho_prev = ref(ts, :node, node_id, "density")
+    rho_prev = get_density(ts, p_prev)
     t = ref(ts, :current_time)
     for ci in in_c
         ctr, cmpr_val = control(ts, :compressor, ci, t)
@@ -232,7 +231,7 @@ function _assemble_compressor_contributions_to_node_without_incoming_discharge_p
         if ctr == discharge_pressure_control
             var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, val, 1.0, ts)
             discharge_pressure_prev = ref(ts, :node, node_across_co_id, "pressure")
-            discharge_rho_prev = ref(ts, :node, node_across_co_id, "density")
+            discharge_rho_prev = get_density(ts, ref(ts, :node, node_across_co_id, "pressure"))
             discharge_rho = get_density(ts, cmpr_val)
             term2 += var1 * (discharge_rho_prev - discharge_rho) + var2
             _set_pressure_at_node!(node_across_co_id, cmpr_val, ts)
@@ -320,7 +319,7 @@ function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int6
     a_vec = params(ts, :dt) * beta ./ (rho[2:n] + rho[1:n-1])
     y_vec = phi[2:n] - (params(ts, :dt) / ref(ts, :pipe, pipe_id, "dx")) *
             (get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:n-1])) - a_vec .* phi[2:n] .* abs.(phi[2:n])
-    phi[2:n] = _invert_quadratic.(a_vec, y_vec)
+    # phi[2:n] = _invert_quadratic.(a_vec, y_vec)
     # update field
     ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] = phi[2]
     ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] = phi[n]
@@ -335,15 +334,15 @@ function _compute_pipe_end_fluxes_densities!(ts::TransientSimulator, pipe_id::In
     dt = params(ts, :dt)
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     from_node_id = ref(ts, :pipe, pipe_id)["fr_node"]
-    rho_prev = ref(ts, :node, from_node_id)["density_previous"]
-    rho = ref(ts, :node, from_node_id)["density"]
+    rho_prev = get_density(ts, ref(ts, :node, from_node_id)["pressure_previous"])
+    rho = get_density(ts, ref(ts, :node, from_node_id)["pressure"])
     # at (n + 1/2) level
     ref(ts, :pipe, pipe_id)["fr_mass_flux"] = ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] + (rho - rho_prev) * (dx/dt)
     # at (n + 1) level
     ref(ts, :pipe, pipe_id)["density_profile"][1] = rho
     to_node_id = ref(ts, :pipe, pipe_id)["to_node"]
-    rho_prev = ref(ts, :node, to_node_id)["density_previous"]
-    rho = ref(ts, :node, to_node_id)["density"]
+    rho_prev = get_density(ts, ref(ts, :node, to_node_id)["pressure_previous"])
+    rho = get_density(ts, ref(ts, :node, to_node_id)["pressure"])
     #at (n + 1/2) level
     ref(ts, :pipe, pipe_id)["to_mass_flux"] = ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] + (rho_prev - rho) * (dx/dt)
     # at (n + 1) level

@@ -39,7 +39,6 @@ end
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-        #TODO: account for courant number and for non-ideal effects
         n = ceil(Int64, pipe["length"] / (1.0 * params(ts, :dt)) )
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
@@ -84,7 +83,6 @@ function initialize_nodal_state!(ts::TransientSimulator)
     for (key, node) in ref(ts, :node)
         pressure = node["initial_pressure"]
         ref(ts, :node, key)["pressure"] = pressure
-        ref(ts, :node, key)["density"] = get_density(ts, pressure)
     end
     return
 end

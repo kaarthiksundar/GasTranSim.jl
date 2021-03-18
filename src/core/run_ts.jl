@@ -11,11 +11,6 @@ function run_simulator!(ts::TransientSimulator; run_type = :sync)
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
     	#  if current_time is one where output needs to be saved, check and do now
     	update_output_struc!(ts, out_int)
-    	 err_arr = []
-    	 for key in collect(keys(ts.ref[:node]))
-    	 	push!(err_arr, abs(ts.ref[:node][key]["pressure_previous"] - ts.ref[:node][key]["pressure"]))
-    	 end
-    	 # @show maximum(err_arr)
     end
     # flux profile, density profiles saved to restart time marching
     #out = create_output(ts, out_int)
@@ -35,7 +30,9 @@ end
 function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
     t = ref(ts, :current_time)
     # DO NOT parallelize this (race condition)
-    for (key, junction) in ref(ts, :node)
+    # for (key, junction) in ref(ts, :node)
+    for key in [2, 3, 4, 1, 5, 7, 8]
+        junction = ref(ts, :node, key)
         (ref(ts, :node, key)["is_updated"] == true) && (continue)
         (ref(ts, :node, key)["is_level_2"] == true) && (continue)
         # p(t), but q(t - dt/2) taken care of inside

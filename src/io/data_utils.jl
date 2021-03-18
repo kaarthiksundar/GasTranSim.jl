@@ -121,7 +121,7 @@ function process_data!(data::Dict{String,Any})
     # sound speed (m/s): v = sqrt(R_g * T); R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
     params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
 
-    nominal_values[:length] = 1000.0
+    nominal_values[:length] = 5000.0
     nominal_values[:area] = 1.0
     nominal_values[:pressure] = 3500000.0 # 507.63 psi
     nominal_values[:density] = nominal_values[:pressure] / params[:sound_speed] / params[:sound_speed]
