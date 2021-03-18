@@ -11,8 +11,6 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["is_updated"] = false
         ref[name][id]["pressure"] = NaN
         ref[name][id]["pressure_previous"] = NaN
-        ref[name][id]["density"] = NaN
-        ref[name][id]["density_previous"] = NaN
         ref[name][id]["injection"] = NaN
     end
 

@@ -1,7 +1,8 @@
-function initialize_simulator(file::AbstractString)::TransientSimulator
-    data = parse_json(file)
+function initialize_simulator(data_folder::AbstractString; 
+    kwargs...)::TransientSimulator
+    data = parse_data(data_folder; kwargs...)
     return initialize_simulator(data)
-end
+end 
 
 function initialize_simulator(data::Dict{String,Any})::TransientSimulator
     params, nominal_values = process_data!(data)
@@ -38,7 +39,6 @@ end
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-        #TODO: account for courant number and for non-ideal effects
         n = ceil(Int64, pipe["length"] / (1.0 * params(ts, :dt)) )
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
@@ -48,11 +48,41 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
     return
 end
 
+function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
+    if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
+        ref(ts, :node, node_id)["is_level_2"] = false
+        return
+    end
+    for ci in ref(ts, :incoming_compressors, node_id)
+        node_across_ci = ref(ts, :compressor, ci, "fr_node")
+        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
+            ref(ts, :node, node_id)["is_level_2"] = true
+            return
+        end
+    end
+    for ci in ref(ts, :outgoing_compressors, node_id)
+        node_across_ci = ref(ts, :compressor, ci, "to_node")
+        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
+            ref(ts, :node, node_id)["is_level_2"] = true
+            return
+        end
+    end
+    ref(ts, :node, node_id)["is_level_2"] = false
+    return
+end
+
+function add_node_level_flag!(ts::TransientSimulator)
+    for (node_id, node) in ref(ts, :node)
+        _evaluate_level_of_node!(ts, node_id)
+    end
+    return
+end
+
+
 function initialize_nodal_state!(ts::TransientSimulator)
     for (key, node) in ref(ts, :node)
         pressure = node["initial_pressure"]
         ref(ts, :node, key)["pressure"] = pressure
-        ref(ts, :node, key)["density"] = get_density(ts, pressure)
     end
     return
 end
@@ -79,41 +109,6 @@ function initialize_pipe_state!(ts::TransientSimulator)
     end
     return
 end
-
-function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
-        
-        if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
-            ref(ts, :node, node_id)["is_Level_2"] = false
-            return
-        end
-
-        for ci in ref(ts, :incoming_compressors, node_id)
-            node_across_ci = ref(ts, :compressor, ci, "fr_node")
-            if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-                ref(ts, :node, node_id)["is_Level_2"] = true
-                return
-            end
-        end
-
-        for ci in ref(ts, :outgoing_compressors, node_id)
-            node_across_ci = ref(ts, :compressor, ci, "to_node")
-            if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-                ref(ts, :node, node_id)["is_Level_2"] = true
-                return
-            end
-        end
-
-        ref(ts, :node, node_id)["is_Level_2"] = false
-        return
-end
-
-function add_node_level_flag!(ts::TransientSimulator)
-    for (node_id, node) in ref(ts, :node)
-        _evaluate_level_of_node!(ts, node_id)
-    end
-    return
-end
-
 
 
 

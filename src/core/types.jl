@@ -18,8 +18,8 @@ ref(ts::TransientSimulator, key::Symbol, id::Int64, field) = ts.ref[key][id][fie
 params(ts::TransientSimulator) = ts.params
 params(ts::TransientSimulator, key::Symbol) = ts.params[key]
 
-nominal_values(ts::TransientSimulator) = ts.params
-nominal_values(ts::TransientSimulator, key::Symbol) = ts.params[key]
+nominal_values(ts::TransientSimulator) = ts.nominal_values
+nominal_values(ts::TransientSimulator, key::Symbol) = ts.nominal_values[key]
 
 function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}

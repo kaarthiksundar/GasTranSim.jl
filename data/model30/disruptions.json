@@ -1,0 +1,19 @@
+{
+    "disruption": {
+        "node_disruptions": {
+            "1": {
+                "node_id": 15,
+                "disrupt_time": 720,
+                "valve_delay": 600
+            }
+        },
+        "pipe_disruptions": {
+            "1": {
+                "pipe_id": 22,
+                "distance": 2500,
+                "disrupt_time": 1440,
+                "valve_delay": 600
+            }
+        }
+    }
+}
