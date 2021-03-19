@@ -11,6 +11,7 @@ include("unit_conversion/to_english.jl")
 include("unit_conversion/to_pu.jl")
 include("unit_conversion/unit_convertors.jl")
 
+include("core/eos.jl")
 include("core/types.jl")
 include("core/ref.jl")
 include("core/bc.jl")
@@ -23,8 +24,8 @@ include("core/run_ts.jl")
 include("io/output.jl")
 
 folder = "./data/model8/"
-# folder = "./data/model30/"
+folder = "./data/model30/"
 
 ts = initialize_simulator(folder)
 
-run_simulator!(ts)
+run_simulator!(ts; run_type=:async)

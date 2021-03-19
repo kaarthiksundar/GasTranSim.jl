@@ -1,10 +1,10 @@
-function initialize_simulator(data_folder::AbstractString; 
+function initialize_simulator(data_folder::AbstractString;
     kwargs...)::TransientSimulator
     data = parse_data(data_folder; kwargs...)
-    return initialize_simulator(data)
-end 
+    return initialize_simulator(data; kwargs...)
+end
 
-function initialize_simulator(data::Dict{String,Any})::TransientSimulator
+function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::TransientSimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(data, ref_extensions= [
@@ -14,9 +14,7 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
     )
     ref[:current_time] = params[:t_0]
     bc = build_bc(data)
-    pu_pressure_to_pu_density = x -> x
-    pu_density_to_pu_pressure = x -> x
-    pu_dpressure_to_pu_ddensity = x-> x^0
+    pu_pressure_to_pu_density, pu_density_to_pu_pressure = get_eos(nominal_values, params, eos)
 
     ts = TransientSimulator(data,
         ref,
@@ -25,8 +23,7 @@ function initialize_simulator(data::Dict{String,Any})::TransientSimulator
         params,
         bc,
         pu_pressure_to_pu_density,
-        pu_density_to_pu_pressure,
-        pu_dpressure_to_pu_ddensity
+        pu_density_to_pu_pressure
     )
 
     add_pipe_grid_to_ref!(ts)
@@ -109,6 +106,3 @@ function initialize_pipe_state!(ts::TransientSimulator)
     end
     return
 end
-
-
-
