@@ -28,4 +28,4 @@ folder = "./data/model30/"
 
 ts = initialize_simulator(folder)
 
-run_simulator!(ts; run_type=:async)
+run_simulator!(ts)
