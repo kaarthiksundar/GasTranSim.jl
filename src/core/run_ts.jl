@@ -31,8 +31,7 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
     t = ref(ts, :current_time)
     # DO NOT parallelize this (race condition)
     # for (key, junction) in ref(ts, :node)
-    for key in [2, 3, 4, 1, 5, 7, 8]
-        junction = ref(ts, :node, key)
+    for (key, junction) in ref(ts, :node)
         (ref(ts, :node, key)["is_updated"] == true) && (continue)
         (ref(ts, :node, key)["is_level_2"] == true) && (continue)
         # p(t), but q(t - dt/2) taken care of inside

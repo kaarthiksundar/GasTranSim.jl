@@ -7,7 +7,6 @@ struct TransientSimulator
     boundary_conditions::Dict{Symbol,Any}
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
-    pu_dpressure_to_pu_ddensity::Function
 end
 
 ref(ts::TransientSimulator) = ts.ref
@@ -29,14 +28,8 @@ function control(ts::TransientSimulator,
     return CONTROL_TYPE::unknown_control, 0.0
 end
 
-get_pressure(ts::TransientSimulator, density::Real) = ts.pu_density_to_pu_pressure(density)
-get_pressure(ts::TransientSimulator, density::Vector{<:Real}) = ts.pu_density_to_pu_pressure.(density)
-
-get_density(ts::TransientSimulator, pressure::Real) = ts.pu_pressure_to_pu_density(pressure)
-get_density(ts::TransientSimulator, pressure::Vector{<:Real}) = ts.pu_pressure_to_pu_density.(pressure)
-
-get_sound_speed(ts::TransientSimulator, density::Real) = sqrt(ts.pu_dpressure_to_pu_ddensity(density))
-get_sound_speed(ts::TransientSimulator, density::Vector{<:Real}) = sqrt.(ts.pu_dpressure_to_pu_ddensity.(density))
+get_pressure(ts::TransientSimulator, density) = ts.pu_density_to_pu_pressure(density, nominal_values(ts), params(ts))
+get_density(ts::TransientSimulator, pressure) = ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
 TOL = 1e-6
 
