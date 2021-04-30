@@ -134,11 +134,16 @@ function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,
 
     ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()
-
+    
     for (i, val) in ref[:node]
         ref[:incoming_compressors][i] = []
         ref[:outgoing_compressors][i] = []
     end
+
+    if !haskey(ref, :compressor)
+        return
+    end
+    
 
     for (id, compressor) in ref[:compressor]
         push!(ref[:incoming_compressors][compressor["to_node"]], id)

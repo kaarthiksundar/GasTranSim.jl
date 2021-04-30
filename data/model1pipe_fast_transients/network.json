@@ -1,0 +1,38 @@
+{
+    "nodes": {
+        "1": {
+            "node_id": 1,
+            "node_name": "n1",
+            "x_coord": -1,
+            "y_coord": 0,
+            "min_pressure": 3000000,
+            "max_pressure": 6000000,
+            "min_injection": 0,
+            "max_injection": 1000,
+            "slack_bool": 1
+        },
+        "2": {
+            "node_id": 2,
+            "node_name": "n2",
+            "x_coord": -0.0421,
+            "y_coord": 0,
+            "min_pressure": 3000000,
+            "max_pressure": 6000000,
+            "min_injection": -1000,
+            "max_injection": 1000,
+            "slack_bool": 0
+        }
+    },
+    "pipes": {
+        "1": {
+            "pipe_id": 1,
+            "pipe_name": "p1",
+            "from_node": 1,
+            "to_node": 2,
+            "diameter": 0.9144,
+            "length": 20000,
+            "friction_factor": 0.01,
+            "disc_seg": 0
+        }
+    }
+}
