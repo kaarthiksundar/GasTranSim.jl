@@ -51,8 +51,6 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         ref(ts, :node, node_id)["is_level_2"] = false
         return
     end
-
-
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
         ref(ts, :node, node_id)["is_level_2"] = false
         return

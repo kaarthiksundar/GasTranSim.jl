@@ -140,12 +140,7 @@ function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,
         ref[:outgoing_compressors][i] = []
     end
 
-    if !haskey(ref, :compressor)
-        return
-    end
-    
-
-    for (id, compressor) in ref[:compressor]
+    for (id, compressor) in get(ref, :compressor, [])
         push!(ref[:incoming_compressors][compressor["to_node"]], id)
         push!(ref[:outgoing_compressors][compressor["fr_node"]], id)
     end
@@ -156,8 +151,6 @@ function add_current_time_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:current_time] = 0.0
     return
 end
-
-
 
 function build_ref(data::Dict{String,Any};
     ref_extensions=[])::Dict{Symbol,Any}
