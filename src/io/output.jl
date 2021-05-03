@@ -1,10 +1,41 @@
+# struct OutputData
+#     initial_time::Float64 
+#     final_time::Float64 
+#     time_points_pressure::Vector{Float64}
+#     time_points_flow_rate::Vector{Float64}
+#     junction::Dict{Int64,Any}
+#     pipe::Dict{Int64,Any}
+#     compressor::Dict{Int64,Any}
+#     is_si_units::Bool
+#     is_english_units::Bool 
+#     is_per_unit::Bool
+# end 
+
+function initialize_output_data(ts::TransientSimulator)::OutputData 
+    initial_time = ref(ts, :current_time) 
+    final_time = params(ts, :tf)
+    time_points_pressure = Float64[]
+    time_points_flow_rate = Float64[]
+    push!(time_points_pressure, initial_time)
+    push!(time_points_flow_rate, initial_time)
+    junction = Dict{Int64,Any}()
+    pipe = Dict{Int64,Any}()
+    compressor = Dict{Int64,Any}()
+    # for (i, node) in get(ref(ts), :node, [])
+    #     junction[i] = Dict(
+    #         "pressure" => [],
+    #         "flow" => []
+    #     )
+
+
+end 
+
 struct OutputIntermediate
     time_pressure::Vector{Float64}
     time_flux::Vector{Float64}
     junction::Dict{Int64, Vector{Float64}}
     pipe::Dict{Int64, Tuple{ Vector{Float64}, Vector{Float64} } }
 end 
-
 
 struct OutputData
     initial_time::Float64
