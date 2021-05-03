@@ -31,14 +31,3 @@ function initialize_solution(data::Dict{String,Any}, params::Dict{Symbol,Any})::
 
     return sol
 end
-
-function update_solution!(ts::TransientSimulator) 
-    push!(solution["time_points"], ref(ts, :current_time))
-
-    for (i, node) in get(data, "nodes", [])
-        key = isa(i, Number) ? i : parse(Int64, i) 
-        push!(sol["nodes"][i]["pressure"], ref(ts, :node, key, "pressure"))
-        push!(sol["nodes"][i]["flow"], ref(ts, :node, key, "injection"))
-    end 
-
-end 

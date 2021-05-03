@@ -1,9 +1,10 @@
 function run_simulator!(ts::TransientSimulator; run_type = :sync)
+    # output_state = initialize_output_state(ts)
     out_int = initialize_output_struc(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     num_steps = Int(ceil(t_f/dt))
-    update_solution!(ts)
+    # update_solution!(ts)
     @showprogress 1 "Simulation progress: " for i in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now

@@ -10,7 +10,7 @@ function _advance_pipe_density_internal!(ts::TransientSimulator, pipe_id::Int64)
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     dx = ref(ts, :pipe, pipe_id)["dx"]
     dt = params(ts, :dt)
-    # rho[2:n-1] = rho[2:n-1] + (dt / dx) *  (phi[2:n-1] - phi[3:n])
+    rho[2:n-1] = rho[2:n-1] + (dt / dx) *  (phi[2:n-1] - phi[3:n])
     return
 end
 
@@ -319,7 +319,7 @@ function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int6
     a_vec = params(ts, :dt) * beta ./ (rho[2:n] + rho[1:n-1])
     y_vec = phi[2:n] - (params(ts, :dt) / ref(ts, :pipe, pipe_id, "dx")) *
             (get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:n-1])) - a_vec .* phi[2:n] .* abs.(phi[2:n])
-    # phi[2:n] = _invert_quadratic.(a_vec, y_vec)
+    phi[2:n] = _invert_quadratic.(a_vec, y_vec)
     # update field
     ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] = phi[2]
     ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] = phi[n]

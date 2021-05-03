@@ -29,11 +29,14 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
+    required_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow"]
+    filter!(p -> p.first in required_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
     data = merge(network_data, params_data, ic_data, bc_data, disruptions_data)
     return data
 end 
+
 
 function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()

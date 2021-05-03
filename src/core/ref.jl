@@ -9,7 +9,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]
         ref[name][id]["is_updated"] = false
-        ref[name][id]["pressure"] = NaN
+        ref[name][id]["pressure"] = NaN 
         ref[name][id]["pressure_previous"] = NaN
         ref[name][id]["injection"] = NaN
     end
@@ -53,66 +53,31 @@ end
 
 function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 
+    if get(data, "initial_nodal_pressure", false) == false 
+        @error "nodal pressure initial condition missing"
+    end 
+
+
+    if get(data, "initial_pipe_flow", false) == false 
+        @error "pipe flow initial condition missing"
+    end 
+
     for (i, value) in get(data, "initial_nodal_pressure", [])
         id = parse(Int64, i)
         @assert id in keys(ref[:node])
         ref[:node][id]["initial_pressure"] = value
     end
 
-    for (i, value) in get(data, "initial_nodal_flow", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:node])
-        ref[:node][id]["initial_injection"] = (-1.0) * value
-    end
-
     for (i, value) in get(data, "initial_pipe_flow", [])
         id = parse(Int64, i)
         @assert id in keys(ref[:pipe])
+        ref[:pipe][id]["initial_mass_flow"] = value
         ref[:pipe][id]["initial_mass_flux"] = value / ref[:pipe][id]["area"]
-    end
-
-    for (i, value) in get(data, "initial_pipe_pressure_in", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:pipe])
-        ref[:pipe][id]["initial_fr_pressure"] = value
-
-    end
-
-    for (i, value) in get(data, "initial_pipe_pressure_out", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:pipe])
-        ref[:pipe][id]["initial_to_pressure"] = value
-    end
-
-    for (i, value) in get(data, "initial_compressor_flow", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:compressor])
-        ref[:compressor][id]["initial_mass_flow"] = value
-    end
-
-    for (i, value) in get(data, "initial_compressor_pressure_in", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:compressor])
-        ref[:compressor][id]["initial_fr_pressure"] = value
-
-    end
-
-    for (i, value) in get(data, "initial_compressor_pressure_out", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:compressor])
-        ref[:compressor][id]["initial_to_pressure"] = value
-    end
-
-    for (i, value) in get(data, "initial_compressor_ratio", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:compressor])
-        ref[:compressor][id]["initial_c_ratio"] = value
     end
     return
 end
 
 function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
 
     ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}()
@@ -130,7 +95,6 @@ function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 end
 
 function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
 
     ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()

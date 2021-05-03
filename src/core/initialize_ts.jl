@@ -92,8 +92,12 @@ end
 function initialize_pipe_state!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
         fill!(pipe["mass_flux_profile"], pipe["initial_mass_flux"])
-        density_at_first_sq = get_density(ts, pipe["initial_fr_pressure"]) ^ 2
-        density_at_last_sq = get_density(ts, pipe["initial_to_pressure"]) ^ 2
+        fr_node = pipe["fr_node"]
+        to_node = pipe["to_node"]
+        initial_fr_pressure = ref(ts, :node, fr_node, "pressure")
+        initial_to_pressure = ref(ts, :node, to_node, "pressure")
+        density_at_first_sq = get_density(ts, initial_fr_pressure) ^ 2
+        density_at_last_sq = get_density(ts, initial_to_pressure) ^ 2
         n = pipe["num_discretization_points"]
         dx = pipe["dx"]
         L = pipe["length"]
