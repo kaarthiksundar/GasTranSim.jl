@@ -1,10 +1,9 @@
 function run_simulator!(ts::TransientSimulator; run_type = :sync)
-    # output_state = initialize_output_state(ts)
-    out_int = initialize_output_struc(ts)
+    output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     num_steps = Int(ceil(t_f/dt))
-    # update_solution!(ts)
+    output_data = OutputData(ts)
     @showprogress 1 "Simulation progress: " for i in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
@@ -12,10 +11,9 @@ function run_simulator!(ts::TransientSimulator; run_type = :sync)
     	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
     	#  if current_time is one where output needs to be saved, check and do now
-    	update_output_struc!(ts, out_int)
+        update_output_state!(ts, output_state)
     end
-    # flux profile, density profiles saved to restart time marching
-    #out = create_output(ts, out_int)
+    update_output_data!(ts, output_state, output_data)
 end
 
 function advance_current_time!(ts::TransientSimulator, tau::Real)
