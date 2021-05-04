@@ -78,12 +78,13 @@ function update_output_data!(ts::TransientSimulator,
         n = pipe["num_discretization_points"]
         dx = pipe["dx"]
         L = pipe["length"]
-        x_rho = LinRange(0, 1, n)
-        x_phi = x_rho .+ dx/(2*L)
-        rho = pipe["density_profile"][2:n-1] #len n
-        phi = pipe["mass_flux_profile"][2:n] #len n+1
+        x_rho = LinRange(0, L, n)
+        x_mid = x_rho[1:n-1] .+ dx/2.0
+        x_phi = [0, x_mid..., L]
+        rho = pipe["density_profile"] # len n
+        phi = pipe["mass_flux_profile"] # len n+1
 
-        data.pipe[i]["density_profile"] = Spline1D(x_rho[2:n-1], rho, k=1)
-        data.pipe[i]["mass_flux_profile"] = Spline1D(x_phi[1:n-1], phi, k=1)
+        data.pipe[i]["final_density_profile"] = Spline1D(x_rho, rho, k=1)
+        data.pipe[i]["final_mass_flux_profile"] = Spline1D(x_phi, phi, k=1)
     end 
 end 
