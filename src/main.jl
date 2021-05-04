@@ -20,13 +20,12 @@ include("core/initialize_ts.jl")
 include("core/run_task.jl")
 include("core/time_integration.jl")
 include("core/run_ts.jl")
+include("core/output.jl")
 
-include("io/output.jl")
-
-folder = "./data/model8/"
+# folder = "./data/model8/"
 # folder = "./data/model30/"
 # folder = "./data/model8_paper_VG_AZ/"
-# folder = "./data/model1pipe_slow_transients/"
+folder = "./data/model1pipe_slow_transients/"
 # folder = "./data/model1pipe_fast_transients/"
 
 

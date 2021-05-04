@@ -85,7 +85,7 @@ function process_data!(data::Dict{String,Any})
                     params[:is_english_units] = 0
                     params[:is_per_unit] = 0
                 else
-                    params[:units] = 0
+                    params[:units] = 1
                     params[:is_is_units] = 0
                     params[:is_english_units] = 1
                     params[:is_per_unit] = 0

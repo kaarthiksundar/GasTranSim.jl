@@ -14,6 +14,7 @@ function run_simulator!(ts::TransientSimulator; run_type = :sync)
         update_output_state!(ts, output_state)
     end
     update_output_data!(ts, output_state, output_data)
+    populate_solution!(ts, output_data)
 end
 
 function advance_current_time!(ts::TransientSimulator, tau::Real)
