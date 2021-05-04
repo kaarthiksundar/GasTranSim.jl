@@ -3,6 +3,7 @@ mutable struct OutputData
     final_time::Float64 
     node::Dict{Int64,Any}
     pipe::Dict{Int64,Any}
+    final_state::Dict{Any,Any}
 end 
 
 function OutputData(ts::TransientSimulator)::OutputData 
@@ -10,13 +11,19 @@ function OutputData(ts::TransientSimulator)::OutputData
     final_time = NaN 
     node = Dict{Int64,Any}()
     pipe = Dict{Int64,Any}()
+    final_state = Dict{Any,Any}(
+        "nodal_pressure" => Dict{Int64,Any}(),
+        "pipe_flow" => Dict{Int64,Any}(),
+        "pipe_pressure" => Dict{Int64,Any}()
+    )
     for (i, dummy) in ref(ts, :node)
         node[i] = Dict{String,Any}() 
     end 
     for (i, dummy) in ref(ts, :pipe)
         pipe[i] = Dict{String,Any}() 
     end 
-    return OutputData(initial_time, final_time, node, pipe)
+
+    return OutputData(initial_time, final_time, node, pipe, final_state)
 end 
 
 struct OutputState
@@ -66,6 +73,7 @@ function update_output_data!(ts::TransientSimulator,
         data.node[i]["pressure"] = Spline1D(
             state.time_pressure, state.node[i]["pressure"], k=1
         )
+        data.final_state["nodal_pressure"][i] = ref(ts, :node, i, "pressure")
     end 
     for (i, pipe) in ref(ts, :pipe)
         data.pipe[i]["fr_mass_flux"] = Spline1D(
@@ -74,17 +82,21 @@ function update_output_data!(ts::TransientSimulator,
         data.pipe[i]["to_mass_flux"] = Spline1D(
             state.time_flux, state.pipe[i]["to_mass_flux"], k=1
         )
+    
         n = pipe["num_discretization_points"]
         dx = pipe["dx"]
         L = pipe["length"]
+        area = pipe["area"]
         x_rho = LinRange(0, L, n)
         x_mid = x_rho[1:n-1] .+ dx/2.0
         x_phi = [0, x_mid..., L]
         rho = pipe["density_profile"] # len n
+        pressure = [get_pressure(ts, val) for val in rho]
         phi = pipe["mass_flux_profile"] # len n+1
+        flow = phi .* area
 
-        data.pipe[i]["final_density_profile"] = Spline1D(x_rho, rho, k=1)
-        data.pipe[i]["final_mass_flux_profile"] = Spline1D(x_phi, phi, k=1)
+        data.final_state["pipe_flow"][i] = Spline1D(x_phi, flow, k=1)
+        data.final_state["pipe_pressure"][i] = Spline1D(x_rho, pressure, k=1)
     end 
 end 
 
@@ -95,7 +107,6 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
     data = ts.data
     sol = ts.sol
     units = params(ts, :units)
-    units = 1
 
     function pressure_convertor(pu) 
         (units == 0) && (return pu * nominal_values(ts, :pressure)) 
@@ -115,14 +126,19 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         return m_to_miles(pu * nominal_values(ts, :length))
     end 
 
+    sol["final_state"]["initial_nodal_pressure"] = Dict{String,Any}()
     
     for (i, _) in get(data, "nodes", [])
         key =  isa(i, String) ? parse(Int64, i) : i
         pressure_spl = output.node[key]["pressure"]
         pressure = [pressure_spl(t) for t in times]
         sol["nodes"][i]["pressure"] = pressure_convertor.(pressure)
-        @show sol["nodes"][i]["pressure"]
+        sol["final_state"]["initial_nodal_pressure"][i] = 
+            pressure_convertor(output.final_state["nodal_pressure"][key])
     end
+
+    sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
+    sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
 
     for (i, _) in get(data, "pipes", [])
         key =  isa(i, String) ? parse(Int64, i) : i
@@ -137,6 +153,16 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         to_node = string(ref(ts, :pipe, key, "to_node"))
         sol["pipes"][i]["in_pressure"] = sol["nodes"][fr_node]["pressure"]
         sol["pipes"][i]["out_pressure"] = sol["nodes"][to_node]["pressure"]
+        flow_spl = output.final_state["pipe_flow"][key]
+        pressure_spl = output.final_state["pipe_pressure"][key]
+        sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
+            "length" => length_convertor.(get_knots(flow_spl)), 
+            "value" => flow_convertor.(get_coeffs(flow_spl))
+        )
+        sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
+            "length" => length_convertor.(get_knots(pressure_spl)), 
+            "value" => pressure_convertor.(get_coeffs(pressure_spl))
+        )
     end 
 
     for (i, _) in get(data, "compressors", [])
@@ -147,15 +173,6 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         sol["compressors"][i]["discharge_pressure"] = sol["nodes"][to_node]["pressure"]
     end 
 
-    sol["times"] = time_convertor.(times)
-
-    for (i, value) in output.node 
-        key =  isa(i, Int) ? string(i) : i
-        pressure = value["pressure"]
-    end 
-
-    for (i, value) in output.pipe
-        key =  isa(i, Int) ? string(i) : i
-        L = ref(ts, :pipe, key, "length")
-    end 
+    sol["time_points"] = time_convertor.(times)
+    return
 end 
