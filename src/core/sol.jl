@@ -24,6 +24,8 @@ function initialize_solution(data::Dict{String,Any}, params::Dict{Symbol,Any})::
         sol["compressors"][i]["flow"] = Vector{Float64}()
         sol["compressors"][i]["suction_pressure"] = Vector{Float64}()
         sol["compressors"][i]["discharge_pressure"] = Vector{Float64}()
+        sol["compressors"][i]["compression_ratio"] = Vector{Float64}()
+
     end
 
     return sol

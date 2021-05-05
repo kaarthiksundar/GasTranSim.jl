@@ -171,6 +171,7 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         to_node = string(ref(ts, :compressor, key, "to_node"))
         sol["compressors"][i]["suction_pressure"] = sol["nodes"][fr_node]["pressure"]
         sol["compressors"][i]["discharge_pressure"] = sol["nodes"][to_node]["pressure"]
+        sol["compressors"][i]["compression_ratio"] = sol["nodes"][to_node]["pressure"] ./ sol["nodes"][fr_node]["pressure"]
     end 
 
     sol["time_points"] = time_convertor.(times)
