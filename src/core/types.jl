@@ -73,10 +73,10 @@ function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
     time = sp.time
     control_type = sp.control_type
     value = sp.value
-    (t == time[1]) && (return control_type[1], value[1])
-    (t == time[end]) && (return control_type[end], value[end])
+    (isapprox(t, time[1], rtol=TOL)) && (return control_type[1], value[1])
+    (isapprox(t, time[end], rtol=TOL)) && (return control_type[end], value[end])
     index = findlast(x -> t >= x, time)
-    (t == time[index]) && (return control_type[index], value[index])
+    (isapprox(t, time[index], rtol=TOL)) && (return control_type[index], value[index])
     first_control = control_type[index]
     second_control = control_type[index + 1]
     (first_control != second_control) && (return first_control, value[index])
