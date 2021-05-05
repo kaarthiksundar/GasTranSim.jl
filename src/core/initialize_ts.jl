@@ -36,7 +36,11 @@ end
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-        n = ceil(Int64, pipe["length"] / (1.0 * params(ts, :dt)) )
+        numpts = ceil(Int64, pipe["length"] / (1.0 * params(ts, :dt)) )
+
+        # Need at least 2 points for a pipe
+        n =  numpts < 2 ? 2 : numpts
+        
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
