@@ -38,10 +38,16 @@ end
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-        numpts = ceil(Int64, pipe["length"] / (1.0 * params(ts, :dt)) )
 
-        # Need at least 2 points for a pipe
-        n =  numpts < 2 ? 2 : numpts
+        # CFL condition a*dt/dx <= 1 => dx >= a*dt
+        num_segments = pipe["length"] / (1.0 * params(ts, :dt)) 
+        
+        if num_segments < 1
+            @error "Time step too large for CFL condition. Spatial discretization failed"
+        else
+            n = floor(Int64, num_segments) + 1
+        end
+
         
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
