@@ -44,12 +44,15 @@ function process_data!(data::Dict{String,Any})
 
     params_exhaustive = ["temperature", "gas_specific_gravity",
         "specific_heat_capacity_ratio", "units", "t_0", "t_f", "dt",
-        "courant_number", "output_dt", "output_dx", "save_final_state",
+        "courant_number", "output_dt", "output_dx", "save_final_state", "sound_speed"
     ]
     defaults_exhaustive = [288.706, 0.6, 1.4, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
-        1000.0, 0
+        1000.0, 0, NaN
     ]
+
     simulation_params = data["simulation_params"]
+    
+
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
@@ -64,6 +67,7 @@ function process_data!(data::Dict{String,Any})
         occursin("dt", k) && (key_map["output_dt"] = k)
         occursin("dx", k) && (key_map["output_dx"] = k)
         occursin("final state", k) && (key_map["save_final_state"] = k)
+        occursin("sound", k) && (key_map["sound_speed"] = k)
 
     end
 
@@ -119,10 +123,15 @@ function process_data!(data::Dict{String,Any})
     # other parameter calculations
     # universal gas constant (J/mol/K)
     params[:R] = 8.314
+    
     # molecular mass of natural gas (kg/mol): M_g = M_a * G
     params[:gas_molar_mass] = 0.02896 * params[:gas_specific_gravity]
-    # sound speed (m/s): v = sqrt(R_g * T); R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
-    params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
+
+    if isnan(params[:sound_speed])
+        # sound speed (m/s): v = sqrt(R_g * T); 
+        # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
+        params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
+    end
 
     nominal_values[:length] = 5000.0
     nominal_values[:area] = 1.0
