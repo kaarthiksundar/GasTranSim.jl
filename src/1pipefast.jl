@@ -49,6 +49,8 @@ ts = initialize_simulator(folder; eos = :simple_cnga)
 
 run_simulator!(ts)
 
+println("ideal completed")
+
 
 inlet_pr_cnga = ts.sol["nodes"]["1"]["pressure"]
 inlet_density_cnga = ts.nominal_values[:density] * get_density(ts, inlet_pr_cnga / ts.nominal_values[:pressure])

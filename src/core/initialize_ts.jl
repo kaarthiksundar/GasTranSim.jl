@@ -41,6 +41,7 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
 
         # CFL condition a*dt/dx <= 1 => dx >= a*dt
         num_segments = pipe["length"] / (1.0 * params(ts, :dt)) 
+        n = 1
         
         if num_segments < 1
             @error "Time step too large for CFL condition. Spatial discretization failed"
