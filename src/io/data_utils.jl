@@ -133,6 +133,7 @@ function process_data!(data::Dict{String,Any})
         params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
     end
 
+    params[:warning] = "R, temperature, sound speed are in SI units. Rest are dimensionless"
     nominal_values[:length] = 5000.0
     nominal_values[:area] = 1.0
     nominal_values[:pressure] = 3500000.0 # 507.63 psi
