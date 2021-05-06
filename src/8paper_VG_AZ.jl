@@ -50,10 +50,15 @@ t = ts.sol["time_points"]/3600 #hrs
 
 
 fig, ax = PyPlot.subplots(4, 1, figsize=(6, 12), sharex=true)
-ax[2, 1].plot(t, pr_node5/1e6)
+
+
 
 ax[1, 1].plot(t, inflow_node6, t, outflow_node2)
 ax[1, 1].legend(["pipe 1 inflow at n6", "pipe1 outflow at n2"])
+#ax[1,1].set_ylim([250, 340])
+
+ax[2, 1].plot(t, pr_node5/1e6)
+#ax[2,1].set_ylim([3, 5.5])
 
 ax[3, 1].plot(t, outflow_node5, t, outflow_node3)
 ax[3, 1].legend(["node 5", "node 3"])
