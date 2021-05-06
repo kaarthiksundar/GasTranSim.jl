@@ -1,6 +1,8 @@
 function initialize_simulator(data_folder::AbstractString;
+    case_name::AbstractString="", 
+    case_types::Vector{Symbol}=Symbol[],
     kwargs...)::TransientSimulator
-    data = parse_data(data_folder; kwargs...)
+    data = parse_data(data_folder; case_name=case_name, case_types=case_types)
     return initialize_simulator(data; kwargs...)
 end
 
