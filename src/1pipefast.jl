@@ -32,6 +32,8 @@ ts = initialize_simulator(folder; eos = :ideal)
 
 run_simulator!(ts)
 
+println("ideal completed")
+
 
 inlet_pr = ts.sol["nodes"]["1"]["pressure"]
 inlet_density = ts.nominal_values[:density] * get_density(ts, inlet_pr / ts.nominal_values[:pressure])
@@ -48,8 +50,6 @@ t = ts.sol["time_points"]/60 #mins
 ts = initialize_simulator(folder; eos = :simple_cnga)
 
 run_simulator!(ts)
-
-println("ideal completed")
 
 
 inlet_pr_cnga = ts.sol["nodes"]["1"]["pressure"]
