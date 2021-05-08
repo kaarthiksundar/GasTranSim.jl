@@ -39,8 +39,9 @@ end
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
 
-        # CFL condition a*dt/dx <= 1 => dx >= a*dt
-        num_segments = pipe["length"] / (1.0 * params(ts, :dt)) 
+        # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
+        c = 1
+        num_segments = (pipe["length"] * params(ts, :courant_number)) / ( c * params(ts, :dt)) 
         n = 1
         
         if num_segments < 1
