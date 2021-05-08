@@ -237,6 +237,37 @@ The way to solve this problem without any restrictions on network topology is to
 However, this algorithm does not take advantage of the local nature  of jucntion computations, and will result in the computational overhead  of repeated calculation and assembly of the global matrix if there are topology changes.
 \end{enumerate}
 
+\section{Non-dimensionalization}
+Let us choose the nominal quantities $p_0, \rho_0, v_0, \phi_0, t_0, l_0,f_0, A_0$ for pressure, density, velocity, mass flux, time, length, mass flow and cross-sectional area respectively.
+
+Then we can rewrite the governing equations in nondimensional variables $\bar{\rho}, \bar{t},\bar{\phi}, \bar{x}$  through the substitutions $\rho = \rho_0 \bar{\rho}, t = t_0\bar{t}, \dotsc$.
+
+Then $$\dfrac{\partial \bar{\rho}}{\partial \bar{t}} + \left( \dfrac{\phi_0t_0}{\rho_0l_0} \right)\dfrac{\partial \bar{\phi}}{\partial \bar{x}} = 0$$
+and
+$$\dfrac{\partial \bar{\phi}}{\partial \bar{t}} + \left( \dfrac{p_0t_0}{l_0\phi_0} \right)\dfrac{\partial \bar{p}}{\partial \bar{x}} = -\dfrac{\lambda}{2D}\left( \dfrac{\phi_0t_0}{\rho_0} \right) \dfrac{\bar{\phi}|\bar{\phi}|}{\bar{\rho}}$$
+
+We use a \emph{fixed} value for the speed of sound $a$ for $v_0$, choose length $l_0$ and $p_0$, $A_0 =1$ to set $\rho_0 = p_0/a^2, \phi_0 = a \rho_0, t_0 = l_0/a, f_0 = \phi_0 A_0$.
+
+This choice of values reduces the governing equations to 
+$$\dfrac{\partial \bar{\rho}}{\partial \bar{t}} + \dfrac{\partial \bar{\phi}}{\partial \bar{x}} = 0$$
+$$\dfrac{\partial \bar{\phi}}{\partial \bar{t}} + \dfrac{\partial \bar{p}}{\partial \bar{x}} = -\left( \dfrac{\lambda}{2D/l_0} \right) \dfrac{\bar{\phi}|\bar{\phi}|}{\bar{\rho}}$$
+
+Note that in this process, the equation of state has never been considered. Thus, the non-dimensionalisation is valid for both ideal and non-ideal gas. 
+
+For the ideal gas equation, $p = \rho R_g T$, thus $\bar{p} = \left(\dfrac{R_gT}{a^2}\right) \bar{\rho}$ 
+Thus,  the ideal gas equation reduces to $\bar{p} = \bar{\rho}$ \emph{if we choose} $a = \sqrt{R_gT}$. This choice is always valid, and hence we shall do so. Even in non-isothermal problems, we can define a nominal temperature $T_0$  and set $a=\sqrt{R_gT_0}$ in that case.
+
+For non-ideal gases, the coefficients of the equation of state $p = f(\rho, T)$ are defined  with quantities in given units, and thus we shall content ourselves with writing $\bar{p} = f(\bar{\rho}\rho_0, T)/p_0$ and $\bar{\rho} = f^{-1}(p_0\bar{p}, T)/\rho_0$.
+
+The speed of sound $c$ in a gas  is given by $c^2 = \dfrac{d p}{d \rho}$. For an ideal gas, we get $c^2 = R_g T$, or in nondimensional terms  $\dfrac{d \bar{p}}{d \bar{\rho}} = \dfrac{{R_gT}}{a^2} = 1 = \bar{c}^2 $.
+
+For a simple CNGA equation, $p\cdot(b_1 + b_2 p) = R_g T$, we can calculate the sound speed from $\dfrac{d \rho}{d p}$ since $\dfrac{d p}{d \rho} \cdot \dfrac{d \rho}{d p} = 1$. Thus  $c_{CNGA}^2 = \dfrac{R_g T}{b_1 + 2b_2 p}$. Since $b_1 > 1, b_2 > 0, p > 0$, $c_{CNGA} < c$.
 
 
+Let us record the CFL condition and its consequence next. Usually, it would be stated as $\bar{c}\Delta t/ \Delta x \leq 1$, but to be safe, we consider $\bar{c}\Delta t/ \Delta x \leq k$ for $k= 0.9$.
+
+Thus, for a given value of $\Delta t$, $\Delta x \geq \bar{c}\Delta t/k$. Setting $\Delta x = L/m$,  $m \leq \dfrac{L k}{\bar{c}\Delta t}$.
+Since we showed that $c > c_{CNGA}$, it is sufficient to use $\bar{c}$ in the CFL condition for non-ideal gases also. 
+
+Finally, in a non-isothermal case, we may define $ \bar{T} = T/T_0$ and get $\bar{p} = \left(\dfrac{R_gT}{R_gT_0}\right) \bar{\rho} = \bar{\rho}\bar{T}$ and $\bar{c} = \sqrt{\bar{T}}$. 
 \end{document}
