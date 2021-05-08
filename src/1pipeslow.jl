@@ -25,11 +25,16 @@ include("core/time_integration.jl")
 include("core/run_ts.jl")
 include("core/output.jl")
 
+# Temp for ideal gas case set to 239.11 K, nonideal 288.7K to match p, rho
 folder = "./data/model1pipe_slow_transients/"
+
+
+##=== Run ideal gas case ===##
 
 ts = initialize_simulator(folder; eos = :ideal)
 
 run_simulator!(ts)
+println("ideal completed")
 
 
 inlet_pr = ts.sol["nodes"]["1"]["pressure"]
@@ -44,9 +49,12 @@ outlet_vel = outlet_massflux ./ outlet_density
 
 t = ts.sol["time_points"]/3600 #hrs
 
-ts = initialize_simulator(folder; eos = :simple_cnga)
+##=== Run non-ideal gas case ===##
+
+ts = initialize_simulator(folder; eos = :simple_cnga, case_name="cnga", case_types=[:params])
 
 run_simulator!(ts)
+println("simple cnga completed")
 
 
 inlet_pr_cnga = ts.sol["nodes"]["1"]["pressure"]
@@ -60,6 +68,7 @@ outlet_massflux_cnga = ts.sol["pipes"]["1"]["out_flow"]/ts.ref[:pipe][1]["area"]
 outlet_vel_cnga = outlet_massflux_cnga ./ outlet_density_cnga
 
 
+##=== Plot results ===##
 
 fig, ax = PyPlot.subplots(4, 2, figsize=(12, 6), sharex=true)
 ax[1, 1].plot(t, inlet_pr/1e6, t, inlet_pr_cnga/1e6)
