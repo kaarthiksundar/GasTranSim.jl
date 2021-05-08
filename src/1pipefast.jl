@@ -25,10 +25,12 @@ include("core/time_integration.jl")
 include("core/run_ts.jl")
 include("core/output.jl")
 
-# Temp set to 239.11 K instead of 288 as given to get given sound speed
+# Temp for ideal gas case set to 239.11 K, nonideal 288.7K to match p, rho
 folder = "./data/model1pipe_fast_transients/"
 
-ts = initialize_simulator(folder; eos = :ideal)
+##=== Run ideal gas case ===##
+
+ts = initialize_simulator(folder; eos = :ideal, case_name="ideal")
 
 run_simulator!(ts)
 
@@ -47,38 +49,44 @@ outlet_vel = outlet_massflux ./ outlet_density
 
 t = ts.sol["time_points"]/60 #mins
 
-ts = initialize_simulator(folder; eos = :simple_cnga)
+##=== Run non-ideal gas case ===##
 
-run_simulator!(ts)
+ts1 = initialize_simulator(folder; eos = :simple_cnga, case_name="cnga", case_types=[:params])
+
+run_simulator!(ts1)
 
 println("simple cnga completed")
 
+t1 = ts1.sol["time_points"]/60 #mins
 
-inlet_pr_cnga = ts.sol["nodes"]["1"]["pressure"]
-inlet_density_cnga = ts.nominal_values[:density] * get_density(ts, inlet_pr_cnga / ts.nominal_values[:pressure])
-outlet_pr_cnga = ts.sol["nodes"]["2"]["pressure"]
-outlet_density_cnga = ts.nominal_values[:density] * get_density(ts, outlet_pr_cnga/ ts.nominal_values[:pressure] )
+inlet_pr_cnga = ts1.sol["nodes"]["1"]["pressure"]
+inlet_density_cnga = ts1.nominal_values[:density] * get_density(ts1, inlet_pr_cnga / ts1.nominal_values[:pressure])
+outlet_pr_cnga = ts1.sol["nodes"]["2"]["pressure"]
+outlet_density_cnga = ts1.nominal_values[:density] * get_density(ts1, outlet_pr_cnga/ ts1.nominal_values[:pressure] )
 
-inlet_massflux_cnga = ts.sol["pipes"]["1"]["in_flow"]/ts.ref[:pipe][1]["area"]
+inlet_massflux_cnga = ts1.sol["pipes"]["1"]["in_flow"]/ts1.ref[:pipe][1]["area"]
 inlet_vel_cnga = inlet_massflux_cnga ./ inlet_density_cnga
-outlet_massflux_cnga = ts.sol["pipes"]["1"]["out_flow"]/ts.ref[:pipe][1]["area"]
+outlet_massflux_cnga = ts1.sol["pipes"]["1"]["out_flow"]/ts1.ref[:pipe][1]["area"]
 outlet_vel_cnga = outlet_massflux_cnga ./ outlet_density_cnga
 
 
+##=== Plot results ===##
 
 fig, ax = PyPlot.subplots(4, 2, figsize=(12, 6), sharex=true)
-ax[1, 1].plot(t, inlet_pr/1e6, t, inlet_pr_cnga/1e6)
+ax[1, 1].plot(t, inlet_pr/1e6, t1, inlet_pr_cnga/1e6)
 ax[1, 1].legend(["ideal", "non-ideal"])
 
-ax[2, 1].plot(t, inlet_density, t, inlet_density_cnga)
+ax[2, 1].plot(t, inlet_density, t1, inlet_density_cnga)
+ax[2, 1].set_ylim(55, 58)
 
-ax[3, 1].plot(t, inlet_massflux, t, inlet_massflux_cnga)
-ax[4, 1].plot(t, inlet_vel, t, inlet_vel_cnga)
 
-ax[1, 2].plot(t, outlet_pr/1e6, t, outlet_pr_cnga/1e6)
-ax[2, 2].plot(t, outlet_density, t, outlet_density_cnga)
-ax[3, 2].plot(t, outlet_massflux, t, outlet_massflux_cnga)
-ax[4, 2].plot(t, outlet_vel, t, outlet_vel_cnga)
+ax[3, 1].plot(t, inlet_massflux, t1, inlet_massflux_cnga)
+ax[4, 1].plot(t, inlet_vel, t1, inlet_vel_cnga)
+
+ax[1, 2].plot(t, outlet_pr/1e6, t1, outlet_pr_cnga/1e6)
+ax[2, 2].plot(t, outlet_density, t1, outlet_density_cnga)
+ax[3, 2].plot(t, outlet_massflux, t1, outlet_massflux_cnga)
+ax[4, 2].plot(t, outlet_vel, t1, outlet_vel_cnga)
 
 ax[4, 1].set_xlabel("time (mins)")
 ax[4, 2].set_xlabel("time (mins)")
