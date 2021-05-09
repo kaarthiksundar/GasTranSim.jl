@@ -2,7 +2,9 @@ using JSON
 using Dierckx
 using ProgressMeter
 import PyPlot
-# using TerminalExtensions
+const plt = PyPlot
+using LaTeXStrings
+using TerminalExtensions
 
 
 include("io/json.jl")
@@ -30,7 +32,7 @@ folder = "./data/model1pipe_fast_transients/"
 
 ##=== Run ideal gas case ===##
 
-ts = initialize_simulator(folder; eos = :ideal, case_name="ideal")
+ts = initialize_simulator(folder; eos = :ideal)
 
 run_simulator!(ts)
 
@@ -72,7 +74,7 @@ outlet_vel_cnga = outlet_massflux_cnga ./ outlet_density_cnga
 
 ##=== Plot results ===##
 
-fig, ax = PyPlot.subplots(4, 2, figsize=(12, 6), sharex=true)
+fig, ax = plt.subplots(4, 2, figsize=(12, 6), sharex=true)
 ax[1, 1].plot(t, inlet_pr/1e6, t1, inlet_pr_cnga/1e6)
 ax[1, 1].legend(["ideal", "non-ideal"])
 
@@ -88,11 +90,11 @@ ax[2, 2].plot(t, outlet_density, t1, outlet_density_cnga)
 ax[3, 2].plot(t, outlet_massflux, t1, outlet_massflux_cnga)
 ax[4, 2].plot(t, outlet_vel, t1, outlet_vel_cnga)
 
-ax[4, 1].set_xlabel("time (mins)")
-ax[4, 2].set_xlabel("time (mins)")
+ax[4, 1].set_xlabel("time (hrs)")
+ax[4, 2].set_xlabel("time (hrs)")
 ax[1, 1].set_ylabel("pressure (MPa)")
-ax[2, 1].set_ylabel("density (kg/m^3)")
-ax[3, 1].set_ylabel("mass flux (kg / m^2 s)")
-ax[4, 1].set_ylabel("vel (m/s)")
-
+ax[2, 1].set_ylabel(L"$\rho \;(\mathrm{kg}\mathrm{m}^{-3})$")
+ax[3, 1].set_ylabel(L"$\phi \; (\mathrm{kg}\mathrm{m}^{-2} \mathrm{s})$")
+ax[4, 1].set_ylabel(L"$v \; (\mathrm{m}\mathrm{s}^{-1})$")
+fig.tight_layout()
 
