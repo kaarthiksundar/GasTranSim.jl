@@ -105,20 +105,23 @@ end
 
 function initialize_pipe_state!(ts::TransientSimulator)
     is_steady = false 
-    (isempty(ts.ic[:pipe]["pressure"])) && (is_steady = true)
+    if isempty(ts.ic[:pipe]["pressure"])
+        is_steady = true
+    end 
     for (key, pipe) in ref(ts, :pipe)
+        area = pipe["area"]
+        n = pipe["num_discretization_points"]
+        dx = pipe["dx"]
+        L = pipe["length"]
+        fr_node = pipe["fr_node"]
+        to_node = pipe["to_node"]
         if is_steady
-            initial_mass_flux = initial_pipe_mass_flow(ts, key)(0.0) / pipe["area"]
+            initial_mass_flux = initial_pipe_mass_flow(ts, key)(0.0) / area
             fill!(pipe["mass_flux_profile"], initial_mass_flux)
-            fr_node = pipe["fr_node"]
-            to_node = pipe["to_node"]
             initial_fr_pressure = ref(ts, :node, fr_node, "pressure")
             initial_to_pressure = ref(ts, :node, to_node, "pressure")
             density_at_first_sq = get_density(ts, initial_fr_pressure) ^ 2
             density_at_last_sq = get_density(ts, initial_to_pressure) ^ 2
-            n = pipe["num_discretization_points"]
-            dx = pipe["dx"]
-            L = pipe["length"]
             dL = dx / L
             pipe["density_profile"][1:n] = [
                 sqrt(
@@ -133,11 +136,6 @@ function initialize_pipe_state!(ts::TransientSimulator)
         else 
             flow_spl = initial_pipe_mass_flow(ts, key)
             pressure_spl = initial_pipe_pressure(ts, key)
-            area = pipe["area"]
-            n = pipe["num_discretization_points"]
-            dx = pipe["dx"]
-            L = pipe["length"]
-            area = pipe["area"]
             x_rho = LinRange(0, L, n)
             x_mid = x_rho[1:n-1] .+ dx/2.0
             pipe["mass_flux_profile"] = [
@@ -145,12 +143,13 @@ function initialize_pipe_state!(ts::TransientSimulator)
                 [flow_spl(x) for x in x_mid]..., 
                 get_coeffs(flow_spl)[end]
             ] ./ area
-            pipe["fr_minus_mass_flux"] = flow_spl(dx/2)/area
-            pipe["to_minus_mass_flux"] = flow_spl(L-(dx/2))/ area
-            pipe["fr_mass_flux"] = get_coeffs(flow_spl)[0]/area
-            pipe["to_mass_flux"] = get_coeffs(flow_spl)[end]/area 
-            pipe["density_profile"] = [
-                get_density(ts, pressure_spl(x)) for x in x_rho]
+            pipe["fr_minus_mass_flux"] = pipe["mass_flux_profile"][2]
+            pipe["to_minus_mass_flux"] = pipe["mass_flux_profile"][end-1]
+            pipe["fr_mass_flux"] = pipe["mass_flux_profile"][1]
+            pipe["to_mass_flux"] = pipe["mass_flux_profile"][end]
+            pipe["density_profile"][1:n] = [
+                get_density(ts, pressure_spl(x)) for x in x_rho
+            ]
         end 
     end
     return
