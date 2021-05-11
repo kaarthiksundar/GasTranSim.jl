@@ -29,7 +29,8 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
-    required_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow"]
+    required_ic_fields = ["initial_nodal_pressure", 
+        "initial_pipe_flow", "initial_pipe_pressure"]
     filter!(p -> p.first in required_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)

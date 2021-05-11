@@ -156,11 +156,11 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         flow_spl = output.final_state["pipe_flow"][key]
         pressure_spl = output.final_state["pipe_pressure"][key]
         sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
-            "length" => length_convertor.(get_knots(flow_spl)), 
+            "distance" => length_convertor.(get_knots(flow_spl)), 
             "value" => flow_convertor.(get_coeffs(flow_spl))
         )
         sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
-            "length" => length_convertor.(get_knots(pressure_spl)), 
+            "distance" => length_convertor.(get_knots(pressure_spl)), 
             "value" => pressure_convertor.(get_coeffs(pressure_spl))
         )
     end 

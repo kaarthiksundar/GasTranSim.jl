@@ -4,6 +4,7 @@ struct TransientSimulator
     sol::Dict{String,Any}
     nominal_values::Dict{Symbol,Any}
     params::Dict{Symbol,Any}
+    initial_conditions::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
@@ -19,6 +20,14 @@ params(ts::TransientSimulator, key::Symbol) = ts.params[key]
 
 nominal_values(ts::TransientSimulator) = ts.nominal_values
 nominal_values(ts::TransientSimulator, key::Symbol) = ts.nominal_values[key]
+
+initial_pipe_mass_flow(ts::TransientSimulator, id::Int64) = 
+    ts.ic[:pipe]["mass_flow"][id]
+
+initial_pipe_pressure(ts::TransientSimulator, id::Int64) = 
+    get(ts.ic[:pipe]["pressure"], id, false)
+
+initial_nodal_pressure(ts::TransientSimulator, id::Int64) = ts.ic[:node][id]
 
 function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}

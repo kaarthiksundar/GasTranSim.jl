@@ -1,4 +1,5 @@
-function run_simulator!(ts::TransientSimulator; run_type = :sync)
+function run_simulator!(ts::TransientSimulator; 
+    run_type = :sync)
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)

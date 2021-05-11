@@ -75,12 +75,16 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
         "max_flow" => rescale_mass_flow, 
     )
 
-    initial_flow_units = Dict{String,Function}(
+    initial_pipe_flow_units = Dict{String,Function}(
         "initial_pipe_flow" => rescale_mass_flow, 
     )
 
-    initial_pressure_units = Dict{String,Function}(
+    initial_node_pressure_units = Dict{String,Function}(
         "initial_nodal_pressure" => rescale_pressure
+    )
+
+    initial_pipe_pressure_units = Dict{String,Function}(
+        "initial_pipe_pressure" => rescale_pressure
     )
 
     boundary_flow_units = Dict{String,Function}(
@@ -106,8 +110,9 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     units[:node_units] = node_units
     units[:pipe_units] = pipe_units
     units[:compressor_units] = compressor_units
-    units[:initial_flow_units] = initial_flow_units
-    units[:initial_pressure_units] = initial_pressure_units
+    units[:initial_pipe_flow_units] = initial_pipe_flow_units
+    units[:initial_pipe_pressure_units] = initial_pipe_pressure_units
+    units[:initial_node_pressure_units] = initial_node_pressure_units
     units[:boundary_flow_units] = boundary_flow_units 
     units[:boundary_pressure_units] = boundary_pressure_units
     units[:node_disruption_units] = node_disruption_units 
@@ -124,8 +129,9 @@ function _rescale_data!(data::Dict{String,Any},
     node_units = units[:node_units]
     pipe_units = units[:pipe_units]
     compressor_units = units[:compressor_units] 
-    initial_flow_units = units[:initial_flow_units]
-    initial_pressure_units = units[:initial_pressure_units]
+    initial_pipe_flow_units = units[:initial_pipe_flow_units]
+    initial_pipe_pressure_units = units[:initial_pipe_pressure_units]
+    initial_node_pressure_units = units[:initial_node_pressure_units]
     boundary_flow_units = units[:boundary_flow_units]
     boundary_pressure_units = units[:boundary_pressure_units]
     node_disruption_units = units[:node_disruption_units]
@@ -170,9 +176,20 @@ function _rescale_data!(data::Dict{String,Any},
         end 
     end 
 
-    for (param, f) in merge(initial_flow_units, initial_pressure_units)
+    for (param, f) in initial_node_pressure_units
         for (i, value) in get(data, param, [])
             data[param][i] = f(value)
+        end 
+    end 
+
+    for (param, f) in merge(initial_pipe_flow_units, initial_pipe_pressure_units)
+        for (i, value) in get(data, param, [])
+            if isa(data[param][i], Number)
+                data[param][i] = f(value)
+            else 
+                data[param][i]["distance"] = rescale_length.(value["length"])
+                data[param][i]["value"] = f.(value["value"])
+            end 
         end 
     end 
 

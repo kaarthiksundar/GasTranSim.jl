@@ -51,32 +51,6 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     return
 end
 
-function add_initial_conditions_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
-    if get(data, "initial_nodal_pressure", false) == false 
-        @error "nodal pressure initial condition missing"
-    end 
-
-
-    if get(data, "initial_pipe_flow", false) == false 
-        @error "pipe flow initial condition missing"
-    end 
-
-    for (i, value) in get(data, "initial_nodal_pressure", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:node])
-        ref[:node][id]["initial_pressure"] = value
-    end
-
-    for (i, value) in get(data, "initial_pipe_flow", [])
-        id = parse(Int64, i)
-        @assert id in keys(ref[:pipe])
-        ref[:pipe][id]["initial_mass_flow"] = value
-        ref[:pipe][id]["initial_mass_flux"] = value / ref[:pipe][id]["area"]
-    end
-    return
-end
-
 function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 
     ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
@@ -121,7 +95,6 @@ function build_ref(data::Dict{String,Any};
 
     ref = Dict{Symbol,Any}()
     add_components_to_ref!(ref, data)
-    add_initial_conditions_to_ref!(ref, data)
 
     for extension in ref_extensions
         extension(ref, data)

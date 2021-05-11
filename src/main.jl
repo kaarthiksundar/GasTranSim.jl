@@ -14,6 +14,7 @@ include("unit_conversion/unit_convertors.jl")
 include("core/eos.jl")
 include("core/types.jl")
 include("core/ref.jl")
+include("core/ic.jl")
 include("core/bc.jl")
 include("core/sol.jl")
 include("core/initialize_ts.jl")
@@ -31,4 +32,6 @@ folder = "./data/model1pipe_slow_transients/"
 
 ts = initialize_simulator(folder, eos=:ideal)
 
-run_simulator!(ts)
+# run_simulator!(ts)
+
+# output foldername, output filename, final state output filename

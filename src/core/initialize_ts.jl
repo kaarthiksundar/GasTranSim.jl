@@ -15,6 +15,8 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
         add_current_time_to_ref!]
     )
     ref[:current_time] = params[:t_0]
+    ic = build_ic(data)
+    add_initial_nodal_conditions_to_ref!(ref, ic)
     bc = build_bc(data)
     pu_pressure_to_pu_density, pu_density_to_pu_pressure = get_eos(nominal_values, params, eos)
 
@@ -23,6 +25,7 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
         initialize_solution(data, params),
         nominal_values,
         params,
+        ic,
         bc,
         pu_pressure_to_pu_density,
         pu_density_to_pu_pressure
