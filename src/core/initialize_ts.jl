@@ -16,7 +16,6 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
     )
     ref[:current_time] = params[:t_0]
     ic = build_ic(data)
-    add_initial_nodal_conditions_to_ref!(ref, ic)
     bc = build_bc(data)
     pu_pressure_to_pu_density, pu_density_to_pu_pressure = get_eos(nominal_values, params, eos)
 
@@ -52,7 +51,6 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
         else
             n = floor(Int64, num_segments) + 1
         end
-
         
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
@@ -97,10 +95,9 @@ function add_node_level_flag!(ts::TransientSimulator)
     return
 end
 
-
 function initialize_nodal_state!(ts::TransientSimulator)
     for (key, node) in ref(ts, :node)
-        pressure = node["initial_pressure"]
+        pressure = initial_nodal_pressure(ts, key)
         ref(ts, :node, key)["pressure"] = pressure
     end
     return

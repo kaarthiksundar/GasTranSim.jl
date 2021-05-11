@@ -29,17 +29,9 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
         values = value["value"]
         ic[:pipe]["pressure"][id] = Spline1D(distance, values, k=1)
     end 
-    return ic
-end 
-
-function add_initial_nodal_conditions_to_ref!(ref::Dict{Symbol,Any}, ic::Dict{Symbol,Any})
 
     (isempty(ic[:node])) && (@error "nodal pressure initial condition missing") 
     (isempty(ic[:pipe]["mass_flow"])) && (@error "pipe flow initial condition missing")
-
-    for (i, value) in ic[:node]
-        @assert i in keys(ref[:node])
-        ref[:node][i]["initial_pressure"] = value
-    end
-    return
-end
+    
+    return ic
+end 
