@@ -16,10 +16,10 @@ function OutputData(ts::TransientSimulator)::OutputData
         "pipe_flow" => Dict{Int64,Any}(),
         "pipe_pressure" => Dict{Int64,Any}()
     )
-    for (i, dummy) in ref(ts, :node)
+    for (i, _) in ref(ts, :node)
         node[i] = Dict{String,Any}() 
     end 
-    for (i, dummy) in ref(ts, :pipe)
+    for (i, _) in ref(ts, :pipe)
         pipe[i] = Dict{String,Any}() 
     end 
 
@@ -40,13 +40,14 @@ function initialize_output_state(ts::TransientSimulator)::OutputState
     pipe = Dict{Int64,Any}() 
     for i in keys(get(ref(ts), :node, []))
         node[i] = Dict(
-            "pressure" => [ref(ts, :node, i, "initial_pressure")]
+            "pressure" => [ref(ts, :node, i, "pressure")]
         )
     end 
     for i in keys(get(ref(ts), :pipe, []))
+        mass_flux_profile = ref(ts, :pipe, i, "mass_flux_profile")
         pipe[i] = Dict(
-            "fr_mass_flux" => [ref(ts, :pipe, i, "initial_mass_flux")],
-            "to_mass_flux" => [ref(ts, :pipe, i, "initial_mass_flux")], 
+            "fr_mass_flux" => [mass_flux_profile[1]],
+            "to_mass_flux" => [mass_flux_profile[end]], 
         )
     end 
     return OutputState(time_pressure, time_flux, node, pipe)

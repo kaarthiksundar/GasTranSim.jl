@@ -32,6 +32,6 @@ folder = "./data/model1pipe_slow_transients/"
 
 ts = initialize_simulator(folder, eos=:ideal)
 
-# run_simulator!(ts)
+run_simulator!(ts)
 
 # output foldername, output filename, final state output filename
