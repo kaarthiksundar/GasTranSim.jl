@@ -5,7 +5,7 @@ function run_simulator!(ts::TransientSimulator;
     t_f = params(ts, :t_f)
     num_steps = Int(ceil(t_f/dt))
     output_data = OutputData(ts)
-    @showprogress 1 "Simulation progress: " for i in 1:num_steps
+    @showprogress 1 "Simulation progress: " for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level

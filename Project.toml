@@ -1,4 +1,21 @@
+name = "NGTransientSimulator"
+uuid = "940af2f7-3068-4858-9dd7-09faded72307"
+authors = ["Kaarthik Sundar <kaarthik01sundar@gmail.com>"]
+version = "0.1.0"
+
 [deps]
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+
+[compat]
+Dierckx = "~0.4, ~0.5"
+JSON = "~0.18, ~0.19, ~0.20, ~0.21"
+ProgressMeter = ">= 1.6"
+julia = "^1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

@@ -56,10 +56,10 @@ end
 function update_output_state!(ts::TransientSimulator, state::OutputState)
     push!(state.time_pressure, ref(ts, :current_time))
     push!(state.time_flux, ref(ts, :current_time) - params(ts, :dt)/2)
-	for (i, dummy) in ref(ts, :node)
+	for (i, _) in ref(ts, :node)
         push!(state.node[i]["pressure"], ref(ts, :node, i, "pressure"))
     end
-    for (i, dummy) in ref(ts, :pipe)
+    for (i, _) in ref(ts, :pipe)
         push!(state.pipe[i]["fr_mass_flux"], ref(ts, :pipe, i, "fr_mass_flux"))
         push!(state.pipe[i]["to_mass_flux"], ref(ts, :pipe, i, "to_mass_flux"))
     end
@@ -70,7 +70,7 @@ function update_output_data!(ts::TransientSimulator,
     state::OutputState, data::OutputData)
     data.initial_time = params(ts, :t_0)
     data.final_time = ref(ts, :current_time)
-    for (i, dummy) in ref(ts, :node)
+    for (i, _) in ref(ts, :node)
         data.node[i]["pressure"] = Spline1D(
             state.time_pressure, state.node[i]["pressure"], k=1
         )
@@ -103,7 +103,6 @@ end
 
 function populate_solution!(ts::TransientSimulator, output::OutputData)
     dt = params(ts, :output_dt)
-    dx = params(ts, :output_dx)
     times = collect(range(params(ts, :t_0), params(ts, :t_f), step=dt)) 
     data = ts.data
     sol = ts.sol
