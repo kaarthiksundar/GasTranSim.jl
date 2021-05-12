@@ -1,6 +1,6 @@
 name = "NGTransientSimulator"
 uuid = "940af2f7-3068-4858-9dd7-09faded72307"
-authors = ["Kaarthik Sundar <kaarthik01sundar@gmail.com>"]
+authors = ["Shriram Srinivasan and Kaarthik Sundar"]
 version = "0.1.0"
 
 [deps]

@@ -15,19 +15,15 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
         add_current_time_to_ref!]
     )
     ref[:current_time] = params[:t_0]
-    ic = build_ic(data)
-    bc = build_bc(data)
-    pu_pressure_to_pu_density, pu_density_to_pu_pressure = get_eos(nominal_values, params, eos)
 
     ts = TransientSimulator(data,
         ref,
-        initialize_solution(data, params),
+        initialize_solution(data),
         nominal_values,
         params,
-        ic,
-        bc,
-        pu_pressure_to_pu_density,
-        pu_density_to_pu_pressure
+        build_ic(data),
+        build_bc(data),
+        get_eos(eos)...
     )
 
     add_pipe_grid_to_ref!(ts)
@@ -96,7 +92,7 @@ function add_node_level_flag!(ts::TransientSimulator)
 end
 
 function initialize_nodal_state!(ts::TransientSimulator)
-    for (key, node) in ref(ts, :node)
+    for (key, _) in ref(ts, :node)
         pressure = initial_nodal_pressure(ts, key)
         ref(ts, :node, key)["pressure"] = pressure
     end

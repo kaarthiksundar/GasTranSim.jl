@@ -72,7 +72,7 @@ function process_data!(data::Dict{String,Any})
     end
 
     # add "area" key to pipes in data
-    for (i, pipe) in get(data, "pipes", [])
+    for (_, pipe) in get(data, "pipes", [])
         pipe["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25
     end
 

@@ -1,4 +1,4 @@
-function initialize_solution(data::Dict{String,Any}, params::Dict{Symbol,Any})::Dict{String,Any}
+function initialize_solution(data::Dict{String,Any})::Dict{String,Any}
     sol = Dict{String,Any}()
     sol["time_points"] = Vector{Float64}()
     sol["nodes"] = Dict{String,Any}()
@@ -6,12 +6,12 @@ function initialize_solution(data::Dict{String,Any}, params::Dict{Symbol,Any})::
     sol["compressors"] = Dict{String,Any}()
     sol["final_state"] = Dict{String,Any}()
 
-    for (i, node) in get(data, "nodes", [])
+    for (i, _) in get(data, "nodes", [])
         sol["nodes"][i] = Dict{String,Any}()
         sol["nodes"][i]["pressure"] = Vector{Float64}()
     end
 
-    for (i, pipe) in get(data, "pipes", [])
+    for (i, _) in get(data, "pipes", [])
         sol["pipes"][i] = Dict{String,Any}()
         sol["pipes"][i]["in_flow"] = Vector{Float64}()
         sol["pipes"][i]["out_flow"] = Vector{Float64}()
@@ -19,7 +19,7 @@ function initialize_solution(data::Dict{String,Any}, params::Dict{Symbol,Any})::
         sol["pipes"][i]["out_pressure"] = Vector{Float64}()
     end
 
-    for (i, compressor) in get(data, "compressors", [])
+    for (i, _) in get(data, "compressors", [])
         sol["compressors"][i] = Dict{String,Any}()
         sol["compressors"][i]["flow"] = Vector{Float64}()
         sol["compressors"][i]["suction_pressure"] = Vector{Float64}()

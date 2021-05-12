@@ -1,4 +1,4 @@
-function get_eos(nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any}, eos::Symbol)
+function get_eos(eos::Symbol)
     (eos == :ideal) &&
         (return _pressure_to_density_ideal, _density_to_pressure_ideal)
     (eos == :simple_cnga) &&

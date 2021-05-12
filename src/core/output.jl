@@ -126,6 +126,7 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         return m_to_miles(pu * nominal_values(ts, :length))
     end 
 
+    sol["final_state"]["time"] = time_convertor(ref(ts, :current_time))
     sol["final_state"]["initial_nodal_pressure"] = Dict{String,Any}()
     
     for (i, _) in get(data, "nodes", [])
