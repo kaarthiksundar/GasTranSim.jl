@@ -22,12 +22,13 @@ nominal_values(ts::TransientSimulator) = ts.nominal_values
 nominal_values(ts::TransientSimulator, key::Symbol) = ts.nominal_values[key]
 
 initial_pipe_mass_flow(ts::TransientSimulator, id::Int64) = 
-    ts.ic[:pipe]["mass_flow"][id]
+    ts.initial_conditions[:pipe]["mass_flow"][id]
 
 initial_pipe_pressure(ts::TransientSimulator, id::Int64) = 
-    get(ts.ic[:pipe]["pressure"], id, false)
+    get(ts.initial_conditions[:pipe]["pressure"], id, false)
 
-initial_nodal_pressure(ts::TransientSimulator, id::Int64) = ts.ic[:node][id]
+initial_nodal_pressure(ts::TransientSimulator, id::Int64) = 
+    ts.initial_conditions[:node][id]
 
 function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}

@@ -105,7 +105,7 @@ end
 
 function initialize_pipe_state!(ts::TransientSimulator)
     is_steady = false 
-    if isempty(ts.ic[:pipe]["pressure"])
+    if isempty(ts.initial_conditions[:pipe]["pressure"])
         is_steady = true
     end 
     for (key, pipe) in ref(ts, :pipe)
