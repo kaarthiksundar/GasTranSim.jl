@@ -15,7 +15,6 @@ ts = initialize_simulator(folder; case_name="start", case_types=[:params])
 run_simulator!(ts)
 write_output(ts; output_path = folder, 
 	output_file = "output_restart_1.json", final_state_file = "ic_restart_1.json")
-println("first half run complete")
 
 sol = parse_json(folder*"output_restart_1.json")
 t = sol["time_points"]/3600 #hrs
@@ -23,12 +22,14 @@ dt1 = sol["time_step"]
 pr_node5_a = sol["nodes"]["5"]["pressure"]
 inflow_node6_a = sol["pipes"]["1"]["in_flow"]
 outflow_node2_a = sol["pipes"]["1"]["out_flow"]
+println("first half run complete")
 
 
 ##=== Run from t=t1 to t=tf ===##
 
 
-ts = initialize_simulator(folder; case_name="restart_1", case_types=[:params])
+ts = initialize_simulator(folder; case_name="restart_1", 
+	case_types=[:params, :ic])
 run_simulator!(ts)
 write_output(ts; output_path = folder, output_file = "output_restart_2.json")
 println("second half run complete")
@@ -77,17 +78,17 @@ fig, ax = plt.subplots(2, 1, figsize=(6, 6), sharex=true)
 
 
 
-ax[1, 1].plot(t, inflow_node6_a, t1, inflow_node6_b, t3, inflow_node6, "k.", markevery=3)
+ax[1, 1].plot(t, inflow_node6_a, "r.", t1,  inflow_node6_b, "g.", t3, inflow_node6, "k--", markevery=3)
 ax[1, 1].legend(["First half", "Second half", "Full"]) #string interpolation
 #ax[1,1].set_ylim([250, 340])
 
-ax[2, 1].plot(t, pr_node5_a/1e6, t1, pr_node5_b/1e6, t3, pr_node5/1e6, "k.", markevery=3)
+ax[2, 1].plot(t, pr_node5_a/1e6, "r.", t1, pr_node5_b/1e6, "g.", t3, pr_node5/1e6, "k--", markevery=3)
 ax[2, 1].legend(["First half", "Second half", "Full"])
 #ax[2,1].set_ylim([3, 5.5])
 
 
 ax[2, 1].set_xlabel("time (hrs)")
-ax[1, 1].set_ylabel(L"mass flow  ($\mathrm{kg}\mathrm{s}^{-1}$)")
+ax[1, 1].set_ylabel(L"mass inflow at node 6  ($\mathrm{kg}\mathrm{s}^{-1}$)")
 ax[2, 1].set_ylabel("pressure at node 5 (MPa)")
 fig.tight_layout()
 

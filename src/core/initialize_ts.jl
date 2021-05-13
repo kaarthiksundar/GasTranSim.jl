@@ -135,9 +135,9 @@ function initialize_pipe_state!(ts::TransientSimulator)
             x_rho = LinRange(0, L, n)
             x_mid = x_rho[1:n-1] .+ dx/2.0
             pipe["mass_flux_profile"] = [
-                get_coeffs(flow_spl)[0], 
+                flow_spl(-dx/2.0), 
                 [flow_spl(x) for x in x_mid]..., 
-                get_coeffs(flow_spl)[end]
+                flow_spl(L + dx/2.0)
             ] ./ area
             pipe["fr_minus_mass_flux"] = pipe["mass_flux_profile"][2]
             pipe["to_minus_mass_flux"] = pipe["mass_flux_profile"][end-1]

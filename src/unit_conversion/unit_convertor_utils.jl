@@ -187,7 +187,7 @@ function _rescale_data!(data::Dict{String,Any},
             if isa(data[param][i], Number)
                 data[param][i] = f(value)
             else 
-                data[param][i]["distance"] = rescale_length.(value["length"])
+                data[param][i]["distance"] = rescale_length.(value["distance"])
                 data[param][i]["value"] = f.(value["value"])
             end 
         end 
