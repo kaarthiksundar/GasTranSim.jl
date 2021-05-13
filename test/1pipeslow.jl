@@ -1,34 +1,13 @@
-using JSON
-using Dierckx
-using ProgressMeter
+using NGTransientSimulator
 import PyPlot
 const plt = PyPlot
 using LaTeXStrings
 using TerminalExtensions
 
 
-include("io/json.jl")
-include("io/data_utils.jl")
-
-include("unit_conversion/unit_convertor_utils.jl")
-include("unit_conversion/to_si.jl")
-include("unit_conversion/to_english.jl")
-include("unit_conversion/to_pu.jl")
-include("unit_conversion/unit_convertors.jl")
-
-include("core/eos.jl")
-include("core/types.jl")
-include("core/ref.jl")
-include("core/bc.jl")
-include("core/sol.jl")
-include("core/initialize_ts.jl")
-include("core/run_task.jl")
-include("core/time_integration.jl")
-include("core/run_ts.jl")
-include("core/output.jl")
 
 # Temp for ideal gas case set to 239.11 K, nonideal 288.7K to match p, rho
-folder = "./data/model1pipe_slow_transients/"
+folder = "test/data/model1pipe_slow_transients/"
 
 
 ##=== Run ideal gas case ===##
