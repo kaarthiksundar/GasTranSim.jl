@@ -175,6 +175,7 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         sol["compressors"][i]["compression_ratio"] = sol["nodes"][to_node]["pressure"] ./ sol["nodes"][fr_node]["pressure"]
     end 
 
+    sol["time_step"] = time_convertor(params(ts, :dt))
     sol["time_points"] = time_convertor.(times)
     return
 end 

@@ -6,6 +6,7 @@ function write_output(ts::TransientSimulator;
     solution = ts.sol 
     output_string = output_path * output_file
     output_dict = Dict(
+        "time_step"  => solution["time_step"],
         "time_points" => solution["time_points"],
         "nodes" => solution["nodes"],
         "pipes" => solution["pipes"],
