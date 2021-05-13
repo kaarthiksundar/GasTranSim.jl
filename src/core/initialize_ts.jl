@@ -85,7 +85,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
 end
 
 function add_node_level_flag!(ts::TransientSimulator)
-    for (node_id, node) in ref(ts, :node)
+    for (node_id, _) in ref(ts, :node)
         _evaluate_level_of_node!(ts, node_id)
     end
     return

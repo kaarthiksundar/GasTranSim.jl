@@ -60,9 +60,9 @@ outflow_node2 = ts.sol["pipes"]["1"]["out_flow"]
 
 
 ##=== Compute norm of difference ===##
-e1 = maximum(abs.(pr_node5_cat - pr_node5))
-e2 = maximum(abs.(inflow_node6_cat - inflow_node6))
-e3 = maximum(abs.(outflow_node2_cat - outflow_node2))
+e1 = sum(abs.(pr_node5_cat - pr_node5) ./ abs.(pr_node5)) / length(pr_node5)
+e2 = sum(abs.(inflow_node6_cat - inflow_node6) ./ abs.(inflow_node6)) / length(inflow_node6)
+e3 = sum(abs.(outflow_node2_cat - outflow_node2) ./ abs.(outflow_node2)) / length(outflow_node2)
 
 @show e1, e2, e3
 # if maximum([e1, e2, e3]) < eps

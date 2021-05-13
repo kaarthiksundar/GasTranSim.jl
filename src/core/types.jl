@@ -79,9 +79,6 @@ struct CompressorControl
 end
 
 function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
-    # if !((t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL))
-    #     @show t, TOL, sp.time[1], sp.time[end]
-    # end
     @assert (t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL)
     time = sp.time
     control_type = sp.control_type

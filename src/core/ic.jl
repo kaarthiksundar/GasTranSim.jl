@@ -14,12 +14,12 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
         L = data["pipes"][i]["length"]
         if (isa(value, Number))
             distance = [0.0, L]
-            values = [value, value]
-            ic[:pipe]["mass_flow"][id] = Spline1D(distance, values, k=1)
+            val = [value, value]
+            ic[:pipe]["mass_flow"][id] = Spline1D(distance, val, k=1)
         else 
             distance = value["distance"]
-            values = value["value"]
-            ic[:pipe]["mass_flow"][id] = Spline1D(distance, values, k=1)
+            val = value["value"]
+            ic[:pipe]["mass_flow"][id] = Spline1D(distance, val, k=1)
         end 
     end 
 
@@ -28,12 +28,12 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
         L = data["pipes"][i]["length"]
         if (isa(value, Number))
             distance = [0.0, L]
-            values = [value, value]
-            ic[:pipe]["pressure"][id] = Spline1D(distance, values, k=1)
+            val = [value, value]
+            ic[:pipe]["pressure"][id] = Spline1D(distance, val, k=1)
         else
             distance = value["distance"]
-            values = value["value"]
-            ic[:pipe]["pressure"][id] = Spline1D(distance, values, k=1)
+            val = value["value"]
+            ic[:pipe]["pressure"][id] = Spline1D(distance, val, k=1)
         end
     end 
 
