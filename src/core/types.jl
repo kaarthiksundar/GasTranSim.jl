@@ -41,7 +41,7 @@ end
 get_pressure(ts::TransientSimulator, density) = ts.pu_density_to_pu_pressure(density, nominal_values(ts), params(ts))
 get_density(ts::TransientSimulator, pressure) = ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
-TOL = 1e-6
+TOL = 2.0
 
 function get_nodal_control(ts::TransientSimulator,
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
@@ -79,7 +79,10 @@ struct CompressorControl
 end
 
 function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
-    @assert (t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL)
+    # if !((t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL))
+    #     @show t, TOL, sp.time[1], sp.time[end]
+    # end
+    # @assert (t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL)
     time = sp.time
     control_type = sp.control_type
     value = sp.value
