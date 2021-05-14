@@ -1,4 +1,4 @@
-using NGTransientSimulator
+using GasTranSim
 import PyPlot
 const plt = PyPlot
 using LaTeXStrings

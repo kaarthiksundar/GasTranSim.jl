@@ -1,7 +1,7 @@
-using NGTransientSimulator 
+using GasTranSim 
 
 using Test
 
-@testset "NGTransientSimulator" begin
+@testset "GasTranSim" begin
     @test 1 == 1
 end 
