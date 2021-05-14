@@ -1,4 +1,4 @@
-module NGTransientSimulator
+module GasTranSim
 
 import JSON
 using Dierckx

@@ -1,5 +1,5 @@
-name = "NGTransientSimulator"
-uuid = "940af2f7-3068-4858-9dd7-09faded72307"
+name = "GasTranSim"
+uuid = "69f9d653-1b8b-4f14-83cd-52913e0d1f1c"
 authors = ["Shriram Srinivasan and Kaarthik Sundar"]
 version = "0.1.0"
 
