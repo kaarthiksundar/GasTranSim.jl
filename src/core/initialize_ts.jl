@@ -134,6 +134,7 @@ function initialize_pipe_state!(ts::TransientSimulator)
             pressure_spl = initial_pipe_pressure(ts, key)
             x_rho = LinRange(0, L, n)
             x_mid = x_rho[1:n-1] .+ dx/2.0
+            get_coeffs(flow_spl)[1]
             pipe["mass_flux_profile"] = [
                 get_coeffs(flow_spl)[1], 
                 [flow_spl(x) for x in x_mid]..., 
