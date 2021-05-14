@@ -4,6 +4,7 @@ struct TransientSimulator
     sol::Dict{String,Any}
     nominal_values::Dict{Symbol,Any}
     params::Dict{Symbol,Any}
+    initial_conditions::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
@@ -20,6 +21,15 @@ params(ts::TransientSimulator, key::Symbol) = ts.params[key]
 nominal_values(ts::TransientSimulator) = ts.nominal_values
 nominal_values(ts::TransientSimulator, key::Symbol) = ts.nominal_values[key]
 
+initial_pipe_mass_flow(ts::TransientSimulator, id::Int64) = 
+    ts.initial_conditions[:pipe]["mass_flow"][id]
+
+initial_pipe_pressure(ts::TransientSimulator, id::Int64) = 
+    get(ts.initial_conditions[:pipe]["pressure"], id, false)
+
+initial_nodal_pressure(ts::TransientSimulator, id::Int64) = 
+    ts.initial_conditions[:node][id]
+
 function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     (key == :node) && (return get_nodal_control(ts, id, t))
@@ -31,7 +41,7 @@ end
 get_pressure(ts::TransientSimulator, density) = ts.pu_density_to_pu_pressure(density, nominal_values(ts), params(ts))
 get_density(ts::TransientSimulator, pressure) = ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
-TOL = 1e-6
+TOL = 1.0e-5
 
 function get_nodal_control(ts::TransientSimulator,
     id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
@@ -73,10 +83,10 @@ function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
     time = sp.time
     control_type = sp.control_type
     value = sp.value
-    (t == time[1]) && (return control_type[1], value[1])
-    (t == time[end]) && (return control_type[end], value[end])
-    index = findfirst(x -> t >= x, time)
-    (t == time[index]) && (return control_type[index], value[index])
+    (isapprox(t, time[1], rtol=TOL)) && (return control_type[1], value[1])
+    (isapprox(t, time[end], rtol=TOL)) && (return control_type[end], value[end])
+    index = findlast(x -> t >= x, time)
+    (isapprox(t, time[index], rtol=TOL)) && (return control_type[index], value[index])
     first_control = control_type[index]
     second_control = control_type[index + 1]
     (first_control != second_control) && (return first_control, value[index])

@@ -1,6 +1,8 @@
-using JSON
+module GasTranSim
+
+import JSON
 using Dierckx
-using ProgressMeter
+using ProgressMeter: @showprogress
 
 include("io/json.jl")
 include("io/data_utils.jl")
@@ -14,22 +16,17 @@ include("unit_conversion/unit_convertors.jl")
 include("core/eos.jl")
 include("core/types.jl")
 include("core/ref.jl")
+include("core/ic.jl")
 include("core/bc.jl")
 include("core/sol.jl")
 include("core/initialize_ts.jl")
 include("core/run_task.jl")
 include("core/time_integration.jl")
 include("core/run_ts.jl")
+include("core/output.jl")
 
-include("io/output.jl")
+include("io/writer.jl")
 
-# folder = "./data/model8/"
-# folder = "./data/model30/"
-folder = "./data/model8_paper_VG_AZ/"
-# folder = "./data/model1pipe_slow_transients/"
-# folder = "./data/model1pipe_fast_transients/"
+include("core/export.jl")
 
-
-ts = initialize_simulator(folder)
-
-run_simulator!(ts)
+end # module

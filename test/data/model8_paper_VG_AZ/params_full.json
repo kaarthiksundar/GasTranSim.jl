@@ -1,0 +1,15 @@
+{
+    "simulation_params": {
+        "Temperature (K):": 288.70599999999996,
+        "Gas specific gravity (G):": 0.6,
+        "Specific heat capacity ratio": 1.4,
+        "units (SI = 0, standard = 1)": 0.0,
+        "Initial time": 0.0,
+        "Final time": 86400,
+        "Discretization time step": 20,
+        "Courant number (must be between 0 and 1, recommended value is 0.9)": 0.90,
+        "Output dt": 1000.0,
+        "Output dx": 1000.0,
+        "Save final state": 1.0
+    }
+}

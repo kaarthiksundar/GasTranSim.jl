@@ -29,11 +29,15 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
+    required_ic_fields = ["initial_nodal_pressure", 
+        "initial_pipe_flow", "initial_pipe_pressure"]
+    filter!(p -> p.first in required_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
     data = merge(network_data, params_data, ic_data, bc_data, disruptions_data)
     return data
 end 
+
 
 function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
@@ -41,12 +45,16 @@ function process_data!(data::Dict{String,Any})
 
     params_exhaustive = ["temperature", "gas_specific_gravity",
         "specific_heat_capacity_ratio", "units", "t_0", "t_f", "dt",
-        "courant_number", "output_dt", "output_dx", "save_final_state",
+        "courant_number", "output_dt", "output_dx", "save_final_state"
     ]
+
     defaults_exhaustive = [288.706, 0.6, 1.4, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
         1000.0, 0
     ]
+
     simulation_params = data["simulation_params"]
+    
+
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
@@ -61,11 +69,10 @@ function process_data!(data::Dict{String,Any})
         occursin("dt", k) && (key_map["output_dt"] = k)
         occursin("dx", k) && (key_map["output_dx"] = k)
         occursin("final state", k) && (key_map["save_final_state"] = k)
-
     end
 
     # add "area" key to pipes in data
-    for (i, pipe) in get(data, "pipes", [])
+    for (_, pipe) in get(data, "pipes", [])
         pipe["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25
     end
 
@@ -82,7 +89,7 @@ function process_data!(data::Dict{String,Any})
                     params[:is_english_units] = 0
                     params[:is_per_unit] = 0
                 else
-                    params[:units] = 0
+                    params[:units] = 1
                     params[:is_is_units] = 0
                     params[:is_english_units] = 1
                     params[:is_per_unit] = 0
@@ -118,16 +125,19 @@ function process_data!(data::Dict{String,Any})
     params[:R] = 8.314
     # molecular mass of natural gas (kg/mol): M_g = M_a * G
     params[:gas_molar_mass] = 0.02896 * params[:gas_specific_gravity]
-    # sound speed (m/s): v = sqrt(R_g * T); R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
-    params[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
+    params[:warning] = "R, temperature are in SI units. Rest are dimensionless"
 
+    # sound speed (m/s): v = sqrt(R_g * T); 
+    # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
+    nominal_values[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
     nominal_values[:length] = 5000.0
     nominal_values[:area] = 1.0
     nominal_values[:pressure] = 3500000.0 # 507.63 psi
-    nominal_values[:density] = nominal_values[:pressure] / params[:sound_speed] / params[:sound_speed]
-    nominal_values[:mass_flux] = nominal_values[:density] * params[:sound_speed]
-    nominal_values[:time] = nominal_values[:length] / params[:sound_speed]
+    nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+    nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:sound_speed]
+    nominal_values[:time] = nominal_values[:length] / nominal_values[:sound_speed]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
+    
 
     return params, nominal_values
 end
