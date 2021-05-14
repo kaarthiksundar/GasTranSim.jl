@@ -1,7 +1,6 @@
 @testset "Simulation restart" begin
     folder = "./data/8-node/"
     # full run for 24 hours
-    @info "Running simulation from 0 to 24 hours"
     ts = initialize_simulator(folder; 
         case_name="full", case_types=[:params])
     run_simulator!(ts)
@@ -10,7 +9,6 @@
     outflow_node_2 = ts.sol["pipes"]["1"]["out_flow"]
 
     # run for 0 to 12 hours 
-    @info "Running simulation from 0 to 12 hours"
     ts_a = initialize_simulator(folder; 
         case_name="first_half", case_types=[:params])
     run_simulator!(ts_a)
@@ -22,7 +20,6 @@
     outflow_node_2_a = ts_a.sol["pipes"]["1"]["out_flow"]
 
     # run for 12 to 24 hours 
-    @info "Running simulation from 12 to 24 hours"
     ts_b = initialize_simulator(folder; 
         case_name="second_half", case_types=[:params, :ic])
     run_simulator!(ts_b)
