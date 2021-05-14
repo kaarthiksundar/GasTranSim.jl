@@ -1,7 +1,7 @@
-using GasTranSim 
+using GasTranSim
 
 using Test
 
-@testset "GasTranSim" begin
-    @test 1 == 1
+@testset "GasTranSim unit tests" begin
+    include("sim_restart.jl")
 end 
