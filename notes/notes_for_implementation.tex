@@ -270,4 +270,12 @@ Thus, for a given value of $\Delta t$, $\Delta x \geq \bar{c}\Delta t/k$. Settin
 Since we showed that $c > c_{CNGA}$, it is sufficient to use $\bar{c}$ in the CFL condition for non-ideal gases also. 
 
 Finally, in a non-isothermal case, we may define $ \bar{T} = T/T_0$ and get $\bar{p} = \left(\dfrac{R_gT}{R_gT_0}\right) \bar{\rho} = \bar{\rho}\bar{T}$ and $\bar{c} = \sqrt{\bar{T}}$. 
+
+\section{Inclined pipes}
+If the inclination of the pipes is taken into account, then gravity could have a component along the pipe, and if this is taken into account, the formulation needs to be modified slightly.
+For the given choice of non-dimensional variables, the momentum equation is modified to
+$$\dfrac{\partial \bar{\phi}}{\partial \bar{t}} + \dfrac{\partial \bar{p}}{\partial \bar{x}} = -\left( \dfrac{\lambda}{2D/l_0} \right) \dfrac{\bar{\phi}|\bar{\phi}|}{\bar{\rho}} + 
+\left ( \dfrac{l_0g_{||}}{a^2} \right )\rho$$
+Given the elevation of the ``from" and``to" ends of a pipe, $g_{||}$ can be calculated as the component of gravity along the assumed flow direction. The resultant nondimensional number $\mathbb{G}_{\mathrm{pipe}} = \dfrac{l_0 g_{||}}{a^2}$ thus varies for each pipe, and is not a constant for the network.
+
 \end{document}

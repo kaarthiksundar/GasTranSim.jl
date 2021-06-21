@@ -1,7 +1,8 @@
-using GasTranSim 
+using GasTranSim
 
 using Test
 
-@testset "GasTranSim" begin
-    @test 1 == 1
-end 
+
+include("sim_restart.jl")
+    
+include("steady_bc.jl")
