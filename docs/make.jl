@@ -10,7 +10,11 @@ makedocs(
     strict = true,
     authors = "Shriram Srinivasan and Kaarthik Sundar",
     pages = [
-        "Introduction" => "index.md"
+        "Introduction" => "index.md",
+        "Theory" => "theory.md",
+        "Input Files" => "inputs.md",
+        "Simulation Engine" => "simulation.md",
+        "Examples" => "examples.md"
     ],
 )
 

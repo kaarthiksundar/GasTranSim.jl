@@ -8,7 +8,6 @@ CurrentModule = GasTranSim
 
 GasTranSim.jl is a Julia/JuMP package for simulating transient flow of a gas through a given network of gas pipelines which may include compressors/boosting stations with defined operation. 
 The simulator allows us to predict the pressure and mass-flux (mass-flow per unit time for unit cross-sectional area) throughout the pipeline network for a given  time interval.
-Moreover, it allows the user to save the state of the simulation at a particular time instant, and restart the simulation seamlessly from the saved state.
 
 ## Description of network
 
