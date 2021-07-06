@@ -7,7 +7,7 @@ using TerminalExtensions
 
 
 # Temp for ideal gas case set to 239.11 K, nonideal 288.7K to match p, rho
-folder = "test/data/model1pipe_slow_transients/"
+folder = "examples/data/model1pipe_slow_transients/"
 
 
 ##=== Run ideal gas case ===##
