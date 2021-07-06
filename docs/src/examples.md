@@ -18,12 +18,19 @@ These three examples are taken from
 
 - The directory `model1pipe_slow_transients` pertains to Section 5.3 in the paper.
 
-- The directory `model8_paper_VG_AZ` replicates some results of the problem discussed in Section 6 of the paper.
+- The directory `8-node` replicates some results of the problem discussed in Section 6 of the paper.
 
 
 ## 30 node network example
 
 The directory  `model30` has the input data and source files to demonstrate that if we start with a steady state initial condition,  the same steady state solution can be recovered from the transient simulation.
+
+## Running the examples
+
+Each of the four examples has its own file that can be invoked from the root directory as follows 
+```julia
+include("examples/1pipefast.jl")
+```
 
 
 

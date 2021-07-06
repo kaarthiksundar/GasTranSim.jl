@@ -148,22 +148,3 @@ The initial condition should specify the pressure and mass flux throughout the n
 
 Note that here the initial conditions correspond to a steady flow which is why the flow is the same throughout the pipe. In general, the initial condition will have flows that are spatially varying, in which case instead of specifying a single scalar, the mass flux at discrete lengths along the pipe will be recorded, analogous to what we saw above with `bc.json` for temporal variation. We shall deal with such a case subsequently.
 
-## Installation Guide
-
-To use GasTranSim, first [download and install](https://julialang.org/downloads/) Julia or open up a remote notebook at [JuliaBox](https://www.juliabox.com/) or similar services.
-
-This version of GasTranSim is compatible with Julia 1.0 and later.
-
-From Julia REPL, GasTranSim is installed by using the built-in package manager:
-```julia
-import Pkg
-Pkg.add("GasTranSim")
-```
-
-## Unit Tests
-To run the tests in the package, run the following command within the Julia REPL after installing the package.
-
-```julia
-import Pkg
-Pkg.test("GasTranSim")
-```
