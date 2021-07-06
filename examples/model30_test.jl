@@ -7,16 +7,16 @@ using TerminalExtensions
 
 
 
-folder = "test/data/model30/"
+folder = "examples/data/model30/"
 
 ##=== Run from t=0 to t=t1 ===##
 
 ts = initialize_simulator(folder)
 run_simulator!(ts)
 write_output(ts; output_path = folder, 
-	output_file = "output_steady.json", final_state_file = "ic_delete.json")
+	output_file = "output_steady_delete.json", final_state_file = "ic_delete.json")
 
-sol = parse_json(folder*"output_steady.json")
+sol = parse_json(folder*"output_steady_delete.json")
 t = sol["time_points"]/3600 #hrs
 
 
