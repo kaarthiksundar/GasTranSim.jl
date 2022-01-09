@@ -37,17 +37,29 @@ function parse_data(data_folder::AbstractString;
     return data
 end 
 
+function _get_nominal_pressure(data::Dict{String,Any}, units)
+    nodal_pressures = []
+    for (_, value) in get(data, "initial_nodal_pressure", [])
+        push!(nodal_pressures, value)
+    end 
+
+    @assert length(nodal_pressures) != 0
+    (units == 1) && (return minimum(nodal_pressures) *  6894.75729)
+    return minimum(nodal_pressures)
+end 
+
 
 function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
     params = Dict{Symbol,Any}()
 
-    params_exhaustive = ["temperature", "gas_specific_gravity",
-        "specific_heat_capacity_ratio", "units", "t_0", "t_f", "dt",
+    params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
+     "nominal_length", "nominal_velocity", "nominal_pressure","nominal_density", 
+        "units", "t_0", "t_f", "dt",
         "courant_number", "output_dt", "output_dx", "save_final_state"
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
         1000.0, 0
     ]
 
@@ -60,6 +72,10 @@ function process_data!(data::Dict{String,Any})
         occursin("Gas", k) && (key_map["gas_specific_gravity"] = k)
         occursin("Specific heat", k) &&
             (key_map["specific_heat_capacity_ratio"] = k)
+        occursin("length", k) && (key_map["nominal_length"] = k)
+        occursin("velocity", k) && (key_map["nominal_velocity"] = k)
+        occursin("pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("density", k) && (key_map["nominal_density"] = k)
         occursin("units", k) && (key_map["units"] = k)
         occursin("Initial time", k) && (key_map["t_0"] = k)
         occursin("Final time", k) && (key_map["t_f"] = k)
@@ -129,13 +145,42 @@ function process_data!(data::Dict{String,Any})
     # sound speed (m/s): v = sqrt(R_g * T); 
     # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
     nominal_values[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
-    nominal_values[:length] = 5000.0
+    
+    nominal_values[:length] = params[:nominal_length]
     nominal_values[:area] = 1.0
-    nominal_values[:pressure] = 3500000.0 # 507.63 psi
-    nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
-    nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:sound_speed]
-    nominal_values[:time] = nominal_values[:length] / nominal_values[:sound_speed]
+    nominal_values[:pressure] = 
+    if isnan(params[:nominal_pressure]) 
+        _get_nominal_pressure(data, params[:units]) 
+    else 
+        params[:nominal_pressure]
+    end
+    nominal_values[:density] = 
+    if isnan(params[:nominal_density]) 
+        nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+    else 
+        params[:nominal_density]
+    end 
+    nominal_values[:velocity] =
+    if isnan(params[:nominal_velocity])
+       ceil(nominal_values[:sound_speed]/2)
+    else
+        params[:nominal_velocity]
+    end
+    nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
+    nominal_values[:time] = nominal_values[:length] / nominal_values[:velocity]
+    nominal_values[:euler_num] = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
+    
+
+    # nominal_values[:length] = 5000.0
+    # nominal_values[:area] = 1.0
+    # nominal_values[:pressure] = 3500000.0 # 507.63 psi
+    # nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+    # nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:sound_speed]
+    # nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
+    # nominal_values[:time] = nominal_values[:length] / nominal_values[:sound_speed]
+
     
 
     return params, nominal_values
