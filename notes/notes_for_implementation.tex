@@ -266,25 +266,15 @@ For a simple CNGA equation, $p\cdot(b_1 + b_2 p) = \rho R_g T$, we can calculate
 We can reach the same conclusion from the fact that  $\dfrac{d \bar{p}}{d \bar{\rho}} = \dfrac{1}{\bar{b_1} + 2\bar{b_2}\bar{p}}$ and $\bar{b_1} > \mathcal{C}, \bar{b_2} > 0$.
 
 
-%--------------------
-% For the ideal gas equation, $p = \rho R_g T$, thus $\bar{p} = \left(\dfrac{R_gT}{a^2}\right) \bar{\rho}$ 
-% Thus,  the ideal gas equation reduces to $\bar{p} = \bar{\rho}$ \emph{if we choose} $a = \sqrt{R_gT}$. This choice is always valid, and hence we shall do so. Even in non-isothermal problems, we can define a nominal temperature $T_0$  and set $a=\sqrt{R_gT_0}$ in that case.
-
-% For non-ideal gases, the coefficients of the equation of state $p = f(\rho, T)$ are defined  with quantities in given units, and thus we shall content ourselves with writing $\bar{p} = f(\bar{\rho}\rho_0, T)/p_0$ and $\bar{\rho} = f^{-1}(p_0\bar{p}, T)/\rho_0$.
-
-% The speed of sound $c$ in a gas  is given by $c^2 = \dfrac{d p}{d \rho}$. For an ideal gas, we get $c^2 = R_g T$, or in nondimensional terms  $\dfrac{d \bar{p}}{d \bar{\rho}} = \dfrac{{R_gT}}{a^2} = 1 = \bar{c}^2 $.
-
-% For a simple CNGA equation, $p\cdot(b_1 + b_2 p) = \rho R_g T$, we can calculate the sound speed from $\dfrac{d \rho}{d p}$ since $\dfrac{d p}{d \rho} \cdot \dfrac{d \rho}{d p} = 1$. Thus  $c_{CNGA}^2 = \dfrac{R_g T}{b_1 + 2b_2 p}$. Since $b_1 > 1, b_2 > 0, p > 0$, $c_{CNGA} < c$.
-
 
 Let us record the CFL condition and its consequence next. Usually, it would be stated as $\bar{c}\Delta \bar{t}/ \Delta \bar{x} \leq 1$, but to be safe, we consider 
 $\bar{c}\Delta \bar{t}/ \Delta \bar{x} \leq k$ for $k= 0.9$.
 
-\emph{Note that $\bar{c}$ here is not the speed of sound but the wave speed that appears as the coefficient in the PDE.}
-In dimensional form, the coefficient of the pressure gradient is $1$ so that $\bar{c}=1$. In nondimensional form, we have $\bar{c} = \dfrac{\mathcal{C}}{\mathcal{M}^2}$.
+Note that $\bar{c} = \dfrac{\mathcal{C}}{\mathcal{M}^2} \sqrt{\dfrac{d \bar{p}}{d \bar{\rho}}}$.
+The CFL condition for the ideal gas is the strongest and thus it is sufficient to take $\bar{c} = \dfrac{\sqrt{\mathcal{C}}}{\mathcal{M}^2}$. For the particular choice $v_0 = a$, we  get $\mathcal{C} = \mathcal{M} = \bar{c} = 1$.
+
 Thus, for a given value of $\Delta \bar{t}$, $\Delta \bar{x} \geq \bar{c}\Delta \bar{t}/k$. Setting $\Delta \bar{x} = \bar{L}/m$,  $m \leq \dfrac{\bar{L} k}{\bar{c}\Delta \bar{t}}$.
 
-Note that this condition has no relation to the equation of the state of the gas.
 
 \section{Inclined pipes}
 If the inclination of the pipes is taken into account, then gravity could have a component along the pipe, and if this is taken into account, the formulation needs to be modified slightly.
