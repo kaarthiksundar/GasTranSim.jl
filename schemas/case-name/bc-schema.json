@@ -35,16 +35,10 @@
             }
           }
         }
-      },
-      "required": [
-        "^\\d+$"
-      ]
+      }
     },
     "boundary_nonslack_flow": {
       "type": "object",
-      "required": [
-        "^\\d+$"
-      ],
       "patternProperties": {
         "^\\d+$": {
           "type": "object",
@@ -71,9 +65,6 @@
     },
     "boundary_pslack": {
       "type": "object",
-      "required": [
-        "^\\d+$"
-      ],
       "patternProperties": {
         "^\\d+$": {
           "type": "object",
