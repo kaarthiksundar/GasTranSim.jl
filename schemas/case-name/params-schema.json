@@ -1,0 +1,65 @@
+{
+  "description": "The json file that conforms to this schema has to be named params.json that contains all the parameters for the transient simulation. ",
+  "type": "object",
+  "properties": {
+    "simulation_params": {
+      "type": "object",
+      "required": [
+        "Temperature (K):",
+        "Gas specific gravity (G):",
+        "Specific heat capacity ratio",
+        "units (SI = 0, standard = 1)",
+        "Initial time",
+        "Final time",
+        "Discretization time step",
+        "Courant number (must be between 0 and 1, recommended value is 0.9)",
+        "Output dt",
+        "Output dx",
+        "Save final state"
+      ],
+      "properties": {
+        "Temperature (K):": {
+          "type": "number"
+        },
+        "Gas specific gravity (G):": {
+          "type": "number"
+        },
+        "Specific heat capacity ratio": {
+          "type": "number"
+        },
+        "units (SI = 0, standard = 1)": {
+          "type": "integer"
+        },
+        "Initial time": {
+          "type": "number"
+        },
+        "Final time": {
+          "type": "number"
+        },
+        "Discretization time step": {
+          "type": "number"
+        },
+        "Courant number (must be between 0 and 1, recommended value is 0.9)": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "Output dt": {
+          "type": "number"
+        },
+        "Output dx": {
+          "type": "number"
+        },
+        "Save final state": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  },
+  "required": [
+    "simulation_params"
+  ],
+  "title": ""
+}

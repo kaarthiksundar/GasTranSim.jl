@@ -1,0 +1,141 @@
+{
+  "description": "The json file that conforms to this schema has to be named network.json. For transient simulation, it requires only the nodes, pipes, and compressors. ",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "properties": {
+            "node_id": {
+              "type": "number"
+            },
+            "node_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "x_coord": {
+              "type": "number"
+            },
+            "y_coord": {
+              "type": "number"
+            },
+            "min_pressure": {
+              "type": "number"
+            },
+            "max_pressure": {
+              "type": "number"
+            },
+            "min_injection": {
+              "type": "number"
+            },
+            "max_injection": {
+              "type": "number"
+            },
+            "slack_bool": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "node_id",
+            "slack_bool"
+          ]
+        }
+      }
+    },
+    "pipes": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "properties": {
+            "pipe_id": {
+              "type": "number"
+            },
+            "pipe_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "from_node": {
+              "type": "number"
+            },
+            "to_node": {
+              "type": "number"
+            },
+            "diameter": {
+              "type": "number"
+            },
+            "length": {
+              "type": "number"
+            },
+            "friction_factor": {
+              "type": "number"
+            },
+            "disc_seg": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "pipe_id",
+            "from_node",
+            "to_node",
+            "diameter",
+            "length",
+            "friction_factor"
+          ]
+        }
+      }
+    },
+    "compressors": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "properties": {
+            "comp_id": {
+              "type": "number"
+            },
+            "comp_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "from_node": {
+              "type": "number"
+            },
+            "to_node": {
+              "type": "number"
+            },
+            "c_min": {
+              "type": "number"
+            },
+            "c_max": {
+              "type": "number"
+            },
+            "max_power": {
+              "type": "number"
+            },
+            "min_flow": {
+              "type": "number"
+            },
+            "max_flow": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "comp_id",
+            "from_node",
+            "to_node"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "nodes",
+    "pipes"
+  ]
+}

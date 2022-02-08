@@ -90,7 +90,9 @@ function update_output_data!(ts::TransientSimulator,
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
         x_mid = x_rho[1:n-1] .+ dx/2.0
-        x_phi = [-(dx/2), x_mid..., L+(dx/2)]
+        # this is what needs to be done to replicate
+        # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
+        x_phi = [0.0, x_mid..., L]
         rho = pipe["density_profile"] # len n
         pressure = [get_pressure(ts, val) for val in rho]
         phi = pipe["mass_flux_profile"] # len n+1

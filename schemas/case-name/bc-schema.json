@@ -1,0 +1,97 @@
+{
+  "description": "The json file that conforms to this schema has to be named bc.json. The file has to be named bc.json. It contains time series of compressor ratios/discharge pressures/compressor flows for compressors, and withdrawal values for non-slack nodes",
+  "type": "object",
+  "properties": {
+    "boundary_compressor": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "required": [
+            "time",
+            "control_type",
+            "value"
+          ],
+          "properties": {
+            "time": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "control_type": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "maximum": 2,
+                "minimum": 0
+              }
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "boundary_nonslack_flow": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "required": [
+            "time",
+            "value"
+          ],
+          "properties": {
+            "time": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "boundary_pslack": {
+      "type": "object",
+      "patternProperties": {
+        "^\\d+$": {
+          "type": "object",
+          "required": [
+            "time",
+            "value"
+          ],
+          "properties": {
+            "time": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "boundary_nonslack_flow",
+    "boundary_pslack"
+  ]
+}
