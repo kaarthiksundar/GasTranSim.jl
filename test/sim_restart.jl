@@ -19,6 +19,7 @@
     inflow_node_6_a = ts_a.sol["pipes"]["1"]["in_flow"]
     outflow_node_2_a = ts_a.sol["pipes"]["1"]["out_flow"]
 
+
     # run for 12 to 24 hours 
     ts_b = initialize_simulator(folder; 
         case_name="second_half", case_types=[:params, :ic])
@@ -29,6 +30,8 @@
     pressure_node_5_b = ts_b.sol["nodes"]["5"]["pressure"]
     inflow_node_6_b = ts_b.sol["pipes"]["1"]["in_flow"]
     outflow_node_2_b = ts_b.sol["pipes"]["1"]["out_flow"]
+
+
 
     # concatenated full solution 
     pressure_node_5_cat = 

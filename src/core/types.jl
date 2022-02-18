@@ -6,6 +6,7 @@ struct TransientSimulator
     params::Dict{Symbol,Any}
     initial_conditions::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
+    pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
 end
@@ -38,6 +39,7 @@ function control(ts::TransientSimulator,
     return CONTROL_TYPE::unknown_control, 0.0
 end
 
+get_eos_coeffs(ts::TransientSimulator) = ts.pu_eos_coeffs(nominal_values(ts), params(ts))
 get_pressure(ts::TransientSimulator, density) = ts.pu_density_to_pu_pressure(density, nominal_values(ts), params(ts))
 get_density(ts::TransientSimulator, pressure) = ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
