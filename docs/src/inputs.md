@@ -126,23 +126,12 @@ The list of discrete time instants and the corresponding value are specified in 
 The initial condition should specify the pressure and mass flux throughout the network at the initial time instant. For this case in particular, the initial nodal pressures and the mass flux along the length of the pipe should be specified.
 
 	{
-
-	    "initial_nodal_flow": {
-	        "1": 0,
-	        "2": 0
-	    },
 	    "initial_nodal_pressure": {
 	        "1": 6.5e6,
 	        "2": 6.5e6
 	    },
 	    "initial_pipe_flow": {
 	        "1": 0
-	    },
-	    "initial_pipe_pressure_in": {
-	        "1": 6.5e6
-	    },
-	    "initial_pipe_pressure_out": {
-	        "1": 6.5e6
 	    }
 	}
 
