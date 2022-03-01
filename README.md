@@ -13,3 +13,18 @@ Pkg.add("https://github.com/kaarthiksundar/GasTranSim.jl.git")
 ```
 
 For usage, please refer to the documentation or the ``examples/`` and ``test/`` directories. The json schemas for the data with the validator is provided in the ``schemas/`` folder. 
+
+## Citation
+If you find the package useful in your work, we kindly request that you cite the following paper ([arxiv link](https://arxiv.org/abs/1803.00418)): 
+
+```bibtex
+@article{GyryaZlotnik2019,
+  title={An explicit staggered-grid method for numerical simulation of large-scale natural gas pipeline networks},
+  author={Gyrya, Vitaliy and Zlotnik, Anatoly},
+  journal={Applied Mathematical Modelling},
+  volume={65},
+  pages={34--51},
+  year={2019},
+  publisher={Elsevier}
+}
+```
