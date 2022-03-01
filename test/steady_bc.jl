@@ -8,6 +8,23 @@
         error = maximum( abs.(pressure .- pressure[1]) ) / pressure[1]
         @test error ≈ 0.0 atol=1e-2
     end
+    ts = initialize_simulator(folder; eos=:simple_cnga)
+    run_simulator!(ts)
+    sol = ts.sol
+    for i in keys(get(sol, "nodes", []))
+        pressure = sol["nodes"][i]["pressure"]
+        error = maximum( abs.(pressure .- pressure[1]) ) / pressure[1]
+        @test error <= 0.05 
+    end
+
+    ts = initialize_simulator(folder; eos=:simple_cnga)
+    run_simulator!(ts)
+    sol = ts.sol
+    for i in keys(get(sol, "nodes", []))
+        pressure = sol["nodes"][i]["pressure"]
+        error = maximum( abs.(pressure .- pressure[1]) ) / pressure[1]
+        @test error <= 0.05 
+    end
 end 
 
 
