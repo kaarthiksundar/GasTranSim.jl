@@ -26,7 +26,3 @@
         @test error <= 0.05 
     end
 end 
-
-
-
-
