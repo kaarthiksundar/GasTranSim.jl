@@ -1,3 +1,9 @@
+function get_data(data_folder::AbstractString; 
+    case_name::AbstractString="", 
+    case_types::Vector{Symbol}=Symbol[])::Dict{String,Any}
+    return parse_data(data_folder; case_name=case_name, case_types=case_types)
+end
+
 function initialize_simulator(data_folder::AbstractString;
     case_name::AbstractString="", 
     case_types::Vector{Symbol}=Symbol[],
@@ -45,7 +51,8 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
         n = 1
         
         if num_segments < 1
-            @error "Time step too large for CFL condition. Spatial discretization failed"
+            throw(CFLException(string(key)))
+            # @error "Time step too large for CFL condition. Spatial discretization failed"
         else
             n = floor(Int64, num_segments) + 1
         end

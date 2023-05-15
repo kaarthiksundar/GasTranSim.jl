@@ -11,6 +11,12 @@ struct TransientSimulator
     pu_density_to_pu_pressure::Function
 end
 
+mutable struct CFLException <: Exception
+    var::String
+end
+
+Base.showerror(io::IO, e::CFLException) = print(io, "CFL condition fails, time-step too large for component ", e.var, "!")
+
 ref(ts::TransientSimulator) = ts.ref
 ref(ts::TransientSimulator, key::Symbol) = ts.ref[key]
 ref(ts::TransientSimulator, key::Symbol, id::Int64) = ts.ref[key][id]
