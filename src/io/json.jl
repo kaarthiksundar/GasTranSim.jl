@@ -1,5 +1,6 @@
 "Grab the data from a json field"
 function parse_json(file_string::AbstractString)
+    (~isfile(file_string)) && (return Dict{String,Any}())
     data = open(file_string, "r") do io
         parse_json(io)
     end

@@ -87,12 +87,12 @@ struct CompressorControl
 end
 
 function evaluate(sp::CompressorControl, t::Real)::Tuple{Any,Float64}
-    @assert (t >= sp.time[1] - TOL) && (t <= sp.time[end] + TOL)
+    @assert (t >= sp.time[1] - TOL)
     time = sp.time
     control_type = sp.control_type
     value = sp.value
     (isapprox(t, time[1], rtol=TOL)) && (return control_type[1], value[1])
-    (isapprox(t, time[end], rtol=TOL)) && (return control_type[end], value[end])
+    (isapprox(t, time[end], rtol=TOL) || t >= time[end]) && (return control_type[end], value[end])
     index = findlast(x -> t >= x, time)
     (isapprox(t, time[index], rtol=TOL)) && (return control_type[index], value[index])
     first_control = control_type[index]
