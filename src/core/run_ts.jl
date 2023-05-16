@@ -4,7 +4,7 @@ function run_simulator!(ts::TransientSimulator;
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     t_0 = params(ts, :t_0)
-    num_steps = Int(ceil((t_f-t_0)/dt))
+    num_steps = Int(round((t_f-t_0)/dt))
     output_data = OutputData(ts)
     @showprogress "Simulation progress: " for _ in 1:num_steps
     	advance_current_time!(ts, dt)
