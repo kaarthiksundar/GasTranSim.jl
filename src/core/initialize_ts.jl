@@ -44,20 +44,26 @@ end
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-        # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
-        # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
-        c_inv = nominal_values(ts, :mach_num)
-        num_segments = c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :dt) 
-        n = 1
-        if num_segments < 1
-            throw(CFLException(string(key)))
-        else
-            n = floor(Int64, num_segments) + 1
-        end
+
+        # # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
+        # # c = 1 when euler and mach number are 1
+        # c = sqrt(nominal_values(ts, :euler_num)) / ( nominal_values(ts, :mach_num) )^2
+
+        # num_segments = (pipe["length"] * params(ts, :courant_number)) / ( c * params(ts, :dt)) 
+        # n = 1
+        
+        # if num_segments < 1
+        #     throw(CFLException(string(key)))
+        #     # @error "Time step too large for CFL condition. Spatial discretization failed"
+        # else
+        #     n = floor(Int64, num_segments) + 1
+        # end
+        
+         # assert n > 1
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
-        ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64, n+1)
+        ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64, n)
     end
     return
 end
@@ -195,7 +201,7 @@ function initialize_pipe_state!(ts::TransientSimulator)
             flow_spl = initial_pipe_mass_flow(ts, key)
             pressure_spl = initial_pipe_pressure(ts, key)
             x_rho = LinRange(0, L, n)
-            x_mid = x_rho[1:n-1] .+ dx/2.0
+            x_mid = x_rho[1:n-1] .+ dx/2.0  # modify since no longer staggered
             get_coeffs(flow_spl)[1]
             pipe["mass_flux_profile"] = [
                 get_coeffs(flow_spl)[1], 

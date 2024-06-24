@@ -19,6 +19,19 @@ function run_simulator!(ts::TransientSimulator;
     for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
+
+        # advance_nodal_pressure!() #(n+1) level
+          # go to each slack node and update pressure, mark update node flag
+            # advance_compressor_nodes!()  #(n+1) level
+            # if  slack node has compressor, update other end vertex, mark update node flag
+            # if any compressor has discharge pressure set, use to update vertex, mark update node flag
+          # now go to other nodes
+            #calculate density based on conservation eq with chosen fictitious vertex vol and edge mass flux    from previous step # check - does this need theta or smhtg to be second order accurate in time  and space to match pipe scheme ?
+          # 
+        # 
+        # advance_pipes!() #(n+1) level
+        # fill in compressor fluuxes, calculate compressor vals
+        
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
     	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level

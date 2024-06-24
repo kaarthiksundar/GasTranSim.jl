@@ -1,0 +1,74 @@
+{
+  "nodes": {
+    "4": {
+      "node_id": 4,
+      "slack_bool": 0
+    },
+    "1": {
+      "node_id": 1,
+      "slack_bool": 1
+    },
+    "5": {
+      "node_id": 5,
+      "slack_bool": 0
+    },
+    "2": {
+      "node_id": 2,
+      "slack_bool": 0
+    },
+    "6": {
+      "node_id": 6,
+      "slack_bool": 0
+    },
+    "3": {
+      "node_id": 3,
+      "slack_bool": 0
+    }
+  },
+  "pipes": {
+    "4": {
+      "length": 1.6011246047700348e6,
+      "friction_factor": 0.01,
+      "to_node": 4,
+      "pipe_id": 4,
+      "diameter": 0.3,
+      "from_node": 3
+    },
+    "1": {
+      "length": 956882.9604502318,
+      "friction_factor": 0.01,
+      "to_node": 2,
+      "pipe_id": 1,
+      "diameter": 0.6,
+      "from_node": 5
+    },
+    "2": {
+      "length": 1.4206072645175373e6,
+      "friction_factor": 0.01,
+      "to_node": 3,
+      "pipe_id": 2,
+      "diameter": 0.6,
+      "from_node": 2
+    },
+    "3": {
+      "length": 339705.75502926053,
+      "friction_factor": 0.01,
+      "to_node": 4,
+      "pipe_id": 3,
+      "diameter": 0.6,
+      "from_node": 6
+    }
+  },
+  "compressors": {
+    "1": {
+      "comp_id": 1,
+      "to_node": 5,
+      "from_node": 1
+    },
+    "2": {
+      "comp_id": 2,
+      "to_node": 6,
+      "from_node": 2
+    }
+  }
+}
