@@ -44,10 +44,10 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
 
         # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
-        # c = 1 when euler and mach number are 1
-        c = sqrt(nominal_values(ts, :euler_num)) / ( nominal_values(ts, :mach_num) )^2
+        # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
+        c_inv = nominal_values(ts, :mach_num)
 
-        num_segments = (pipe["length"] * params(ts, :courant_number)) / ( c * params(ts, :dt)) 
+        num_segments = c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :dt) 
         n = 1
         
         if num_segments < 1

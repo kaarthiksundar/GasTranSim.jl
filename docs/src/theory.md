@@ -46,12 +46,12 @@ For an ideal gas, we get $a^2 = R_g T$, or in nondimensional terms $\dfrac{d\bar
 For a simple CNGA equation, $p\cdot(b_1 + b_2 p) = \rho R_g T$, we can calculate the sound speed from $\dfrac{d \rho}{d p}$ since $\dfrac{d p}{d \rho} \cdot \dfrac{d \rho}{d p} = 1$. Thus  $a_{CNGA}^2 = \dfrac{R_g T}{b_1 + 2b_2 p}$. Since $b_1 > 1, b_2 > 0, p > 0$, $a_{CNGA} < a$.
 We can reach the same conclusion from the fact that  $\dfrac{d \bar{p}}{d \bar{\rho}} = \dfrac{1}{\bar{b_1} + 2\bar{b_2}\bar{p}}$ and $\bar{b_1} > \mathcal{C}, \bar{b_2} > 0$.
 
-Let us record the CFL condition and its consequence next. Usually, it would be stated as $\bar{c}\Delta \bar{t}/ \Delta \bar{x} \leq 1$, but to be safe, we consider 
-$\bar{c}\Delta \bar{t}/ \Delta \bar{x} \leq k$ for $k= 0.9$.
+Let us record the CFL condition and its consequence next. Usually, it would be stated as $a \Delta {t}/ \Delta {x} \leq 1$, but to be safe, we consider $ a \Delta {t}/ \Delta {x} \leq k$ for $k= 0.9$. 
+The dimensionless form of this condition is $\Delta \bar{t}/ (\mathcal{M} \Delta \bar{x}) \leq k$.
 
-Note that $\bar{c} = \dfrac{\mathcal{C}}{\mathcal{M}^2} \sqrt{\dfrac{d \bar{p}}{d \bar{\rho}}}$.
-The CFL condition for the ideal gas is the strongest and thus it is sufficient to take $\bar{c} = \dfrac{\sqrt{\mathcal{C}}}{\mathcal{M}^2}$. For the particular choice $v_0 = a$, we  get $\mathcal{C} = \mathcal{M} = \bar{c} = 1$.
 
-Thus, for a given value of $\Delta \bar{t}$, $\Delta \bar{x} \geq \bar{c}\Delta \bar{t}/k$. Setting $\Delta \bar{x} = \bar{L}/m$,  $m \leq \dfrac{\bar{L} k}{\bar{c}\Delta \bar{t}}$.
+The CFL condition  was derived in the paper assuming the ideal gas equation but we use it for non-ideal gas as well since we have relaxed $k=0.9$.  For the particular choice $v_0 = a$, we  get $\mathcal{C} = \mathcal{M}  = 1$.
+
+Setting $\Delta \bar{x} = \bar{L}/m$,  we can find the number of pipe segments $m$.
 
 
