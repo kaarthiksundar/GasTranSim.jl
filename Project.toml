@@ -11,7 +11,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 [compat]
 Dierckx = "~0.4, ~0.5"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
-ProgressMeter = ">= 1.6"
+ProgressMeter = "~1.10"
 julia = "^1"
 
 [extras]
