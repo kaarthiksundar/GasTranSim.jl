@@ -4,7 +4,6 @@ makedocs(
     sitename = "GasTranSim",
     format = Documenter.HTML(
         mathengine = Documenter.MathJax(),
-        assets=[asset("https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&display=swap", class=:css)],
         prettyurls = get(ENV, "CI", nothing) == "true",
     ),
     authors = "Shriram Srinivasan and Kaarthik Sundar",
@@ -17,4 +16,5 @@ makedocs(
     ],
 )
 
-deploydocs(repo = "https://github.com/kaarthiksundar/GasTranSim.jl.git")
+deploydocs(repo = "https://github.com/kaarthiksundar/GasTranSim.jl.git",
+    versions = ["stable" => "v^", "v#.#"])
