@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Input Files · GasTranSim</title><meta name="title" content="Input Files · GasTranSim"/><meta property="og:title" content="Input Files · GasTranSim"/><meta property="twitter:title" content="Input Files · GasTranSim"/><meta name="description" content="Documentation for GasTranSim."/><meta property="og:description" content="Documentation for GasTranSim."/><meta property="twitter:description" content="Documentation for GasTranSim."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&amp;display=swap" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">GasTranSim</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li><a class="tocitem" href="../theory/">Theory</a></li><li class="is-active"><a class="tocitem" href>Input Files</a><ul class="internal"><li><a class="tocitem" href="#Overview"><span>Overview</span></a></li><li><a class="tocitem" href="#Description-of-network-(network.json)"><span>Description of network (network.json)</span></a></li><li><a class="tocitem" href="#Problem-parameters-(params.json)"><span>Problem parameters (params.json)</span></a></li><li><a class="tocitem" href="#Boundary-conditions-(bc.json)"><span>Boundary conditions (bc.json)</span></a></li><li><a class="tocitem" href="#Initial-condition-(ic.json)"><span>Initial condition (ic.json)</span></a></li></ul></li><li><a class="tocitem" href="../simulation/">Simulation Engine</a></li><li><a class="tocitem" href="../examples/">Examples</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Input Files</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Input Files</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/kaarthiksundar/GasTranSim.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/kaarthiksundar/GasTranSim.jl/blob/master/docs/src/inputs.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="GasTranSim.jl-Documentation"><a class="docs-heading-anchor" href="#GasTranSim.jl-Documentation">GasTranSim.jl Documentation</a><a id="GasTranSim.jl-Documentation-1"></a><a class="docs-heading-anchor-permalink" href="#GasTranSim.jl-Documentation" title="Permalink"></a></h1><h2 id="Overview"><a class="docs-heading-anchor" href="#Overview">Overview</a><a id="Overview-1"></a><a class="docs-heading-anchor-permalink" href="#Overview" title="Permalink"></a></h2><p>Before illustrating the call  to invoke the simulator, we go over  the various input data files  and their contents with reference to the simple case of  a single pipe. These input files are contained in the directory <code>examples/data/model1pipe_fast_transients/</code></p><h2 id="Description-of-network-(network.json)"><a class="docs-heading-anchor" href="#Description-of-network-(network.json)">Description of network (network.json)</a><a id="Description-of-network-(network.json)-1"></a><a class="docs-heading-anchor-permalink" href="#Description-of-network-(network.json)" title="Permalink"></a></h2><p>A single pipe gives rise to a network structure of two vertices (ends of the pipe) and one edge (pipe). This topological information is encoded in <code>network.json</code>. Information about compressors is included here if present and nodes which have pressure specified (slack-nodes) are indicated through a boolean flag.</p><pre><code class="nohighlight hljs">{
+    &quot;nodes&quot;: {
+        &quot;1&quot;: {
+            &quot;node_id&quot;: 1,
+            &quot;node_name&quot;: &quot;n1&quot;,
+            &quot;x_coord&quot;: -1,
+            &quot;y_coord&quot;: 0,
+            &quot;min_pressure&quot;: 3000000,
+            &quot;max_pressure&quot;: 6000000,
+            &quot;min_injection&quot;: 0,
+            &quot;max_injection&quot;: 1000,
+            &quot;slack_bool&quot;: 1
+        },
+        &quot;2&quot;: {
+            &quot;node_id&quot;: 2,
+            &quot;node_name&quot;: &quot;n2&quot;,
+            &quot;x_coord&quot;: -0.0421,
+            &quot;y_coord&quot;: 0,
+            &quot;min_pressure&quot;: 3000000,
+            &quot;max_pressure&quot;: 6000000,
+            &quot;min_injection&quot;: -1000,
+            &quot;max_injection&quot;: 1000,
+            &quot;slack_bool&quot;: 0
+        }
+    },
+    &quot;pipes&quot;: {
+        &quot;1&quot;: {
+            &quot;pipe_id&quot;: 1,
+            &quot;pipe_name&quot;: &quot;p1&quot;,
+            &quot;from_node&quot;: 1,
+            &quot;to_node&quot;: 2,
+            &quot;diameter&quot;: 0.9144,
+            &quot;length&quot;: 20000,
+            &quot;friction_factor&quot;: 0.01,
+            &quot;disc_seg&quot;: 0
+        }
+    }
+}</code></pre><p>Note that at quantities like diameter, length and pressure have numbers associated, but we do not know what  units they refer to. The required information to interpret these numbers is specified in another input file  which we now describe.</p><h2 id="Problem-parameters-(params.json)"><a class="docs-heading-anchor" href="#Problem-parameters-(params.json)">Problem parameters (params.json)</a><a id="Problem-parameters-(params.json)-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-parameters-(params.json)" title="Permalink"></a></h2><p>This file records the parameters of the problem and the units in which they are specified.</p><pre><code class="nohighlight hljs">{
+&quot;simulation_params&quot;: {
+    &quot;Temperature (K):&quot;: 239.11,
+    &quot;Gas specific gravity (G):&quot;: 0.6,
+    &quot;Specific heat capacity ratio&quot;: 1.4,
+    &quot;units (SI = 0, standard = 1)&quot;: 0.0,
+    &quot;Initial time&quot;: 0,
+    &quot;Final time&quot;: 3600,
+    &quot;Discretization time step&quot;: 1,
+    &quot;Courant number (must be between 0 and 1, recommended value is 0.9)&quot;: 0.90,
+    &quot;Output dt&quot;: 1.0,
+    &quot;Output dx&quot;: 1000.0,
+    &quot;Save final state&quot;: 1.0
+	}
+}</code></pre><p>Thus, the fixed time step for the simulation, the time step to be used for  saving the results as output if indicated are all specified here.</p><h2 id="Boundary-conditions-(bc.json)"><a class="docs-heading-anchor" href="#Boundary-conditions-(bc.json)">Boundary conditions (bc.json)</a><a id="Boundary-conditions-(bc.json)-1"></a><a class="docs-heading-anchor-permalink" href="#Boundary-conditions-(bc.json)" title="Permalink"></a></h2><p>For the case of a single pipe, conditions have to be specified at the two ends.  The <code>network.json</code> file already indicated  that the left end is a slack node, where pressure will be specified for all times.  Gas withdrawal is specified as a function of time at the other end. The list of discrete time instants and the corresponding value are specified in the json file  and these values are interpolated when necessary.</p><pre><code class="nohighlight hljs">{
+    &quot;boundary_nonslack_flow&quot;: {
+        &quot;2&quot;: {
+            &quot;time&quot;: [
+                0,
+                599,
+                600,
+                1799,
+                1800,
+                86400
+            ],
+            &quot;value&quot;: [
+                0,
+                0,
+                787.63, 
+                787.63,
+                78.76,
+                78.76
+            ]
+        }
+    },
+    &quot;boundary_pslack&quot;: {
+        &quot;1&quot;: {
+            &quot;time&quot;: [
+                0,
+                86400
+            ],
+            &quot;value&quot;: [
+                6.5e6,
+                6.5e6
+            ]
+        }
+    }
+}</code></pre><h2 id="Initial-condition-(ic.json)"><a class="docs-heading-anchor" href="#Initial-condition-(ic.json)">Initial condition (ic.json)</a><a id="Initial-condition-(ic.json)-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-condition-(ic.json)" title="Permalink"></a></h2><p>The initial condition should specify the pressure and mass flux throughout the network at the initial time instant. For this case in particular, the initial nodal pressures and the mass flux along the length of the pipe should be specified.</p><pre><code class="nohighlight hljs">{
+    &quot;initial_nodal_pressure&quot;: {
+        &quot;1&quot;: 6.5e6,
+        &quot;2&quot;: 6.5e6
+    },
+    &quot;initial_pipe_flow&quot;: {
+        &quot;1&quot;: 0
+    }
+}</code></pre><p>Note that here the initial conditions correspond to a steady flow which is why the flow is the same throughout the pipe. In general, the initial condition will have flows that are spatially varying, in which case instead of specifying a single scalar, the mass flux at discrete lengths along the pipe will be recorded, analogous to what we saw above with <code>bc.json</code> for temporal variation. We shall deal with such a case subsequently.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../theory/">« Theory</a><a class="docs-footer-nextpage" href="../simulation/">Simulation Engine »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Friday 28 June 2024 21:17">Friday 28 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
