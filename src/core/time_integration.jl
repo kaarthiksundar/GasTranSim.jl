@@ -19,8 +19,13 @@ end
 """
 function _set_pressure_at_node!(node_id::Int64, pressure::Real, ts::TransientSimulator)
     (ref(ts, :node, node_id)["is_updated"] == true) && (return)
+
     ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
+    ref(ts, :node, node_id)["density_previous"] = ref(ts, :node, node_id)["density"]
+
     ref(ts, :node, node_id)["pressure"] = pressure
+    ref(ts, :node, node_id)["density"] = get_density(ts, pressure)
+
     ref(ts, :node, node_id)["is_updated"] = true
     return
 end
@@ -38,14 +43,7 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
         elseif ctrl_type == discharge_pressure_control
             continue # pressure at both ends must be known by now
         elseif ctrl_type == flow_control
-            node_ctrl, node_val = control(ts, :node, i, t)
-            if node_ctrl == pressure_control
-                _set_pressure_at_node!(i, node_val, ts)
-            elseif node_ctrl == flow_control
-                net_withdrawal = node_val - val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, net_withdrawal, ts)
-            end
-
+            continue
         end
     end
     for ci in ref(ts,:outgoing_compressors, node_id)
@@ -56,14 +54,7 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
         elseif ctrl_type == discharge_pressure_control
             _set_pressure_at_node!(i, val, ts)
         elseif ctrl_type == flow_control
-            node_ctrl, node_val = control(ts, :node, i, t)
-            if node_ctrl == pressure_control
-                _set_pressure_at_node!(i, node_val, ts)
-            elseif node_ctrl == flow_control
-                net_withdrawal = node_val + val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, net_withdrawal, ts)
-            end
-
+            continue
         end
     end
     return
@@ -79,9 +70,39 @@ function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal:
 
     # we know there can be at most one such compressor
     if isa(index, Nothing)
-        _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id, withdrawal, ts)
+        # _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id, withdrawal, ts)
+        out_p = ref(ts, :outgoing_pipes, node_id)
+        in_p = ref(ts, :incoming_pipes, node_id)
+        in_c = ref(ts, :incoming_compressors, node_id)
+        out_c = ref(ts, :outgoing_compressors, node_id)
+        vertex_vol = 0.0
+        term1 = 0.0
+        term2 = -1.0 * withdrawal # in input data, withdrawal is positive, but we want inflow positive
+        pipe = ref(ts, :pipe)
+        for p in out_p
+            term1 += -1 * pipe[p]["fr_mass_flux"] * pipe[p]["area"]
+            vertex_vol += pipe[p]["area"] * ts.params[:dx]
+        end
+        for p in in_p
+            term1 += pipe[p]["to_mass_flux"] * pipe[p]["area"]
+            vertex_vol += pipe[p]["area"] * ts.params[:dx]
+        end
+        comp = ref(ts, :compressor)
+        for co in out_c
+            term1 += -1 * comp[co]["flow"] 
+        end
+        for ci in in_p
+            term1 += comp[ci]["flow"] 
+        end
+        rho_new  =  ref(ts, :node, node_id)["density_previous"] + ts.params[:dt] * (term1 + term2) / vertex_vol
+        p_new = get_pressure(ts, rho_new)
+        _set_pressure_at_node!(node_id, p_new, ts)
+        _set_pressure_at_node_across_compressors!(node_id, p_new, ts)
+
+
     else
         _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(in_c[index], ts)
+       
     end
     return
 end
@@ -89,36 +110,36 @@ end
 """
     Calculate and update the pressures at nodes sans incoming discharge pressure-controlled compressor
 """
-function _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id::Int64, withdrawal::Real, ts::TransientSimulator)
-    s  = _assemble_compressor_contributions_to_node_without_incoming_discharge_pressure_control!(node_id, ts)
-    if isa(s, Nothing)
-        # means vertex pressure is already set
-        pressure = ref(ts, :node, node_id, "pressure")
-        _set_pressure_at_node_across_compressors!(node_id, pressure, ts)
-        return
-    end
-    s1, s2 = s
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
-    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2 + s2) / (t1 + s1)
-    pressure = get_pressure(ts, rho)
-    _set_pressure_at_node!(node_id, pressure, ts)
-    _set_pressure_at_node_across_compressors!(node_id, pressure, ts)
-    return
-end
+# function _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id::Int64, withdrawal::Real, ts::TransientSimulator)
+#     s  = _assemble_compressor_contributions_to_node_without_incoming_discharge_pressure_control!(node_id, ts)
+#     if isa(s, Nothing)
+#         # means vertex pressure is already set
+#         pressure = ref(ts, :node, node_id, "pressure")
+#         _set_pressure_at_node_across_compressors!(node_id, pressure, ts)
+#         return
+#     end
+#     s1, s2 = s
+#     t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
+#     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
+#     rho = rho_prev + (t2 + s2) / (t1 + s1)
+#     pressure = get_pressure(ts, rho)
+#     _set_pressure_at_node!(node_id, pressure, ts)
+#     _set_pressure_at_node_across_compressors!(node_id, pressure, ts)
+#     return
+# end
 
 
 """
     Calculate and update the pressure at vertex with single compressor with flow_control 
 """
-function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, net_withdrawal::Real, ts::TransientSimulator)
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, -net_withdrawal, 1.0, ts)
-    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2  / t1)
-    pressure = get_pressure(ts, rho)
-    _set_pressure_at_node!(node_id, pressure, ts)
-    return
-end
+# function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, net_withdrawal::Real, ts::TransientSimulator)
+#     t1, t2 = _assemble_pipe_contributions_to_node(node_id, -net_withdrawal, 1.0, ts)
+#     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
+#     rho = rho_prev + (t2  / t1)
+#     pressure = get_pressure(ts, rho)
+#     _set_pressure_at_node!(node_id, pressure, ts)
+#     return
+# end
 
 
 """
@@ -126,37 +147,10 @@ end
 """
 function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(compressor_id::Int64, ts::TransientSimulator)
     t = ref(ts, :current_time)
-    node_id = ref(ts, :compressor, compressor_id)["fr_node"]
+    # node_id = ref(ts, :compressor, compressor_id)["fr_node"]
     base_node_id = ref(ts, :compressor, compressor_id)["to_node"]
     ctrl, discharge_pressure = control(ts, :compressor, compressor_id, t)
     @assert ctrl == discharge_pressure_control
-
-    s = _assemble_compressor_contributions_to_node_with_incoming_discharge_pressure_control!(compressor_id, ts)
-    if isa(s, Nothing)
-        # pressure at from end of discharge compressor already set
-        _set_pressure_at_node!(base_node_id, discharge_pressure, ts)
-        _set_pressure_at_node_across_compressors!(base_node_id, discharge_pressure, ts)
-        return
-    end
-    s1, s2 = s
-
-    ctrl_type, withdrawal_1 = control(ts, :node, node_id, t)
-    @assert ctrl_type == flow_control
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal_1, 1.0, ts)
-
-    ctrl_type, withdrawal_2 = control(ts, :node, base_node_id, t)
-    @assert ctrl_type == flow_control
-    r1, r2 = _assemble_pipe_contributions_to_node(base_node_id, withdrawal_2, 1.0, ts)
-
-    discharge_rho = get_density(ts, discharge_pressure)
-    discharge_pressure_prev = ref(ts, :node, base_node_id, "pressure")
-    discharge_rho_prev = get_density(ts, discharge_pressure_prev)
-
-    rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2) / t1
-    pressure = get_pressure(ts, rho)
-
-    _set_pressure_at_node!(node_id, pressure, ts)
     _set_pressure_at_node!(base_node_id, discharge_pressure, ts)
     _set_pressure_at_node_across_compressors!(base_node_id, discharge_pressure, ts)
     return

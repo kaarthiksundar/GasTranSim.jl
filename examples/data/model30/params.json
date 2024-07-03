@@ -10,6 +10,9 @@
         "Courant number (must be between 0 and 1, recommended value is 0.9)": 0.95,
         "Output dt": 600,
         "Output dx": 1000,
+        "nominal_velocity": 25,
+        "nominal_pressure": 3500000,
+        "nominal_density": 20,
         "Save final state": 1
     }
 }

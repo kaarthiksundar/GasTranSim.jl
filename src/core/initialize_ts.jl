@@ -45,23 +45,9 @@ end
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
 
-        # # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
-        # # c = 1 when euler and mach number are 1
-        # c = sqrt(nominal_values(ts, :euler_num)) / ( nominal_values(ts, :mach_num) )^2
-
-        # num_segments = (pipe["length"] * params(ts, :courant_number)) / ( c * params(ts, :dt)) 
-        # n = 1
-        
-        # if num_segments < 1
-        #     throw(CFLException(string(key)))
-        #     # @error "Time step too large for CFL condition. Spatial discretization failed"
-        # else
-        #     n = floor(Int64, num_segments) + 1
-        # end
-        
-         # assert n > 1
-        ref(ts, :pipe, key)["num_discretization_points"] = n
-        ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
+        dx  = ts.params[:dx]
+        ref(ts, :pipe, key)["num_discretization_points"] =   Int(floor(1 + pipe["length"] / dx))
+        n = ref(ts, :pipe, key)["num_discretization_points"]
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
         ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64, n)
     end
@@ -175,7 +161,7 @@ function initialize_pipe_state!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
         area = pipe["area"]
         n = pipe["num_discretization_points"]
-        dx = pipe["dx"]
+        dx = ts.params[:dx]
         L = pipe["length"]
         fr_node = pipe["fr_node"]
         to_node = pipe["to_node"]
@@ -189,27 +175,27 @@ function initialize_pipe_state!(ts::TransientSimulator)
             dL = dx / L
             pipe["density_profile"][1:n] = [
                 sqrt(
-                    density_at_last_sq * (i - 1) * dL +
-                    density_at_first_sq * (n - i) * dL
+                    density_at_last_sq * (i  - 1) * dL +
+                    density_at_first_sq * (n  - i) * dL
                 ) for i in 1:n
             ]
-            pipe["fr_minus_mass_flux"] = initial_mass_flux # (dx/2)
-            pipe["to_minus_mass_flux"] = initial_mass_flux # L-(dx/2)
+            # pipe["fr_minus_mass_flux"] = initial_mass_flux # (dx/2)
+            # pipe["to_minus_mass_flux"] = initial_mass_flux # L-(dx/2)
             pipe["fr_mass_flux"] = initial_mass_flux # -(dx/2)
             pipe["to_mass_flux"] = initial_mass_flux # L+(dx/2)
         else 
             flow_spl = initial_pipe_mass_flow(ts, key)
             pressure_spl = initial_pipe_pressure(ts, key)
             x_rho = LinRange(0, L, n)
-            x_mid = x_rho[1:n-1] .+ dx/2.0  # modify since no longer staggered
+            # x_mid = x_rho[1:n-1] .+ dx/2.0  # modify since no longer staggered
             get_coeffs(flow_spl)[1]
             pipe["mass_flux_profile"] = [
                 get_coeffs(flow_spl)[1], 
-                [flow_spl(x) for x in x_mid]..., 
+                [flow_spl(x) for x in x_rho]..., 
                 get_coeffs(flow_spl)[end]
             ] ./ area
-            pipe["fr_minus_mass_flux"] = pipe["mass_flux_profile"][2]
-            pipe["to_minus_mass_flux"] = pipe["mass_flux_profile"][end-1]
+            # pipe["fr_minus_mass_flux"] = pipe["mass_flux_profile"][2]
+            # pipe["to_minus_mass_flux"] = pipe["mass_flux_profile"][end-1]
             pipe["fr_mass_flux"] = pipe["mass_flux_profile"][1]
             pipe["to_mass_flux"] = pipe["mass_flux_profile"][end]
             pipe["density_profile"][1:n] = [

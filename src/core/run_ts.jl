@@ -19,6 +19,7 @@ function run_simulator!(ts::TransientSimulator;
     for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
+        advance_nodal_pressure!(ts)
 
         # advance_nodal_pressure!() #(n+1) level
           # go to each slack node and update pressure, mark update node flag
@@ -30,8 +31,14 @@ function run_simulator!(ts::TransientSimulator;
           # 
         # 
         # advance_pipes!() #(n+1) level
-        # fill in compressor fluuxes, calculate compressor vals
+            # global id for pressure, mass flux
+            # assemble sparse mat, load vec
+            # solve
+            # postprocess and fill in nodal pressure, density, fr_flux, to_flux
+        # fill in compressor fluuxes, calculate compressor vals by 
+            # use vol of vertex to now find compressor flows
         
+        #=
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
     	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
@@ -47,8 +54,33 @@ function run_simulator!(ts::TransientSimulator;
     finish!(prog)
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
+        =#
+    end
+    # update_output_data!(ts, output_state, output_data)
+    # populate_solution!(ts, output_data)
 end
 
+
+function advance_nodal_pressure!(ts::TransientSimulator)
+    # DO NOT parallelize this (race condition)
+    for (key, junction) in ref(ts, :node)
+        (ref(ts, :node, key)["is_updated"] == true) && (continue)
+        # (ref(ts, :node, key)["is_level_2"] == true) && (continue)
+        # p(t), but q(t) taken care of inside
+        ctrl_type, val = control(ts, :node, key, t)
+        if ctrl_type == pressure_control
+            _set_pressure_at_node!(key, val, ts)
+            _set_pressure_at_node_across_compressors!(key, val, ts)
+        elseif ctrl_type == flow_control
+            _solve_for_pressure_at_node_and_neighbours!(key, val, ts)
+        else
+            @error "control type unknown at advance_nodal_pressure!"
+        end
+    end
+
+    return
+end
+#---------------
 function advance_current_time!(ts::TransientSimulator, tau::Real)
     ts.ref[:current_time] += tau
     return

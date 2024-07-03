@@ -11,6 +11,8 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["is_updated"] = false
         ref[name][id]["pressure"] = NaN 
         ref[name][id]["pressure_previous"] = NaN
+        ref[name][id]["density"] = NaN 
+        ref[name][id]["density_previous"] = NaN
         ref[name][id]["injection"] = NaN
     end
 
@@ -30,8 +32,8 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["num_discretization_points"] = 0
         ref[name][id]["fr_mass_flux"] = NaN
         ref[name][id]["to_mass_flux"] = NaN
-        ref[name][id]["fr_minus_mass_flux"] = NaN
-        ref[name][id]["to_minus_mass_flux"] = NaN
+        # ref[name][id]["fr_minus_mass_flux"] = NaN
+        # ref[name][id]["to_minus_mass_flux"] = NaN
     end
 
     for (i, compressor) in get(data, "compressors", [])
