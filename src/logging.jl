@@ -62,7 +62,11 @@ end
 Sets the logging level for GTS: :Info, :Warn, :Error, :Debug
 """
 function set_logging_level!(level::Symbol)
-    Logging.global_logger(_make_filtered_logger(getfield(Logging, level)))
+    if level == :Debug 
+       Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Debug))
+    else
+        Logging.global_logger(_make_filtered_logger(getfield(Logging, level)))
+    end 
 
     return
 end

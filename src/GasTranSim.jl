@@ -14,10 +14,8 @@ function __init__()
     global _LOGGER = Logging.ConsoleLogger(;
         meta_formatter = GasTranSim._gts_metafmt,
     )
-
     return Logging.global_logger(_LOGGER)
 end
-__init__()
 
 include("io/json.jl")
 include("io/data_utils.jl")
