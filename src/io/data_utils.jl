@@ -53,13 +53,15 @@ function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
     params = Dict{Symbol,Any}()
 
+    # println(data)
+
     params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
      "nominal_length", "nominal_velocity", "nominal_pressure","nominal_density", 
-        "units", "t_0", "t_f", "dt",
-        "courant_number", "output_dt", "output_dx", "save_final_state"
+        "units", "t_0", "t_f", "dt", "dx",
+        "theta", "output_dt", "output_dx", "save_final_state"
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0,  1000, 1.0, 3600.0,
         1000.0, 0
     ]
 
@@ -79,8 +81,9 @@ function process_data!(data::Dict{String,Any})
         occursin("units", k) && (key_map["units"] = k)
         occursin("Initial time", k) && (key_map["t_0"] = k)
         occursin("Final time", k) && (key_map["t_f"] = k)
-        occursin("Discretization", k) && (key_map["dt"] = k)
-        occursin("Courant", k) && (key_map["courant_number"] = k)
+        occursin("Discretization time", k) && (key_map["dt"] = k)
+        occursin("Discretization spatial", k) && (key_map["dx"] = k)
+        occursin("Time level weighting", k) && (key_map["theta"] = k)
         occursin("dt", k) && (key_map["output_dt"] = k)
         occursin("dx", k) && (key_map["output_dx"] = k)
         occursin("final state", k) && (key_map["save_final_state"] = k)

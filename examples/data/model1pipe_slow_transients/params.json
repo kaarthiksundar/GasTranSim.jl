@@ -6,8 +6,9 @@
         "units (SI = 0, standard = 1)": 0.0,
         "Initial time": 0.0,
         "Final time": 43200.0,
-        "Discretization time step": 1,
-        "Courant number (must be between 0 and 1, recommended value is 0.9)": 0.90,
+        "Discretization time step": 3600,
+        "Discretization spatial": 1000,
+        "Time level weighting (between 0.5 and 1 for stability, recommended > 0.6)": 1,
         "Output dt": 3600.0,
         "Output dx": 1000.0,
         "Save final state": 1.0

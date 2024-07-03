@@ -17,7 +17,7 @@ ts = initialize_simulator(folder; eos = :ideal)
 run_simulator!(ts)
 println("ideal completed")
 
-
+#=
 inlet_pr = ts.sol["nodes"]["1"]["pressure"]
 inlet_density = ts.nominal_values[:density] * get_density(ts, inlet_pr / ts.nominal_values[:pressure])
 outlet_pr = ts.sol["nodes"]["2"]["pressure"]
@@ -77,3 +77,4 @@ fig.tight_layout()
 # display(fig)
 # plt.close(fig)
 
+=#

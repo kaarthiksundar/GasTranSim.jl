@@ -37,6 +37,8 @@ t = ts.sol["time_points"]/60 #mins
 ts1 = initialize_simulator(folder; eos = :simple_cnga, case_name="cnga", case_types=[:params])
 
 run_simulator!(ts1)
+write_output(ts1; output_path = folder, 
+	output_file = "output_time_history.json", final_state_file = "ic_restart.json")
 
 println("simple cnga completed")
 

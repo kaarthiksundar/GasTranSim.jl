@@ -52,6 +52,7 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
         "t_0" => rescale_time,
         "t_f" => rescale_time, 
         "dt" => rescale_time, 
+        "dx" => rescale_length,
         "output_dx" => rescale_length,
         "output_dt" => rescale_time
     )
