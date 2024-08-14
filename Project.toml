@@ -1,7 +1,7 @@
 name = "GasTranSim"
 uuid = "69f9d653-1b8b-4f14-83cd-52913e0d1f1c"
 authors = ["Shriram Srinivasan and Kaarthik Sundar"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
