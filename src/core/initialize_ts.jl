@@ -35,6 +35,7 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
     add_pipe_grid_to_ref!(ts)
     add_node_level_flag!(ts)
     initialize_nodal_state!(ts)
+    initialize_compressor_state!(ts)
     initialize_pipe_state!(ts)
     return ts
 end
@@ -69,16 +70,31 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
 
     if !haskey(ref(ts), :compressor)
         ref(ts, :node, node_id)["is_level_2"] = false
+        ref(ts, :node, node_id)["level"] = 0 
         return
     end
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
         ref(ts, :node, node_id)["is_level_2"] = false
+        ref(ts, :node, node_id)["level"] = 0 
+        return
+    end
+    if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 1
+        ref(ts, :node, node_id)["is_level_2"] = false
+        if length(ref(ts, :incoming_compressors, node_id)) == 1
+            ref(ts, :node, node_id)["level"] = -1
+        end
+
+        if length(ref(ts, :outgoing_compressors, node_id)) == 1
+            ref(ts, :node, node_id)["level"] =  1
+        end
+
         return
     end
     for ci in ref(ts, :incoming_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "fr_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
             ref(ts, :node, node_id)["is_level_2"] = true
+            ref(ts, :node, node_id)["level"] = 2
             return
         end
     end
@@ -86,6 +102,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         node_across_ci = ref(ts, :compressor, ci, "to_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
             ref(ts, :node, node_id)["is_level_2"] = true
+            ref(ts, :node, node_id)["level"] = 2
             return
         end
     end
@@ -104,6 +121,14 @@ function initialize_nodal_state!(ts::TransientSimulator)
     for (key, _) in ref(ts, :node)
         pressure = initial_nodal_pressure(ts, key)
         ref(ts, :node, key)["pressure"] = pressure
+    end
+    return
+end
+
+function initialize_compressor_state!(ts::TransientSimulator)
+    for (key, _) in ref(ts, :compressor)
+        flow = initial_compressor_flow(ts, key)
+        ref(ts, :compressor, key)["flow"] = flow
     end
     return
 end

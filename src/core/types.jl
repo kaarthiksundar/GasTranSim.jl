@@ -37,6 +37,9 @@ initial_pipe_pressure(ts::TransientSimulator, id::Int64) =
 initial_nodal_pressure(ts::TransientSimulator, id::Int64) = 
     ts.initial_conditions[:node][id]
 
+initial_compressor_flow(ts::TransientSimulator, id::Int64) = 
+    ts.initial_conditions[:compressor][id]
+
 function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     (key == :node) && (return get_nodal_control(ts, id, t))
