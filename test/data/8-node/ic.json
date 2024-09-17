@@ -16,9 +16,9 @@
         "4": 66.66,
         "5": 150
     },
-     "initial_compressor_flow": {
+    "initial_compressor_flow": {
         "1": 300,
         "2": 233.33,
         "3": 150
-    }
+     }
 }

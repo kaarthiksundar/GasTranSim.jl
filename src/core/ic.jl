@@ -2,14 +2,15 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
     ic = Dict{Symbol,Any}()
 
     ic[:node] = Dict() 
-    ic[:compressor] = Dict() 
     ic[:pipe] = Dict("mass_flow" => Dict(), "pressure" => Dict())
+    ic[:compressor] = Dict() 
 
     for (i, value) in get(data, "initial_nodal_pressure", [])
         id = parse(Int64, i)
         ic[:node][id] = value
     end 
 
+    # this is not a mandatory initial condition - will be computed if not provided
     for (i, value) in get(data, "initial_compressor_flow", [])
         id = parse(Int64, i)
         ic[:compressor][id] = value
@@ -50,9 +51,8 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
         end 
     end 
 
-
+    # compressor flow initial condition is not mandatory
     (isempty(ic[:node])) && (@error "nodal pressure initial condition missing") 
-    (isempty(ic[:compressor])) && (@error "compressor flow initial condition missing") 
     (isempty(ic[:pipe]["mass_flow"])) && (@error "pipe flow initial condition missing")
     
     return ic

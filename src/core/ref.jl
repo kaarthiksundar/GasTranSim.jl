@@ -53,13 +53,12 @@ end
 
 function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 
-    ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
-    ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}()
-
-    for (i, val) in ref[:node]
-        ref[:incoming_pipes][i] = []
-        ref[:outgoing_pipes][i] = []
-    end
+    ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}(
+        i => [] for i in keys(ref[:node])
+    )
+    ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}(
+        i => [] for i in keys(ref[:node])
+    )
 
     for (id, pipe) in ref[:pipe]
         push!(ref[:incoming_pipes][pipe["to_node"]], id)
@@ -69,14 +68,12 @@ function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 end
 
 function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
-    ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
-    ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()
-    
-    for (i, val) in ref[:node]
-        ref[:incoming_compressors][i] = []
-        ref[:outgoing_compressors][i] = []
-    end
+    ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}(
+        i => [] for i in keys(ref[:node])
+    )
+    ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}(
+        i => [] for i in keys(ref[:node])
+    )
 
     for (id, compressor) in get(ref, :compressor, [])
         push!(ref[:incoming_compressors][compressor["to_node"]], id)

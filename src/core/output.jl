@@ -26,7 +26,8 @@ function OutputData(ts::TransientSimulator)::OutputData
     for (i, _) in ref(ts, :pipe)
         pipe[i] = Dict{String,Any}() 
     end 
-    for (i, _) in ref(ts, :compressor)
+    # network need not contain compressors
+    for (i, _) in get(ref(ts), :compressor, [])
         compressor[i] = Dict{String,Any}() 
     end 
 
@@ -71,15 +72,15 @@ end
 function update_output_state!(ts::TransientSimulator, state::OutputState)
     push!(state.time_pressure, ref(ts, :current_time))
     push!(state.time_flux, ref(ts, :current_time) - params(ts, :dt)/2)
-	for (i, _) in ref(ts, :node)
+	for i in keys(get(ref(ts), :node, []))
         push!(state.node[i]["pressure"], ref(ts, :node, i, "pressure"))
     end
-    for (i, _) in ref(ts, :compressor)
-        push!(state.compressor[i]["flow"], ref(ts, :compressor, i, "flow"))
-    end
-    for (i, _) in ref(ts, :pipe)
+    for i in keys(get(ref(ts), :pipe, []))
         push!(state.pipe[i]["fr_mass_flux"], ref(ts, :pipe, i, "fr_mass_flux"))
         push!(state.pipe[i]["to_mass_flux"], ref(ts, :pipe, i, "to_mass_flux"))
+    end
+    for i in keys(get(ref(ts), :compressor, []))
+        push!(state.compressor[i]["flow"], ref(ts, :compressor, i, "flow"))
     end
     return
 end 
@@ -119,7 +120,7 @@ function update_output_data!(ts::TransientSimulator,
         data.final_state["pipe_flow"][i] = Spline1D(x_phi, flow, k=1)
         data.final_state["pipe_pressure"][i] = Spline1D(x_rho, pressure, k=1)
     end 
-    for (i, _) in ref(ts, :compressor)
+    for i in keys(get(ref(ts), :compressor, []))
         data.compressor[i]["flow"] = Spline1D(
             state.time_flux, state.compressor[i]["flow"], k=1
         )

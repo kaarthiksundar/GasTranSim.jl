@@ -34,30 +34,27 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
 
     add_pipe_grid_to_ref!(ts)
     add_node_level_flag!(ts)
+    add_node_ordering_for_compressor_flow_computation!(ts)
     initialize_nodal_state!(ts)
-    initialize_compressor_state!(ts)
     initialize_pipe_state!(ts)
+    initialize_compressor_state!(ts)
     return ts
 end
 
 
 function add_pipe_grid_to_ref!(ts::TransientSimulator)
     for (key, pipe) in ref(ts, :pipe)
-
         # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
         # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
         c_inv = nominal_values(ts, :mach_num)
-
         num_segments = c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :dt) 
         n = 1
-        
         if num_segments < 1
             throw(CFLException(string(key)))
             # @error "Time step too large for CFL condition. Spatial discretization failed"
         else
             n = floor(Int64, num_segments) + 1
         end
-        
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
@@ -67,7 +64,6 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
 end
 
 function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
-
     if !haskey(ref(ts), :compressor)
         ref(ts, :node, node_id)["is_level_2"] = false
         ref(ts, :node, node_id)["level"] = 0 
@@ -117,6 +113,53 @@ function add_node_level_flag!(ts::TransientSimulator)
     return
 end
 
+function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulator)
+    candidate_node_ids = Vector{Int64}()
+    for (node_id, _) in ref(ts, :node)
+        if abs(ref(ts, :node, node_id)["level"]) == 1 && ref(ts, :node, node_id)["is_slack"] == false
+            push!(candidate_node_ids, node_id)
+        end
+    end
+
+    compressors = get(ref(ts), :compressor, Dict())
+    (isempty(compressors)) && (return)
+    compressor_ids = keys(compressors) |> collect
+    compressor_ids_with_uncomputable_flow = Vector{Int64}()
+    num_compressors = length(compressors)
+    compressors_accounted_for = Vector{Int64}()
+    used_node_ids = Vector{Int64}()
+
+    for node_id in candidate_node_ids
+        if ref(ts, :node, node_id)["level"] == 1
+            # find the outgoing compressor
+            out_c = ref(ts, :outgoing_compressors)[node_id]
+            # @assert length(out_c) == 1
+            (out_c[1] in compressors_accounted_for) && (continue)
+            push!(compressors_accounted_for, out_c[1])
+            push!(used_node_ids, node_id)
+        end
+        if ref(ts, :node, node_id)["level"] == -1
+            # find the incoming compressor
+            in_c = ref(ts, :incoming_compressors)[node_id]
+            # @assert length(in_c) == 1
+            (in_c[1] in compressors_accounted_for) && (continue)
+            push!(compressors_accounted_for, in_c[1])
+            push!(used_node_ids, node_id)
+        end
+    end 
+
+    # can use missing_compressors array to calculate using level 2 nodes (TODO)
+    if length(compressors_accounted_for) < num_compressors
+        @info "The flows in some compressors cannot be calculated"
+        for id in compressor_ids 
+            !(id in c) && (push!(compressor_ids_with_uncomputable_flow, id))
+        end 
+    end 
+
+    ref(ts)[:node_ordering_for_compressor_flow_calculation] = used_node_ids 
+    ref(ts)[:compressor_ids_with_uncomputable_flow] = compressor_ids_with_uncomputable_flow
+end 
+
 function initialize_nodal_state!(ts::TransientSimulator)
     for (key, _) in ref(ts, :node)
         pressure = initial_nodal_pressure(ts, key)
@@ -125,13 +168,6 @@ function initialize_nodal_state!(ts::TransientSimulator)
     return
 end
 
-function initialize_compressor_state!(ts::TransientSimulator)
-    for (key, _) in ref(ts, :compressor)
-        flow = initial_compressor_flow(ts, key)
-        ref(ts, :compressor, key)["flow"] = flow
-    end
-    return
-end
 
 function initialize_pipe_state!(ts::TransientSimulator)
     is_steady = false 
@@ -183,5 +219,42 @@ function initialize_pipe_state!(ts::TransientSimulator)
             ]
         end 
     end
+    return
+end
+
+function _compute_compressor_flows!(ts::TransientSimulator)
+    for node_id in ref(ts, :node_ordering_for_compressor_flow_calculation)
+        t = ref(ts, :current_time)
+        ctrl_type, withdrawal = control(ts, :node, node_id, t)
+        @assert ctrl_type == flow_control
+        _, net_injection = _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
+
+        if ref(ts, :node, node_id)["level"] == 1
+            # find the outgoing compressor
+            out_c = ref(ts, :outgoing_compressors)[node_id]
+            # @assert length(out_c) == 1
+            ref(ts, :compressor, out_c[1])["flow"] = net_injection
+        end
+        if ref(ts, :node, node_id)["level"] == -1
+            # find the incoming compressor
+            in_c = ref(ts, :incoming_compressors)[node_id]
+            # @assert length(in_c) == 1
+            ref(ts, :compressor, in_c[1])["flow"] = -net_injection
+        end
+    end
+    return
+end
+
+function initialize_compressor_state!(ts::TransientSimulator)
+    isempty(get(ref(ts), :compressor, [])) && return
+    if has_compressor_initial_flows(ts)
+        for (key, _) in ref(ts, :compressor)
+            flow = initial_compressor_flow(ts, key)
+            ref(ts, :compressor, key)["flow"] = flow
+        end
+        return
+    end  
+    @info "compressor does not have initial flows, computing them"
+    _compute_compressor_flows!(ts)
     return
 end

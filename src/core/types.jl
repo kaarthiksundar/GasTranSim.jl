@@ -37,6 +37,9 @@ initial_pipe_pressure(ts::TransientSimulator, id::Int64) =
 initial_nodal_pressure(ts::TransientSimulator, id::Int64) = 
     ts.initial_conditions[:node][id]
 
+has_compressor_initial_flows(ts::TransientSimulator) = 
+    !isempty(ts.initial_conditions[:compressor])
+
 initial_compressor_flow(ts::TransientSimulator, id::Int64) = 
     ts.initial_conditions[:compressor][id]
 
