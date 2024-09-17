@@ -2,7 +2,7 @@
 [![Build Status](https://github.com/kaarthiksundar/GasTranSim.jl/workflows/CI/badge.svg?branch=master)](https://github.com/kaarthiksundar/GasTranSim.jl/actions?query=workflow%3ACI) 
 [![codecov](https://codecov.io/gh/kaarthiksundar/GasTranSim.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/kaarthiksundar/GasTranSim.jl)
 [![Documentation](https://github.com/lanl-ansi/PowerModels.jl/workflows/Documentation/badge.svg)](https://kaarthiksundar.github.io/GasTranSim.jl/dev/)
-[![GitHub commits since tagged version](https://img.shields.io/github/commits-since/kaarthiksundar/GasTranSim.jl/v0.1.0.svg)](https://github.com/kaarthiksundar/GasTranSim.jl/commits/master)
+[![GitHub commits since tagged version](https://img.shields.io/github/commits-since/kaarthiksundar/GasTranSim.jl/v0.2.0.svg)](https://github.com/kaarthiksundar/GasTranSim.jl/commits/master)
 
 
 This Julia package implements an explicit staggered grid method to perform forward simulation of the full transient gas flow dynamics in a pipeline network. 
