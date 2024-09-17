@@ -65,17 +65,14 @@ end
 
 function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
     if !haskey(ref(ts), :compressor)
-        ref(ts, :node, node_id)["is_level_2"] = false
         ref(ts, :node, node_id)["level"] = 0 
         return
     end
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
-        ref(ts, :node, node_id)["is_level_2"] = false
         ref(ts, :node, node_id)["level"] = 0 
         return
     end
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 1
-        ref(ts, :node, node_id)["is_level_2"] = false
         if length(ref(ts, :incoming_compressors, node_id)) == 1
             ref(ts, :node, node_id)["level"] = -1
         end
@@ -89,7 +86,6 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
     for ci in ref(ts, :incoming_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "fr_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-            ref(ts, :node, node_id)["is_level_2"] = true
             ref(ts, :node, node_id)["level"] = 2
             return
         end
@@ -97,12 +93,10 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
     for ci in ref(ts, :outgoing_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "to_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-            ref(ts, :node, node_id)["is_level_2"] = true
             ref(ts, :node, node_id)["level"] = 2
             return
         end
     end
-    ref(ts, :node, node_id)["is_level_2"] = false
     return
 end
 
@@ -223,7 +217,7 @@ function initialize_pipe_state!(ts::TransientSimulator)
 end
 
 function _compute_compressor_flows!(ts::TransientSimulator)
-    for node_id in ref(ts, :node_ordering_for_compressor_flow_calculation)
+    for node_id in get(ref(ts), :node_ordering_for_compressor_flow_calculation, [])
         t = ref(ts, :current_time)
         ctrl_type, withdrawal = control(ts, :node, node_id, t)
         @assert ctrl_type == flow_control

@@ -37,7 +37,7 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
     # for (key, junction) in ref(ts, :node)
     for (key, junction) in ref(ts, :node)
         (ref(ts, :node, key)["is_updated"] == true) && (continue)
-        (ref(ts, :node, key)["is_level_2"] == true) && (continue)
+        (ref(ts, :node, key)["level"] == 2) && (continue)
         # p(t), but q(t - dt/2) taken care of inside
         ctrl_type, val = control(ts, :node, key, t)
         if ctrl_type == pressure_control

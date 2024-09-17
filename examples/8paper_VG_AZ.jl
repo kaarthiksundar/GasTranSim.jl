@@ -5,7 +5,7 @@ using LaTeXStrings
 using TerminalExtensions
 
 
-folder = "examples/data/8-node/"
+folder = "./data/8-node/"
 
 ##=== Run case ===##
 

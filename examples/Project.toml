@@ -1,0 +1,5 @@
+[deps]
+GasTranSim = "69f9d653-1b8b-4f14-83cd-52913e0d1f1c"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+TerminalExtensions = "d3a6a179-465e-5219-bd3e-0137f7fd17c7"
