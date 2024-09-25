@@ -2,6 +2,9 @@
 
 ## Staged
 
+## v0.2.1
+- Updates compat for LoggingExtras
+
 ## v0.2.0 
 - Adds compressor flow computation 
 

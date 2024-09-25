@@ -1,7 +1,7 @@
 name = "GasTranSim"
 uuid = "69f9d653-1b8b-4f14-83cd-52913e0d1f1c"
 authors = ["Shriram Srinivasan and Kaarthik Sundar"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
@@ -14,7 +14,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Dierckx = "~0.4, ~0.5"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
 ProgressMeter = "~1.10"
-LoggingExtras = "~1.0"
+LoggingExtras = "~0.4, ~0.5, ~1"
 julia = "^1"
 
 [extras]
