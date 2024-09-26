@@ -6,7 +6,7 @@ CurrentModule = GasTranSim
 
 ## Calling the simulator
 
-We shall illustrate the simplest call  to invoke the simulator and then explain the various input arguments with reference to the simple case of  a single pipe. The input files are contained in the directory `examples/data/model1pipe_fast_transients/`
+We shall illustrate the simplest call  to invoke the simulator and then explain the various input arguments with reference to the simple case of  a single pipe. The input files are contained in the directory `examples/data/1-pipe-fast-transients/`
 
 
 The initialization function for the simulator has the definition
@@ -14,7 +14,7 @@ The initialization function for the simulator has the definition
 
 From Julia REPL, the simplest call is:
 ```julia
-folder = "examples/data/model1pipe_fast_transients/"
+folder = "examples/data/1-pipe-fast-transients/"
 ts = initialize_simulator(folder)
 # equivalent to the call
 ts = initialize_simulator(folder; eos = :ideal, case_name="", case_types=[:params, :network, :bc, :ic])
@@ -24,12 +24,12 @@ The minimal function call implicitly looks for all input files in the path `fold
 
 However, suppose one wanted to use the same network, parameters and initial conditions with different boundary conditions in say the file `bc_new_case.json`, and with the CNGA equation of state. Then one would use the call:
 ```julia
-folder = "examples/data/model1pipe_fast_transients/"
+folder = "examples/data/1-pipe-fast-transients/"
 ts = initialize_simulator(folder; eos = :simple_cnga, case_name="new_case", case_types=[:bc])
 ```
 If the initial conditions are also different, and stored in `ic_new_case.json`, then the call would be modified to
 ```julia
-folder = "examples/data/model1pipe_fast_transients/"
+folder = "examples/data/1-pipe-fast-transients/"
 ts = initialize_simulator(folder; eos = :simple_cnga, case_name="new_case", case_types=[:bc, :ic])
 ```
 
@@ -51,7 +51,7 @@ At the end of the simulation, there are two types of output we are interested in
 Both of these tasks are accomplished as follows:
 
 ```julia
-folder = "examples/data/model1pipe_fast_transients/"
+folder = "examples/data/1-pipe-fast-transients/"
 ts = initialize_simulator(folder)
 run_simulator!(ts)
 write_output(ts; output_path = folder, 

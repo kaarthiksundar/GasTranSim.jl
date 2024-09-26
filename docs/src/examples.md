@@ -14,9 +14,9 @@ These three examples are taken from
 * V. Gyrya and A. Zlotnik (2019). An explicit staggered-grid method for numerical simulation of large-scale natural gas pipeline networks. ([doi:10.1016/j.apm.2018.07.051](https://doi.org/10.1016/j.apm.2018.07.051))
 
 
-- The directory `model1pipe_fast_transients` contains the input data and source files related to Section 5.2 in the article.
+- The directory `1-pipe-fast-transients` contains the input data and source files related to Section 5.2 in the article.
 
-- The directory `model1pipe_slow_transients` pertains to Section 5.3 in the paper.
+- The directory `1-pipe-slow-transients` pertains to Section 5.3 in the paper.
 
 - The directory `8-node` replicates some results of the problem discussed in Section 6 of the paper.
 
@@ -29,7 +29,9 @@ The directory  `model30` has the input data and source files to demonstrate that
 
 Each of the four examples has its own file that can be invoked from the root directory as follows 
 ```julia
-include("examples/1pipefast.jl")
+import Pkg 
+Pkg.activate("examples/")
+include("examples/1-pipe-fast.jl")
 ```
 
 
