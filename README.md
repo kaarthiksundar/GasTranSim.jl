@@ -1,8 +1,15 @@
 # GasTranSim.jl
-[![Build Status](https://github.com/kaarthiksundar/GasTranSim.jl/workflows/CI/badge.svg?branch=master)](https://github.com/kaarthiksundar/GasTranSim.jl/actions?query=workflow%3ACI) 
-[![codecov](https://codecov.io/gh/kaarthiksundar/GasTranSim.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/kaarthiksundar/GasTranSim.jl)
-[![Documentation](https://github.com/lanl-ansi/PowerModels.jl/workflows/Documentation/badge.svg)](https://kaarthiksundar.github.io/GasTranSim.jl/dev/)
-[![GitHub commits since tagged version](https://img.shields.io/github/commits-since/kaarthiksundar/GasTranSim.jl/v0.2.1.svg)](https://github.com/kaarthiksundar/GasTranSim.jl/commits/master)
+
+[![Continuous Integration (Unit Tests)][ci-unit-img]][ci-unit-url]  [![Documentation][docs-img]][docs-url]  [![Code Coverage][codecov-img]][codecov-url]    [![Commits][commits-img]][commits-url]                                          
+
+[docs-img]: https://github.com/kaarthiksundar/GasTranSim.jl//workflows/Documentation/badge.svg "Documentation"
+[docs-url]: https://kaarthiksundar.github.io/GasTranSim.jl/dev/
+[ci-unit-img]: https://github.com/kaarthiksundar/GasTranSim.jl/actions/workflows/ci.yml/badge.svg?branch=master "Continuous Integration (Unit Tests)"
+[ci-unit-url]: https://github.com/kaarthiksundar/GasTranSim.jl/actions/workflows/ci.yml
+[codecov-img]: https://codecov.io/gh/kaarthiksundar/GasTranSim.jl/branch/master/graph/badge.svg "Code Coverage"
+[codecov-url]: https://codecov.io/gh/kaarthiksundar/GasTranSim.jl/branch/master
+[commits-img]: https://img.shields.io/github/commits-since/kaarthiksundar/GasTranSim.jl/v0.2.1.svg "Commits since tagged version"
+[commits-url]: https://github.com/kaarthiksundar/GasTranSim.jl/commits/master
 
 
 This Julia package implements an explicit staggered grid method to perform forward simulation of the full transient gas flow dynamics in a pipeline network. 
