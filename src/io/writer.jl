@@ -29,3 +29,20 @@ function write_output(ts::TransientSimulator;
         end
     end 
 end 
+
+function write_final_state(ts::TransientSimulator; 
+    output_path::AbstractString="./", 
+    final_state_file::AbstractString="ic_final.json")
+
+    save_final_state = params(ts, :save_final_state) 
+    (save_final_state != 1) && (return)
+    solution = ts.sol
+    final_state_string = output_path * final_state_file
+    final_state_dict = Dict(
+        key => value for (key, value) in solution["final_state"]
+    )
+
+    open(final_state_string, "w") do f 
+        JSON.print(f, final_state_dict, 2)
+    end
+end 
