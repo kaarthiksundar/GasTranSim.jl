@@ -29,7 +29,7 @@ update_theme!(fonts = (; regular = "Helvetica", bold = "Helvetica bold"))
 fig = Figure()
 ax1 = Axis(fig[1, 1], yticklabelcolor = :blue, 
     ylabelcolor = :blue,
-    title = @lift("t = $(round($time, digits = 1)) min."), 
+    title = @lift("pressure and flow in pipe at t = $(round($time, digits = 1)) min."), 
     xlabel = "distance from start of pipe (km)", 
     ylabel = "Pressure (MPa)")
 ax2 = Axis(fig[1, 1], yticklabelcolor = :red, yaxisposition = :right,
