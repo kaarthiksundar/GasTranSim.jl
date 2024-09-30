@@ -1,4 +1,4 @@
 [deps]
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 GasTranSim = "69f9d653-1b8b-4f14-83cd-52913e0d1f1c"
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"

@@ -1,9 +1,8 @@
 
 using GasTranSim
-using CairoMakie
+using GLMakie
 
 save_figures = false
-save_output = false
 
 base_path = split(Base.active_project(), "Project.toml")[1]
 folder = base_path * "data/1-pipe-slow-transients/"
@@ -78,73 +77,72 @@ function add_legend(ax, data, key)
     orientation = :horizontal)
 end 
 
-with_theme(theme_latexfonts()) do
-    f = Figure(backgroundcolor = RGBf(0.98, 0.98, 0.98),
-        size = (1000, 700))
-    ga = f[1, 1] = GridLayout()
-    gb = f[2, 1] = GridLayout()
-    gc = f[3, 1] = GridLayout()
-    gd = f[4, 1] = GridLayout()
+update_theme!(fonts = (; regular = "Helvetica", bold = "Helvetica bold"))
+f = Figure(backgroundcolor = RGBf(0.98, 0.98, 0.98),
+    size = (1000, 700))
+ga = f[1, 1] = GridLayout()
+gb = f[2, 1] = GridLayout()
+gc = f[3, 1] = GridLayout()
+gd = f[4, 1] = GridLayout()
 
-    axmain = Axis(ga[1, 1], title = "Inlet pressure (MPa)")
-    ideal = scatterlines!(axmain, t, round.(inlet_pressure/1e6; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(inlet_pressure_cnga/1e6; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
-    add_legend(axmain, [ideal, cnga], ["ideal", "non-ideal"])
+axmain = Axis(ga[1, 1], title = "Inlet pressure (MPa)")
+ideal = scatterlines!(axmain, t, round.(inlet_pressure/1e6; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(inlet_pressure_cnga/1e6; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+add_legend(axmain, [ideal, cnga], ["ideal", "non-ideal"])
 
-    axmain = Axis(ga[1, 2], title = "Outlet pressure (MPa)")
-    ideal = scatterlines!(axmain, t, round.(outlet_pressure/1e6; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(outlet_pressure_cnga/1e6; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(ga[1, 2], title = "Outlet pressure (MPa)")
+ideal = scatterlines!(axmain, t, round.(outlet_pressure/1e6; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(outlet_pressure_cnga/1e6; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gb[1, 1], title = 
-        rich("Inlet density (kgm", superscript("-3"), ")"))
-    ideal = scatterlines!(axmain, t, round.(inlet_density; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(inlet_density_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gb[1, 1], title = 
+    rich("Inlet density (kgm", superscript("-3"), ")"))
+ideal = scatterlines!(axmain, t, round.(inlet_density; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(inlet_density_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gb[1, 2], title = 
-        rich("Outlet density (kgm", superscript("-3"), ")"))
-    ideal = scatterlines!(axmain, t, round.(outlet_density; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(outlet_density_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gb[1, 2], title = 
+    rich("Outlet density (kgm", superscript("-3"), ")"))
+ideal = scatterlines!(axmain, t, round.(outlet_density; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(outlet_density_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gc[1, 1], title = 
-        rich("Inlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"), 
-        yticks = [150, 250, 350])
-    ideal = scatterlines!(axmain, t, round.(inlet_mass_flux; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(inlet_mass_flux_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gc[1, 1], title = 
+    rich("Inlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"), 
+    yticks = [150, 250, 350])
+ideal = scatterlines!(axmain, t, round.(inlet_mass_flux; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(inlet_mass_flux_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gc[1, 2], title = 
-        rich("Outlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"), 
-        yticks = [100, 250, 400])
-    ideal = scatterlines!(axmain, t, round.(outlet_mass_flux; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(outlet_mass_flux_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gc[1, 2], title = 
+    rich("Outlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"), 
+    yticks = [100, 250, 400])
+ideal = scatterlines!(axmain, t, round.(outlet_mass_flux; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(outlet_mass_flux_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gd[1, 1], title = 
-        rich("Inlet velocity (ms", superscript("-1"), ")"), 
-        xlabel = "time (hrs.)")
-    ideal = scatterlines!(axmain, t, round.(inlet_velocity; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(inlet_velocity_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gd[1, 1], title = 
+    rich("Inlet velocity (ms", superscript("-1"), ")"), 
+    xlabel = "time (hrs.)")
+ideal = scatterlines!(axmain, t, round.(inlet_velocity; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(inlet_velocity_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    axmain = Axis(gd[1, 2], title = 
-        rich("Outlet velocity (ms", superscript("-1"), ")"),
-        xlabel = "time (hrs.)")
-    ideal = scatterlines!(axmain, t, round.(outlet_velocity; digits=2), 
-        alpha = 0.7, color=:orange, marker=:circle)
-    cnga = scatterlines!(axmain, t_cnga, round.(outlet_velocity_cnga; digits=2), 
-        alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
+axmain = Axis(gd[1, 2], title = 
+    rich("Outlet velocity (ms", superscript("-1"), ")"),
+    xlabel = "time (hrs.)")
+ideal = scatterlines!(axmain, t, round.(outlet_velocity; digits=2), 
+    alpha = 0.7, color=:orange, marker=:circle)
+cnga = scatterlines!(axmain, t_cnga, round.(outlet_velocity_cnga; digits=2), 
+    alpha = 0.7, linestyle=(:dashdot, :dense), color=:green, marker=:star4)
 
-    (save_figures) && save(output_plot * "1-pipe-slow.png", f)
-    save(tmp * "1-pipe-slow.png", f)
-end 
+(save_figures) && save(output_plot * "1-pipe-slow.png", f)
+save(tmp * "1-pipe-slow.png", f)
