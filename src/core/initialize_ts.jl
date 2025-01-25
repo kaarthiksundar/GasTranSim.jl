@@ -51,7 +51,6 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
         n = 1
         if num_segments < 1
             throw(CFLException(string(key)))
-            # @error "Time step too large for CFL condition. Spatial discretization failed"
         else
             n = floor(Int64, num_segments) + 1
         end
@@ -85,18 +84,17 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
     end
     for ci in ref(ts, :incoming_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "fr_node")
-        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-            ref(ts, :node, node_id)["level"] = 2
-            return
+        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  >  1
+            throw(NetworkException("3 compressors are in series"))
         end
     end
     for ci in ref(ts, :outgoing_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "to_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-            ref(ts, :node, node_id)["level"] = 2
-            return
+            throw(NetworkException("3 compressors are in series"))
         end
     end
+    ref(ts, :node, node_id)["level"] = 2
     return
 end
 
@@ -146,7 +144,7 @@ function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulat
     if length(compressors_accounted_for) < num_compressors
         @info "The flows in some compressors cannot be calculated"
         for id in compressor_ids 
-            !(id in c) && (push!(compressor_ids_with_uncomputable_flow, id))
+            !(id in compressors_accounted_for) && (push!(compressor_ids_with_uncomputable_flow, id))
         end 
     end 
 

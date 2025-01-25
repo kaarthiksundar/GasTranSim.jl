@@ -12,10 +12,28 @@ struct TransientSimulator
 end
 
 mutable struct CFLException <: Exception
-    var::String
+    var::AbstractString
 end
 
+mutable struct NetworkException <: Exception 
+    var::AbstractString 
+end 
+
+mutable struct ICException <: Exception 
+    var::AbstractString 
+end 
+
+mutable struct ControlException <: Exception 
+    var::AbstractString 
+end 
+
 Base.showerror(io::IO, e::CFLException) = print(io, "CFL condition fails, time-step too large for component ", e.var, "!")
+
+Base.showerror(io::IO, e::NetworkException) = print(io, "Network topology incompatible with simulator; ", e.var, "!")
+
+Base.showerror(io::IO, e::ICException) = print(io, "Initial condition missing: ", e.var, "!")
+
+Base.showerror(io::IO, e::ControlException) = print(io, "Control values: ", e.var, "!")
 
 ref(ts::TransientSimulator) = ts.ref
 ref(ts::TransientSimulator, key::Symbol) = ts.ref[key]
@@ -47,7 +65,7 @@ function control(ts::TransientSimulator,
     key::Symbol, id::Int64, t::Real)::Tuple{CONTROL_TYPE,Float64}
     (key == :node) && (return get_nodal_control(ts, id, t))
     (key == :compressor) && (return get_compressor_control(ts, id, t))
-    @error "control available only for nodes and compressors"
+    throw(ControlException("control available only for nodes and compressors"))
     return CONTROL_TYPE::unknown_control, 0.0
 end
 

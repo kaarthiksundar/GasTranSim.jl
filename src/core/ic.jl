@@ -52,8 +52,8 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
     end 
 
     # compressor flow initial condition is not mandatory
-    (isempty(ic[:node])) && (@error "nodal pressure initial condition missing") 
-    (isempty(ic[:pipe]["mass_flow"])) && (@error "pipe flow initial condition missing")
+    (isempty(ic[:node])) && (throw(ICException("nodal pressure"))) 
+    (isempty(ic[:pipe]["mass_flow"])) && (throw(ICException("pipe flow")))
     
     return ic
 end 
