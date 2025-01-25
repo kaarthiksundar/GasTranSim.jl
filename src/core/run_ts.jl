@@ -1,12 +1,22 @@
 function run_simulator!(ts::TransientSimulator; 
-    run_type::Symbol = :sync, showprogress::Bool = false)
+    run_type::Symbol = :sync, 
+    showprogress::Bool = false, 
+    progress_dt = 1.0)
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     t_0 = params(ts, :t_0)
     num_steps = Int(round((t_f-t_0)/dt))
     output_data = OutputData(ts)
-    @showprogress enabled=showprogress desc="Simulation progress: " for _ in 1:num_steps
+    prog = Progress(num_steps;
+        dt = progress_dt,
+        barlen = 10, 
+        enabled = showprogress, 
+        desc = "Sim. progress: ")
+    if showprogress == false
+        prog = ProgressUnknown(desc="Sim. status", spinner=true)
+    end 
+    for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
@@ -15,7 +25,13 @@ function run_simulator!(ts::TransientSimulator;
         _compute_compressor_flows!(ts)
     	#  if current_time is one where output needs to be saved, check and do now
         update_output_state!(ts, output_state)
+        if showprogress == false
+            next!(prog, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
+        else 
+            next!(prog)
+        end 
     end
+    finish!(prog)
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 end

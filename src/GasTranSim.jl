@@ -2,7 +2,7 @@ module GasTranSim
 
 import JSON
 using Dierckx
-using ProgressMeter: @showprogress
+using ProgressMeter
 
 import Logging
 import LoggingExtras

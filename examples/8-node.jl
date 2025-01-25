@@ -11,7 +11,7 @@ tmp = base_path * "tmp/"
 
 ##=== Run case ===##
 ts = initialize_simulator(folder)
-run_simulator!(ts)
+run_simulator!(ts; showprogress=true)
 @info "First run completed"
 
 t = ts.sol["time_points"] / 3600.0 # hrs
