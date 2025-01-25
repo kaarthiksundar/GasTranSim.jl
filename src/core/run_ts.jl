@@ -46,7 +46,7 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
         elseif ctrl_type == flow_control
             _solve_for_pressure_at_node_and_neighbours!(key, val, ts)
         else
-            @error "control type unknown at advance_pressure_mass_flux_node!"
+            (throw(ControlException("control type unknown at advance_pressure_mass_flux_node")))
         end
     end
 
