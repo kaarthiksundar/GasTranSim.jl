@@ -6,6 +6,7 @@
 - Bug fix in level computation of nodes 
 - New exceptions: `ICException`, `NetworkException`, `ControlException`
 - Adds more options for progress tracking
+- Sets up parallel computation using `Threads.@threads`
 
 ## v0.2.1
 - Updates compat for LoggingExtras
