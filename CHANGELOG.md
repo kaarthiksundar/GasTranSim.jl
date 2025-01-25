@@ -5,6 +5,7 @@
 ## v0.2.2 
 - Bug fix in level computation of nodes 
 - New exceptions: `ICException`, `NetworkException`, `ControlException`
+- Adds more options for progress tracking
 
 ## v0.2.1
 - Updates compat for LoggingExtras
