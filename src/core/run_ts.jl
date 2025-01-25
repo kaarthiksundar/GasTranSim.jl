@@ -1,5 +1,5 @@
 function run_simulator!(ts::TransientSimulator; 
-    run_type::Symbol = :sync, 
+    run_type::Symbol = :parallel, 
     showprogress::Bool = false, 
     progress_dt = 1.0)
     output_state = initialize_output_state(ts)
@@ -10,6 +10,7 @@ function run_simulator!(ts::TransientSimulator;
     output_data = OutputData(ts)
     prog = Progress(num_steps;
         dt = progress_dt,
+        barglyphs = get_barglyphs(),
         barlen = 10, 
         enabled = showprogress, 
         desc = "Sim. progress: ")

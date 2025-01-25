@@ -3,7 +3,7 @@
     # full run for 24 hours
     ts = initialize_simulator(folder; 
         case_name="full", case_types=[:params])
-    run_simulator!(ts)
+    run_simulator!(ts, run_type=:serial, showprogress=true)
     pressure_node_5 = ts.sol["nodes"]["5"]["pressure"]
     inflow_node_6 = ts.sol["pipes"]["1"]["in_flow"]
     outflow_node_2 = ts.sol["pipes"]["1"]["out_flow"]

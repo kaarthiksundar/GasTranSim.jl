@@ -138,7 +138,6 @@ end
 # call synonym for CompressorControl evaluation
 (spl::CompressorControl)(t::Real) = evaluate(spl, t)
 
-
 @enum CONTROL_TYPE begin
     c_ratio_control = 0
     discharge_pressure_control = 1
@@ -146,3 +145,6 @@ end
     pressure_control = 10
     unknown_control = 100
 end
+
+get_barglyphs() = 
+    BarGlyphs('|','█', ['▁' ,'▂' ,'▃' ,'▄' ,'▅' ,'▆', '▇'],' ','|',)
