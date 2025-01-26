@@ -7,6 +7,8 @@
 - New exceptions: `ICException`, `NetworkException`, `ControlException`
 - Adds more options for progress tracking
 - Sets up parallel computation using `Threads.@threads`
+- Adds more topology checks for two compressors in series
+- Calculates initial compressor flow (if not provided) for such compressors
 
 ## v0.2.1
 - Updates compat for LoggingExtras
