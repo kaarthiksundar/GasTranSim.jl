@@ -68,6 +68,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         return
     end
 
+    # forbid topology if compressor delivers to slack node
     if ref(ts, :node, node_id)["is_slack"] == true && length(ref(ts, :incoming_compressors, node_id)) > 0
         throw(NetworkException("Compressor delivering to slack node"))
     end
@@ -85,34 +86,35 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         end
     end
 
-
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 0
         ref(ts, :node, node_id)["level"] = 0 
         return
     end
+
     if length(ref(ts, :incoming_compressors, node_id)) + length(ref(ts, :outgoing_compressors, node_id)) == 1
         if length(ref(ts, :incoming_compressors, node_id)) == 1
             ref(ts, :node, node_id)["level"] = -1
         end
-
         if length(ref(ts, :outgoing_compressors, node_id)) == 1
             ref(ts, :node, node_id)["level"] =  1
         end
-
         return
     end
+
     for ci in ref(ts, :incoming_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "fr_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  >  1
             throw(NetworkException("3 compressors are in series"))
         end
     end
+
     for ci in ref(ts, :outgoing_compressors, node_id)
         node_across_ci = ref(ts, :compressor, ci, "to_node")
         if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
             throw(NetworkException("3 compressors are in series"))
         end
     end
+
     ref(ts, :node, node_id)["level"] = 2
     return
 end
@@ -125,17 +127,9 @@ function add_node_level_flag!(ts::TransientSimulator)
 end
 
 function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulator)
-    # candidate_node_ids = Vector{Int64}()
-    # for (node_id, _) in ref(ts, :node)
-    #     if abs(ref(ts, :node, node_id)["level"]) == 1 && ref(ts, :node, node_id)["is_slack"] == false
-    #         push!(candidate_node_ids, node_id)
-    #     end
-    # end
-
     compressors = get(ref(ts), :compressor, Dict())
     (isempty(compressors)) && (return)
     compressor_ids = keys(compressors) |> collect
-    # compressor_ids_with_uncomputable_flow = Vector{Int64}()
     num_compressors = length(compressors)
     compressors_accounted_for = Vector{Int64}()
     compressors_remaining = Vector{Int64}()
@@ -157,37 +151,13 @@ function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulat
         end
     end
 
-
-    # for node_id in candidate_node_ids
-    #     if ref(ts, :node, node_id)["level"] == 1
-    #         # find the outgoing compressor
-    #         out_c = ref(ts, :outgoing_compressors)[node_id]
-    #         # @assert length(out_c) == 1
-    #         (out_c[1] in compressors_accounted_for) && (continue)
-    #         push!(compressors_accounted_for, out_c[1])
-    #         push!(used_node_ids, node_id)
-    #     end
-    #     if ref(ts, :node, node_id)["level"] == -1
-    #         # find the incoming compressor
-    #         in_c = ref(ts, :incoming_compressors)[node_id]
-    #         # @assert length(in_c) == 1
-    #         (in_c[1] in compressors_accounted_for) && (continue)
-    #         push!(compressors_accounted_for, in_c[1])
-    #         push!(used_node_ids, node_id)
-    #     end
-    # end 
-
-    # can use missing_compressors array to calculate using level 2 nodes (TODO)
     if length(compressors_accounted_for) < num_compressors
         @info "The flows in some compressors cannot be calculated without knowing  other compressor flows"
-        # for id in compressor_ids 
-        #     !(id in compressors_accounted_for) && (push!(compressor_ids_with_uncomputable_flow, id))
-        # end 
     end 
 
     ref(ts)[:node_ordering_for_compressor_flow_calculation] = used_node_ids 
-    # ref(ts)[:compressor_ids_with_uncomputable_flow] = compressor_ids_with_uncomputable_flow
     ref(ts)[:compressor_ids_second_round_calculation] = compressors_remaining
+    return
 end 
 
 function initialize_nodal_state!(ts::TransientSimulator)
@@ -263,21 +233,19 @@ function _compute_compressor_flows!(ts::TransientSimulator)
         if ref(ts, :node, node_id)["level"] == 1
             # find the outgoing compressor
             out_c = ref(ts, :outgoing_compressors)[node_id]
-            # @assert length(out_c) == 1
             ref(ts, :compressor, out_c[1])["flow"] = net_injection
         end
         if ref(ts, :node, node_id)["level"] == -1
             # find the incoming compressor
             in_c = ref(ts, :incoming_compressors)[node_id]
-            # @assert length(in_c) == 1
             ref(ts, :compressor, in_c[1])["flow"] = -net_injection
         end
     end
 
     # Network topology conditions imply following calculation cannot fail
     # Flows of other compressors at node must be known
-    # compressor has unknown flow must mean one end is slack and other end is level 2
-    # both ends cannot be level 2 or slack, if one end was level 1 non-slack, would already be finished
+    # Compressor has unknown flow must mean one end is slack and other end is level 2
+    # Both ends cannot be level 2 or slack, if one end was level 1 non-slack, would already be finished
     for c_id in ref(ts)[:compressor_ids_second_round_calculation]
         to_id = ref(ts, :compressor, c_id)["to_node"]
         # to_id cannot be slack, so focus on that
@@ -288,7 +256,7 @@ function _compute_compressor_flows!(ts::TransientSimulator)
         in_c = ref(ts, :incoming_compressors)[to_id]
         out_c = ref(ts, :outgoing_compressors)[to_id]
         for id in  in_c 
-            if id == c_id #c_id is incoming
+            if id == c_id # c_id is incoming
                 continue
             end
             net_injection += ref(ts, :compressor, id)["flow"]
@@ -297,10 +265,8 @@ function _compute_compressor_flows!(ts::TransientSimulator)
             net_injection -= ref(ts, :compressor, id)["flow"]
         end
         ref(ts, :compressor, c_id)["flow"] = -net_injection
-
     end
     return
-
 end
 
 function initialize_compressor_state!(ts::TransientSimulator)
