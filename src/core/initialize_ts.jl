@@ -152,7 +152,7 @@ function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulat
     end
 
     if length(compressors_accounted_for) < num_compressors
-        @info "The flows in some compressors cannot be calculated without knowing  other compressor flows"
+        @debug "The flows in some compressors $compressors_remaining cannot be calculated without knowing  other compressor flows"
     end 
 
     ref(ts)[:node_ordering_for_compressor_flow_calculation] = used_node_ids 

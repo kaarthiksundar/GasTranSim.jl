@@ -142,16 +142,19 @@ The idea behind the classification is that to solve for pressure/density at a Le
 \begin{figure}[htb]
 \centering
 \includegraphics[scale=1]{pathologies}
-\caption{Illustration of the three topologies that are explicitly forbidden. (a) Two incoming compressors at $i$ with discharge pressure control, (b) a slack node $i$ with incoming compressor that has discharge pressure control, and (c) connected Level 2 nodes due to three compressors in series.}
+\caption{Illustration of the three topologies that are explicitly forbidden and a fourth configuration that is excluded purely for ease of postprocessing. (a) Two incoming compressors at $i$ with discharge pressure control, (b) a slack node $i$ with incoming compressor, (c) connected Level 2 nodes due to three compressors in series, and (d) Both compressors at a  Level 2 vertex connected to slack (Level 1) vertices. This last configuratiuon is purely to ease postprocessing of compressor flows.}
 \label{fig:pathologies}
 \end{figure}
 
 We shall assume that the network satisfies three conditions: \\
-(1) Two Level 2 vertices cannot be neighbours, i.e., Level 2 vertices can only have Level 1 neighbours. This condition can be stated  alternatively as: there can be at most two compressor elements in series in the network \\
-(2) A vertex cannot be the delivery end of two  compressors with delivery pressure controls \\
-(3) A vertex cannot be a  slack node and the delivery end of a  compressor simultaneously \\
+(1) Two Level 2 vertices cannot be neighbours, i.e., Level 2 vertices can only have Level 1 neighbours. This condition can be stated  alternatively as: there can be at most two compressor elements in series in the network. \\
+(2) A vertex cannot be the delivery end of two  compressors with delivery pressure controls. \\
+(3) A compressor cannot deliver to a slack node. \\
 These conditions are not very restrictive in reality and are simply pathological cases we want to avoid (See Figure~\ref{fig:pathologies}).
-For networks that satisfy the above restrictions, we shall write down the equations for the pressure of a  general Level 1 vertex (and its Level 2 neighbours) in two common configurations (Figure~\ref{fig:configs}). Thus, if we can cycle through all Level 1 vertices of the network and calculate the densities, then all Level 2 neighbour vertices can be updated automatically, ensuring all vertices do get updated.
+For networks that satisfy the above restrictions, we shall write down the equations for the pressure of a  general Level 1 vertex (and its Level 2 neighbours) in two common configurations (Figure~\ref{fig:configs}). Thus, if we can cycle through all Level 1 vertices of the network and calculate the densities, then all Level 2 neighbour vertices can be updated automatically, ensuring all vertices do get updated. 
+
+
+The fourth condition depicted in Figure~\ref{fig:pathologies} has to do with postprocessing to compute the compressor flows and will be detailed in Section~\ref{sec:compressor-flow}.
 
 
 
@@ -198,6 +201,14 @@ are identical; we have simply transposed terms to reflect the known and unknown 
 \item Multiple outgoing compressors with discharge pressure control, such as $c_4$, $c_5$ in Figure~\ref{fig:config1} are no problem.
 \item However, if $c_4$ be incoming, it must be the sole incoming compressor with discharge pressure control. Else the vertex equations cannot be solved locally (since it violates condition (2) above)
 \end{itemize}
+
+\subsection{Postprocessing and calculation of compressor flows}
+\label{sec:compressor-flow}
+If at least one end of a compressor C is a Level 1 \emph{non-slack} vertex, then the flow through C at a time instant can be  inferred from an application of the  balance of mass at that end, since pipe flows and injection are known and the only unknown is the compressor flow. 
+However, the flow cannot be determined if the compressor C connects a Level 1 \emph{slack} node with a Level 2 node since now  slack injection itself is unknown at the Level 1 node, and at the Level 2 node there are at least 2 unknown compressor flows. However, if in the first round of computation, all compressor flows at the Level 2 node except C become known, then one can again apply the balance of mass at the Level 2 node to infer the flow through C. 
+
+The only reason that another compressor flow (other than C) at the Level 2 node  could remain unknown after the first round of computation is precisely the configuration (d) in Figure~\ref{fig:pathologies} wherein, another compressor is analogous to C and connected to a slack node.
+Hence, in order to ensure all compressor flows  are determined, we  rule out the configuration (d) in Figure~\ref{fig:pathologies}.
 
 \subsection{Advantages of this formulation}
 In case of disruptive events, the network topology may change in the following ways:
