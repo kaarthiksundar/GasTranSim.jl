@@ -14,6 +14,38 @@ function _advance_pipe_density_internal!(ts::TransientSimulator, pipe_id::Int64)
     return
 end
 
+
+function _assemble_eqns!(ts::TransientSimulator, pipe_id::Int64)
+    n = ts.ref[:pipe][pipe_id]["num_discretization_points"]
+    rhs = zeros(Float64, 2*n) 
+
+    i_vec, j_vec, k_vec =  Vector{Int32}(), Vector{Int32}(), Vector{Float64}()
+    sizehint!(i_vec, 10*n)
+    sizehint!(j_vec, 10*n)
+    sizehint!(k_vec, 10*n)
+    for ele = 1:n-1  # elements
+        # 4 eqns 
+        push!(i_vec, ele)  
+        push!(j_vec, 2*ele-1)
+        push!(k_vec, 1)
+
+        push!(i_vec, ele) 
+        push!(j_vec, 2*ele+1)
+        push!(k_vec, 1)
+
+        push!(i_vec, ele)  
+        push!(j_vec, 2*ele+2)
+        push!(k_vec, 1)
+
+        push!(i_vec, ele)  # 4 eqns 
+        push!(j_vec, 2*ele)
+        push!(k_vec, 1)
+
+        rhs[ele] = ts.ref[:pipe][pipe_id]["pressure_profile"][2*ele-1] + ts.ref[:pipe][pipe_id]["pressure_profile"][2*ele+1] + 
+    end
+
+    
+
 """
     Sets the pressure and density at a given node to a value
 """
@@ -78,20 +110,22 @@ function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal:
         vertex_vol = 0.0
         term1 = 0.0
         term2 = -1.0 * withdrawal # in input data, withdrawal is positive, but we want inflow positive
-        pipe = ref(ts, :pipe)
         for p in out_p
+            pipe = ref(ts, :pipe)
             term1 += -1 * pipe[p]["fr_mass_flux"] * pipe[p]["area"]
             vertex_vol += pipe[p]["area"] * ts.params[:dx]
         end
         for p in in_p
+            pipe = ref(ts, :pipe)
             term1 += pipe[p]["to_mass_flux"] * pipe[p]["area"]
             vertex_vol += pipe[p]["area"] * ts.params[:dx]
         end
-        comp = ref(ts, :compressor)
         for co in out_c
+            comp = ref(ts, :compressor)
             term1 += -1 * comp[co]["flow"] 
         end
-        for ci in in_p
+        for ci in in_c
+            comp = ref(ts, :compressor)
             term1 += comp[ci]["flow"] 
         end
         rho_new  =  ref(ts, :node, node_id)["density_previous"] + ts.params[:dt] * (term1 + term2) / vertex_vol

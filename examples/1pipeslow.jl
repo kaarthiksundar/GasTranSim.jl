@@ -4,6 +4,7 @@ const plt = PyPlot
 using LaTeXStrings
 using TerminalExtensions
 
+GasTranSim.set_logging_level!(:Debug)
 
 
 # Temp for ideal gas case set to 239.11 K, nonideal 288.7K to match p, rho

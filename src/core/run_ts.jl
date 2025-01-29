@@ -17,9 +17,13 @@ function run_simulator!(ts::TransientSimulator;
         prog = ProgressUnknown(desc="Sim. status", spinner=true)
     end 
     for _ in 1:num_steps
+    @debug "test message"
+    
+    
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
-        advance_nodal_pressure!(ts)
+        advance_nodal_pressure!(ts) # can we do smthg else for vertex that is a leaf node  so that bc is flux
+        advance_pipes!(ts)
 
         # advance_nodal_pressure!() #(n+1) level
           # go to each slack node and update pressure, mark update node flag
@@ -30,9 +34,14 @@ function run_simulator!(ts::TransientSimulator;
             #calculate density based on conservation eq with chosen fictitious vertex vol and edge mass flux    from previous step # check - does this need theta or smhtg to be second order accurate in time  and space to match pipe scheme ?
           # 
         # 
+        
         # advance_pipes!() #(n+1) level
             # global id for pressure, mass flux
-            # assemble sparse mat, load vec
+            # assemble sparse mat, load vec, include extra eqns for boundary
+            # create vec or dictionary of sparsemats, one for each pipe
+            # is updating sparse matrix values expensive ? --if not..update in each time step
+            # but this will mean storing one sparse matrix for each pipe...is that reasonable ?
+            # how about mimic gas_steady_sim's in place J computation ?
             # solve
             # postprocess and fill in nodal pressure, density, fr_flux, to_flux
         # fill in compressor fluuxes, calculate compressor vals by 
@@ -61,8 +70,32 @@ function run_simulator!(ts::TransientSimulator;
 end
 
 
+
+function advance_pipes!(ts::TransientSimulator)
+
+    t = ref(ts, :current_time)
+    @inbounds for (key, pipe) in ref(ts, :pipe)
+        n = ts.ref[:pipe][key]["num_discretization_points"]
+        i_vec, j_vec, k_vec =  Vector{Int32}(), Vector{Int32}(), Vector{Float64}()
+        sizehint!(i_vec, 10*n)
+        sizehint!(j_vec, 10*n)
+        sizehint!(k_vec, 10*n)
+        # 1, 3, 5, 7, 9 pdofs
+        # 2, 4, 6, 8, 10 flux dofs
+        # 1, 2, 3, 4, 5 ele dof...2k-1 p dof, 2k flux dof
+        # 
+
+    
+
+    end
+
+    return
+end
+
+
 function advance_nodal_pressure!(ts::TransientSimulator)
     # DO NOT parallelize this (race condition)
+    t = ref(ts, :current_time)
     for (key, junction) in ref(ts, :node)
         (ref(ts, :node, key)["is_updated"] == true) && (continue)
         # (ref(ts, :node, key)["is_level_2"] == true) && (continue)
