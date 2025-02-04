@@ -44,6 +44,8 @@ For this we shall use the flux at the end points, corresponding to the values at
 where $\phi_R^{-}, \phi_L^{-1}$ are the internal nodes for flux closest to the ghost points. 
 We use the letters $L, R$ to denote the left and right ends, where flow is assumed to be from left to right.
 Substituting these equations into a nodal balance for the fluxes converts them into equations for junction pressure which can then be solved for.
+Note that because of the staggered grid in space and time, we specify a steady-state balance of junction fluxes   at time level $n+1/2$ which  in turn yields an equation that describes the nodal density at tiume level $n+1$. 
+If the formulation were implicit like Kiuchi's method, then density and flux would be collocated in both space and time so that one would have to make some approximation to derive an equation that can determine nodal density at level $n+1$. Kiuchi defines a ``junction volume" and replaces the fluxes with some kind of pressure relation from a pipe flow approximation to obtain a nonlinear equation for junction pressure at $n+1$ when starting from the  mass conservation PDE. Another possibility could be simple time-lagging of fluxes along with choice of ``junction volume" to have a simple ODE for junction pressure that can be solved with a backward Euler approximation.
 
 \section{Junction without compressors}
 
@@ -63,7 +65,7 @@ Thus the algorithm may be understood as the sequence of steps:
  \item Calculate $\rho^{n+1}$ for all internal nodes of all pipes 
  \item Find $\rho^{n+1}$ on pipe boundary (graph nodes)
  \item Now calculate $\phi^{n+1 + 1/2}$ for all \emph{internal} nodes of all pipes
- \item $phi^{n+1/2}$ at pipe ends can only be calculated when $\rho^n, \rho^{n+1}$ are known.
+ \item $\phi^{n+1/2}$ at pipe ends can only be calculated when $\rho^n, \rho^{n+1}$ are known.
  \end{enumerate} 
 Note that if the node $i_0$ is a \emph{slack node}, then the pressure $p(i_0)$ is always known and there is nothing to do.
 
@@ -221,6 +223,12 @@ This list is representative, and by no means exhaustive. However, the point to n
 
 Note that the time marching step for internal nodes associated with mass flux and density are inherently parallel operations and may be performed as such. However, one can go further and check if it is possible to reduce the set of junctions to the  smallest possible set such that each junction and its neighbours are disjoint from the rest thus ensuring that we can perform computations for each of these vertices in parallel too. In the absence of such a decomposition however,  one must visit each junction serially, 
 for parallel operations will result in a race condition.
+
+% check Vitaliy Anatoly paper..compressor representation..how they handle junctions
+% check if GasLib40 can be solved for steady state by giving ss data as transient
+% revisit Kiuchi again and check if volume for junction, junction ODE mean that there are no network restrictions
+% for |V| junctions, , s slacks and |e| edges, in general, cannot solve Af =q unless it is a tree with exactly one slack. Our network restrictions are actually sufficiency conds tgo ensure Af = q has the right number of eqns and dofs to be solvable.
+% instead of std notion of "vertex degree", we are defining "vertex level" as vertex degree of subgraph induced by the compressors
 
 \section{Data structures and sequence of operations for junction equations}
 \begin{enumerate}

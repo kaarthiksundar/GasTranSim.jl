@@ -12,6 +12,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["pressure"] = NaN 
         ref[name][id]["pressure_previous"] = NaN
         ref[name][id]["injection"] = NaN
+        ref[name][id]["total_withdrawal_reduction"] = 0.0
     end
 
     for (i, pipe) in get(data, "pipes", [])
