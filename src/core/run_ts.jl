@@ -35,9 +35,9 @@ function run_simulator!(ts::TransientSimulator;
         end 
     end
 
-    calculate_total_withdrawal_reduction_in_units!(ts)
-
+    calculate_total_withdrawal_reduction!(ts)
     finish!(prog)
+    # TODO: add total withdrawal reduction into output state later 
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 end
@@ -47,12 +47,10 @@ function advance_current_time!(ts::TransientSimulator, tau::Real)
     return
 end
 
-function calculate_total_withdrawal_reduction_in_units!(ts::TransientSimulator)
-
-    for (node_id, junction) in ref(ts, :node)
-        ref(ts, :node, node_id)["total_withdrawal_reduction"] =  ref(ts, :node, node_id)["total_withdrawal_reduction"] * nominal_values(ts, :mass_flow) * params(ts, :dt) * nominal_values(ts, :time)
+function calculate_total_withdrawal_reduction!(ts::TransientSimulator)
+    for (node_id, _) in ref(ts, :node)
+        ref(ts, :node, node_id)["total_withdrawal_reduction"] =  ref(ts, :node, node_id)["total_withdrawal_reduction"] * params(ts, :dt)
     end
-
 end
 
 function advance_pipe_density_internal!(ts::TransientSimulator, run_type::Symbol)
