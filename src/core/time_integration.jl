@@ -42,8 +42,8 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
             if node_ctrl == pressure_control
                 _set_pressure_at_node!(i, node_val, ts)
             elseif node_ctrl == flow_control
-                # net_withdrawal = node_val - val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, -val, ts)
+                # net_withdrawal = node_val + val  # val is outgoing at i
+                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, val, ts)
             end
 
         end
@@ -60,8 +60,8 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
             if node_ctrl == pressure_control
                 _set_pressure_at_node!(i, node_val, ts)
             elseif node_ctrl == flow_control
-                # net_withdrawal = node_val + val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, val, ts)
+                # net_withdrawal = node_val - val #val is incoming at i
+                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, -val, ts)
             end
 
         end
@@ -123,13 +123,12 @@ function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::In
     net_withdrawal = node_withdrawal + compressor_flow_withdrawal 
     t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + ( (t2 + net_withdrawal)  / t1) 
-    # plus in above eq for net_withdrawl because this withdrawal is at other end of compressor?
+    rho = rho_prev + ( (t2 - net_withdrawal)  / t1) 
 
     pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
     rho_min = get_density(ts, pressure_min)
     rho = max(rho, rho_min)
-    node_withdrawal_new = (rho - rho_prev) * t1  - t2 - compressor_flow_withdrawal
+    node_withdrawal_new = (rho_prev - rho) * t1  + t2 - compressor_flow_withdrawal
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
 
     pressure = get_pressure(ts, rho)

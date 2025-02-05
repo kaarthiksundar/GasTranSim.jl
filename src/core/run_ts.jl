@@ -22,8 +22,6 @@ function run_simulator!(ts::TransientSimulator;
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
     	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
-         # check for negative density at junctions now
-         # if node id has negative density,  ts.boundary_conditions[:node][id]["spl"] = 0 or zero vector
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
         _compute_compressor_flows!(ts)
     	#  if current_time is one where output needs to be saved, check and do now
