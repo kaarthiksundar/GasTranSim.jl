@@ -1,6 +1,6 @@
 function run_simulator!(ts::TransientSimulator; 
-    run_type::Symbol = :parallel, 
-    showprogress::Bool = false, 
+    run_type::Symbol = :serial, 
+    showprogress::Bool = true, 
     progress_dt = 1.0)
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)

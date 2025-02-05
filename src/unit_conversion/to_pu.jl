@@ -12,7 +12,7 @@ function si_to_pu!(data::Dict{String,Any},
 
     function rescale_compressor_boundary_conditions!(type, value)
         @assert length(type) == length(value)
-        for i in 1:length(type)
+        for i in eachindex(type)
             (type[i] == 1) && (value[i] = rescale_pressure(value[i]))
             (type[i] == 2) && (value[i] = rescale_mass_flow(value[i]))
         end 

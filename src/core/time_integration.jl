@@ -102,7 +102,8 @@ function _calculate_pressure_for_node_without_incoming_discharge_pressure_contro
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + (t2 -withdrawal  + s2) / (t1 + s1)
 
-    rho_min = get_density(ts, psi_to_pascal(14.69) / nominal_values(ts, :pressure))
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
     rho = max(rho, rho_min)
     withdrawal_new = (rho_prev - rho) * (t1 + s1) + s2 + t2
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal - withdrawal_new)
@@ -124,7 +125,8 @@ function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::In
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + ( (t2 + net_withdrawal)  / t1) # plus because this withdrawal is at other end of compressor ?
 
-    rho_min = get_density(ts, psi_to_pascal(14.69) / nominal_values(ts, :pressure))
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
     rho = max(rho, rho_min)
     node_withdrawal_new = (rho - rho_prev) * t1  - t2 - compressor_flow_withdrawal
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
@@ -170,11 +172,11 @@ function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
     rho = rho_prev + (t2 - withdrawal_1 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 - withdrawal_2 + s2) / t1
     
-    rho_min = get_density(ts, psi_to_pascal(14.69) / nominal_values(ts, :pressure))
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
     rho = max(rho, rho_min)
     withdrawal_1_new = (rho_prev - rho) * t1 + t2  + (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2 - withdrawal_2
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal_1 - withdrawal_1_new)
-
 
     pressure = get_pressure(ts, rho)
 
