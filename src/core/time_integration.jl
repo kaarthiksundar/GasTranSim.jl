@@ -119,14 +119,14 @@ end
 """
 function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, node_withdrawal::Real, compressor_flow_withdrawal::Real, ts::TransientSimulator)
     
-    net_withdrawal = node_withdrawal + compressor_flow_withdrawal
+    net_withdrawal = node_withdrawal + compressor_flow_withdrawal 
     t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + ( (t2 - net_withdrawal)  / t1)
+    rho = rho_prev + ( (t2 + net_withdrawal)  / t1) # plus because this withdrawal is at other end of compressor ?
 
     rho_min = get_density(ts, psi_to_pascal(14.69) / nominal_values(ts, :pressure))
     rho = max(rho, rho_min)
-    node_withdrawal_new = (rho_prev - rho) * t1  + t2 - compressor_flow_withdrawal
+    node_withdrawal_new = (rho - rho_prev) * t1  - t2 - compressor_flow_withdrawal
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
 
     
