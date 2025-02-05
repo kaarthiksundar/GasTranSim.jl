@@ -123,7 +123,8 @@ function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::In
     net_withdrawal = node_withdrawal + compressor_flow_withdrawal 
     t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + ( (t2 + net_withdrawal)  / t1) # plus because this withdrawal is at other end of compressor ?
+    rho = rho_prev + ( (t2 + net_withdrawal)  / t1) 
+    # plus in above eq for net_withdrawl because this withdrawal is at other end of compressor?
 
     pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
     rho_min = get_density(ts, pressure_min)
@@ -131,7 +132,6 @@ function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::In
     node_withdrawal_new = (rho - rho_prev) * t1  - t2 - compressor_flow_withdrawal
     ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
 
-    
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
     return
