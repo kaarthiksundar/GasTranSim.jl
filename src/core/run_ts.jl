@@ -1,6 +1,6 @@
 function run_simulator!(ts::TransientSimulator; 
-    run_type::Symbol = :parallel, 
-    showprogress::Bool = false, 
+    run_type::Symbol = :serial, 
+    showprogress::Bool = true, 
     progress_dt = 1.0)
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
@@ -22,6 +22,8 @@ function run_simulator!(ts::TransientSimulator;
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
     	advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
+         # check for negative density at junctions now
+         # if node id has negative density,  ts.boundary_conditions[:node][id]["spl"] = 0 or zero vector
     	advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
         _compute_compressor_flows!(ts)
     	#  if current_time is one where output needs to be saved, check and do now
@@ -32,7 +34,10 @@ function run_simulator!(ts::TransientSimulator;
             next!(prog)
         end 
     end
+
+    calculate_total_withdrawal_reduction!(ts)
     finish!(prog)
+    # TODO: add total withdrawal reduction into output state later 
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 end
@@ -40,6 +45,12 @@ end
 function advance_current_time!(ts::TransientSimulator, tau::Real)
     ts.ref[:current_time] += tau
     return
+end
+
+function calculate_total_withdrawal_reduction!(ts::TransientSimulator)
+    for (node_id, _) in ref(ts, :node)
+        ref(ts, :node, node_id)["total_withdrawal_reduction"] =  ref(ts, :node, node_id)["total_withdrawal_reduction"] * params(ts, :dt)
+    end
 end
 
 function advance_pipe_density_internal!(ts::TransientSimulator, run_type::Symbol)

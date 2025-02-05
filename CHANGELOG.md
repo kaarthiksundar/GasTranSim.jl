@@ -2,6 +2,9 @@
 
 ## Staged
 
+## v0.2.3 
+- Allow for load shedding if pressure falls below 1 atm.
+
 ## v0.2.2 
 - Bug fix in level computation of nodes 
 - New exceptions: `ICException`, `NetworkException`, `ControlException`

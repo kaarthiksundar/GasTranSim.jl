@@ -42,8 +42,8 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
             if node_ctrl == pressure_control
                 _set_pressure_at_node!(i, node_val, ts)
             elseif node_ctrl == flow_control
-                net_withdrawal = node_val - val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, net_withdrawal, ts)
+                # net_withdrawal = node_val - val
+                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, -val, ts)
             end
 
         end
@@ -60,8 +60,8 @@ function _set_pressure_at_node_across_compressors!(node_id::Int64, pressure::Rea
             if node_ctrl == pressure_control
                 _set_pressure_at_node!(i, node_val, ts)
             elseif node_ctrl == flow_control
-                net_withdrawal = node_val + val
-                _set_pressure_for_node_with_single_flow_control_compressor!(i, net_withdrawal, ts)
+                # net_withdrawal = node_val + val
+                _set_pressure_for_node_with_single_flow_control_compressor!(i, node_val, val, ts)
             end
 
         end
@@ -98,9 +98,16 @@ function _calculate_pressure_for_node_without_incoming_discharge_pressure_contro
         return
     end
     s1, s2 = s
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
+    t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2 + s2) / (t1 + s1)
+    rho = rho_prev + (t2 -withdrawal  + s2) / (t1 + s1)
+
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
+    rho = max(rho, rho_min)
+    withdrawal_new = (rho_prev - rho) * (t1 + s1) + s2 + t2
+    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal - withdrawal_new)
+
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
     _set_pressure_at_node_across_compressors!(node_id, pressure, ts)
@@ -111,10 +118,20 @@ end
 """
     Calculate and update the pressure at vertex with single compressor with flow_control 
 """
-function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, net_withdrawal::Real, ts::TransientSimulator)
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, -net_withdrawal, 1.0, ts)
+function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::Int64, node_withdrawal::Real, compressor_flow_withdrawal::Real, ts::TransientSimulator)
+    
+    net_withdrawal = node_withdrawal + compressor_flow_withdrawal 
+    t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2  / t1)
+    rho = rho_prev + ( (t2 + net_withdrawal)  / t1) 
+    # plus in above eq for net_withdrawl because this withdrawal is at other end of compressor?
+
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
+    rho = max(rho, rho_min)
+    node_withdrawal_new = (rho - rho_prev) * t1  - t2 - compressor_flow_withdrawal
+    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
+
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
     return
@@ -142,18 +159,25 @@ function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(
 
     ctrl_type, withdrawal_1 = control(ts, :node, node_id, t)
     @assert ctrl_type == flow_control
-    t1, t2 = _assemble_pipe_contributions_to_node(node_id, withdrawal_1, 1.0, ts)
+    t1, t2 = _assemble_pipe_contributions_to_node(node_id, 0, 1.0, ts)
 
     ctrl_type, withdrawal_2 = control(ts, :node, base_node_id, t)
     @assert ctrl_type == flow_control
-    r1, r2 = _assemble_pipe_contributions_to_node(base_node_id, withdrawal_2, 1.0, ts)
+    r1, r2 = _assemble_pipe_contributions_to_node(base_node_id, 0, 1.0, ts)
 
     discharge_rho = get_density(ts, discharge_pressure)
     discharge_pressure_prev = ref(ts, :node, base_node_id, "pressure")
     discharge_rho_prev = get_density(ts, discharge_pressure_prev)
 
     rho_prev = get_density(ts, ref(ts, :node, node_id, "pressure"))
-    rho = rho_prev + (t2 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2) / t1
+    rho = rho_prev + (t2 - withdrawal_1 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 - withdrawal_2 + s2) / t1
+    
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = get_density(ts, pressure_min)
+    rho = max(rho, rho_min)
+    withdrawal_1_new = (rho_prev - rho) * t1 + t2  + (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2 - withdrawal_2
+    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal_1 - withdrawal_1_new)
+
     pressure = get_pressure(ts, rho)
 
     _set_pressure_at_node!(node_id, pressure, ts)
@@ -203,9 +227,9 @@ function _assemble_compressor_contributions_to_node_without_incoming_discharge_p
                 _set_pressure_at_node!(node_id, cmpr_val * val, ts)
                 return
             end
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_ci_id, val, 1/cmpr_val, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_ci_id, 0, 1/cmpr_val, ts)
             term1 += var1
-            term2 += var2
+            term2 += var2 - val
         end
         if ctr == flow_control
             term2 += cmpr_val # inflow positive
@@ -221,19 +245,19 @@ function _assemble_compressor_contributions_to_node_without_incoming_discharge_p
                 _set_pressure_at_node!(node_id, val/cmpr_val, ts)
                 return
             end
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, val, cmpr_val, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, 0, cmpr_val, ts)
             term1 += var1
-            term2 += var2
+            term2 += var2 - val
         end
         if ctr == flow_control
             term2 += (-1.0 * cmpr_val) # outflow negative
         end
         if ctr == discharge_pressure_control
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, val, 1.0, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, 0, 1.0, ts)
             discharge_pressure_prev = ref(ts, :node, node_across_co_id, "pressure")
             discharge_rho_prev = get_density(ts, ref(ts, :node, node_across_co_id, "pressure"))
             discharge_rho = get_density(ts, cmpr_val)
-            term2 += var1 * (discharge_rho_prev - discharge_rho) + var2
+            term2 += var1 * (discharge_rho_prev - discharge_rho) + var2 - val
             _set_pressure_at_node!(node_across_co_id, cmpr_val, ts)
         end
     end
@@ -264,9 +288,9 @@ function _assemble_compressor_contributions_to_node_with_incoming_discharge_pres
             ctrl_type, val = control(ts, :node, node_across_ci_id, t)
             # if vertex were a slack node, injection is unknown
             @assert ctrl_type == flow_control
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_ci_id, val, 1/cmpr_val, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_ci_id, 0, 1/cmpr_val, ts)
             term1 += var1
-            term2 += var2
+            term2 += var2 - val
         end
         if ctr == flow_control
             term2 += cmpr_val #incoming flow positive
@@ -279,19 +303,19 @@ function _assemble_compressor_contributions_to_node_with_incoming_discharge_pres
             ctrl_type, val = control(ts, :node, node_across_co_id, t)
             # if vertex were a slack node, injection is unknown
             @assert ctrl_type == flow_control
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, val, cmpr_val, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, 0, cmpr_val, ts)
             term1 += var1
-            term2 += var2
+            term2 += var2 - val
         end
         if ctr == flow_control
             term2 += (-1.0 * cmpr_val) # outflow
         end
         if ctr == discharge_pressure_control
-            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, val, 1.0, ts)
+            var1, var2 = _assemble_pipe_contributions_to_node(node_across_co_id, 0, 1.0, ts)
             out_discharge_pressure_prev = ref(ts, :node, node_across_co_id, "pressure")
             out_discharge_rho_prev = ref(ts, :node, node_across_co_id, "density")
             out_discharge_rho = get_density(ts, cmpr_val)
-            term2 += var1 * (out_discharge_rho_prev - out_discharge_rho) + var2
+            term2 += var1 * (out_discharge_rho_prev - out_discharge_rho) + var2 - val
         end
     end
     return term1, term2

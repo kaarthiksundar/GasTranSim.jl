@@ -158,7 +158,7 @@ function _rescale_data!(data::Dict{String,Any},
         params[Symbol(param)] = f(value)
     end 
 
-    for (i, node) in get(data, "nodes", [])
+    for (_, node) in get(data, "nodes", [])
         for (param, f) in node_units
             (!haskey(node, param)) && (continue)
             value = node[param]
@@ -166,7 +166,7 @@ function _rescale_data!(data::Dict{String,Any},
         end 
     end 
 
-    for (i, pipe) in get(data, "pipes", [])
+    for (_, pipe) in get(data, "pipes", [])
         for (param, f) in pipe_units
             (!haskey(pipe, param)) && (continue)
             value = pipe[param]
@@ -174,7 +174,7 @@ function _rescale_data!(data::Dict{String,Any},
         end 
     end 
     
-    for (i, compressor) in get(data, "compressors", [])
+    for (_, compressor) in get(data, "compressors", [])
         for (param, f) in compressor_units
             (!haskey(Dict(compressor), param)) && (continue)
             value = compressor[param]
