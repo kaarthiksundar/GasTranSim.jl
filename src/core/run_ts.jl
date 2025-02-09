@@ -1,7 +1,15 @@
 function run_simulator!(ts::TransientSimulator; 
     run_type::Symbol = :serial, 
+    load_adjust::Bool = false,
     showprogress::Bool = true, 
     progress_dt = 1.0)
+
+    minimum_pressure_limit = params(ts, :minimum_pressure_limit)
+    ts.params[:load_adjust] = load_adjust
+    if  params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
+        throw(DomainError(minimum_pressure_limit, "Load adjustment requires minimum_pressure_limit > 0"))  
+    end
+
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
@@ -15,7 +23,7 @@ function run_simulator!(ts::TransientSimulator;
         enabled = showprogress, 
         desc = "Sim. progress: ")
     if showprogress == false
-        prog = ProgressUnknown(desc="Sim. status", spinner=true)
+        prog = ProgressUnknown(desc="Sim. status ", spinner=true)
     end 
     for _ in 1:num_steps
     	advance_current_time!(ts, dt)
@@ -33,7 +41,6 @@ function run_simulator!(ts::TransientSimulator;
         end 
     end
 
-    calculate_total_withdrawal_reduction!(ts)
     finish!(prog)
     # TODO: add total withdrawal reduction into output state later 
     update_output_data!(ts, output_state, output_data)
@@ -43,12 +50,6 @@ end
 function advance_current_time!(ts::TransientSimulator, tau::Real)
     ts.ref[:current_time] += tau
     return
-end
-
-function calculate_total_withdrawal_reduction!(ts::TransientSimulator)
-    for (node_id, _) in ref(ts, :node)
-        ref(ts, :node, node_id)["total_withdrawal_reduction"] =  ref(ts, :node, node_id)["total_withdrawal_reduction"] * params(ts, :dt)
-    end
 end
 
 function advance_pipe_density_internal!(ts::TransientSimulator, run_type::Symbol)

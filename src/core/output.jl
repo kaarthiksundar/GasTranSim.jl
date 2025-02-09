@@ -49,11 +49,21 @@ function initialize_output_state(ts::TransientSimulator)::OutputState
     pipe = Dict{Int64,Any}() 
     compressor = Dict{Int64,Any}() 
 
-    for i in keys(get(ref(ts), :node, []))
-        node[i] = Dict(
-            "pressure" => [ref(ts, :node, i, "pressure")]
-        )
-    end 
+    if params(ts, :load_adjust) == true
+        for i in keys(get(ref(ts), :node, []))
+            node[i] = Dict(
+                "pressure" => [ref(ts, :node, i, "pressure")], 
+                "load_reduction" => [ref(ts, :node, i, "load_reduction")]
+            )
+        end
+    else
+        for i in keys(get(ref(ts), :node, []))
+            node[i] = Dict(
+                "pressure" => [ref(ts, :node, i, "pressure")]
+            )
+        end  
+    end
+
     for i in keys(get(ref(ts), :pipe, []))
         mass_flux_profile = ref(ts, :pipe, i, "mass_flux_profile")
         pipe[i] = Dict(
@@ -75,6 +85,13 @@ function update_output_state!(ts::TransientSimulator, state::OutputState)
 	for i in keys(get(ref(ts), :node, []))
         push!(state.node[i]["pressure"], ref(ts, :node, i, "pressure"))
     end
+
+    if params(ts, :load_adjust) == true
+        for i in keys(get(ref(ts), :node, []))
+            push!(state.node[i]["load_reduction"], ref(ts, :node, i, "load_reduction"))
+        end
+    end
+
     for i in keys(get(ref(ts), :pipe, []))
         push!(state.pipe[i]["fr_mass_flux"], ref(ts, :pipe, i, "fr_mass_flux"))
         push!(state.pipe[i]["to_mass_flux"], ref(ts, :pipe, i, "to_mass_flux"))
@@ -95,6 +112,15 @@ function update_output_data!(ts::TransientSimulator,
         )
         data.final_state["nodal_pressure"][i] = ref(ts, :node, i, "pressure")
     end 
+
+    if params(ts, :load_adjust) == true
+        for (i, _) in ref(ts, :node)
+            data.node[i]["load_reduction"] = Spline1D(
+                state.time_flux, state.node[i]["load_reduction"], k=1
+            )
+        end 
+    end
+
     for (i, pipe) in ref(ts, :pipe)
         data.pipe[i]["fr_mass_flux"] = Spline1D(
             state.time_flux, state.pipe[i]["fr_mass_flux"], k=1
@@ -164,6 +190,18 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         sol["final_state"]["initial_nodal_pressure"][i] = 
             pressure_convertor(output.final_state["nodal_pressure"][key])
     end
+
+
+
+    if params(ts, :load_adjust) == true
+        for (i, _) in ref(ts, :node)
+            sol["nodes"][string(i)]["load_reduction"] = Vector{Float64}()
+            load_reduction_spl = output.node[i]["load_reduction"]
+            load_reduction = [load_reduction_spl(t) for t in times]
+            sol["nodes"][string(i)]["load_reduction"] = flow_convertor.(load_reduction)
+        end 
+    end
+
 
     sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
     sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
