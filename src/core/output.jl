@@ -199,7 +199,11 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
             load_reduction_spl = output.node[i]["load_reduction"]
             load_reduction = [load_reduction_spl(t) for t in times]
             sol["nodes"][string(i)]["load_reduction"] = flow_convertor.(load_reduction)
-        end 
+        end
+        sol["load_reduction_nodes"] = Vector{String}()
+        for node_id in ref(ts, :load_reduction_nodes)
+            push!(sol["load_reduction_nodes"], string(node_id))
+        end
     end
 
 
