@@ -57,12 +57,12 @@ function process_data!(data::Dict{String,Any})
      "nominal_length", "nominal_velocity", "nominal_pressure","nominal_density", 
         "units", "t_0", "t_f", "dt",
         "courant_number", "output_dt", "output_dx", 
-        "save_final_state", "minimum_pressure_limit"
+        "save_final_state", "minimum_pressure_limit", "maximum_pressure_limit"
 
     ]
 
     defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
-        1000.0, 0, 101325.0
+        1000.0, 0, 0, 100e6
     ]
 
     simulation_params = data["simulation_params"]
@@ -76,7 +76,7 @@ function process_data!(data::Dict{String,Any})
             (key_map["specific_heat_capacity_ratio"] = k)
         occursin("length", k) && (key_map["nominal_length"] = k)
         occursin("velocity", k) && (key_map["nominal_velocity"] = k)
-        occursin("pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("nominal pressure", k) && (key_map["nominal_pressure"] = k)
         occursin("density", k) && (key_map["nominal_density"] = k)
         occursin("units", k) && (key_map["units"] = k)
         occursin("Initial time", k) && (key_map["t_0"] = k)
@@ -86,7 +86,8 @@ function process_data!(data::Dict{String,Any})
         occursin("dt", k) && (key_map["output_dt"] = k)
         occursin("dx", k) && (key_map["output_dx"] = k)
         occursin("final state", k) && (key_map["save_final_state"] = k)
-        occursin("minimum pressure", k) && (key_map["minimum_pressure_limit"] = k)
+        occursin("Minimum pressure", k) && (key_map["minimum_pressure_limit"] = k)
+        occursin("Maximum pressure", k) && (key_map["maximum_pressure_limit"] = k)
     end
 
     # add "area" key to pipes in data
