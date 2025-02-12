@@ -246,7 +246,7 @@ function _compute_compressor_flows!(ts::TransientSimulator)
     # Flows of other compressors at node must be known
     # Compressor has unknown flow must mean one end is slack and other end is level 2
     # Both ends cannot be level 2 or slack, if one end was level 1 non-slack, would already be finished
-    for c_id in ref(ts)[:compressor_ids_second_round_calculation]
+    for c_id in get(ref(ts), :compressor_ids_second_round_calculation, [])
         to_id = ref(ts, :compressor, c_id)["to_node"]
         # to_id cannot be slack, so focus on that
         t = ref(ts, :current_time)
