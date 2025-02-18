@@ -38,6 +38,7 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Trans
     initialize_nodal_state!(ts)
     initialize_pipe_state!(ts)
     initialize_compressor_state!(ts)
+    test_ic(ts)
     return ts
 end
 
@@ -172,6 +173,7 @@ end
 function initialize_pipe_state!(ts::TransientSimulator)
     is_steady = false 
     if isempty(ts.initial_conditions[:pipe]["pressure"])
+        @info "Pipes do not have initial pressure profile, will be computed assuming steady state flow"
         is_steady = true
     end 
     for (key, pipe) in ref(ts, :pipe)
@@ -280,5 +282,65 @@ function initialize_compressor_state!(ts::TransientSimulator)
     end  
     @info "compressor does not have initial flows, computing them"
     _compute_compressor_flows!(ts)
+    return
+end
+
+function test_ic(ts::TransientSimulator)
+    err_node = 0.0
+    for (node_id, junction) in ref(ts, :node)
+        if ref(ts, :node, node_id)["is_slack"] == 1
+            continue
+        end
+        ctrl_type, term = control(ts, :node, node_id, 0)
+
+        out_p = ref(ts, :outgoing_pipes, node_id)
+        in_p = ref(ts, :incoming_pipes, node_id)
+        for i in out_p
+            term += ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") #withdrawal positive
+        end
+
+        for i in in_p
+            term -= ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") #withdrawal positive
+        end
+
+        out_c = ref(ts, :outgoing_compressors, node_id)
+        in_c = ref(ts, :incoming_compressors, node_id)
+
+        for i in out_c
+            term += ref(ts, :compressor, i)["flow"] #withdrawal positive
+        end
+
+        for i in in_c
+            term -= ref(ts, :compressor, i)["flow"]
+        end
+
+        
+        err_node = max(err_node, abs(term))
+    end
+
+    err_c = 0.0
+    for (key, compressor) in ref(ts, :compressor)
+        ctrl_type, alpha = control(ts, :compressor, key, 10)
+        if  ctrl_type == 0
+            fr_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "fr_node"))
+            to_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "to_node"))
+            term = abs(alpha * fr_pr - to_pr)
+            err_c = max(err_c, term)
+        end
+    end
+
+
+    err_p = 0.0
+    for (key, pipe) in ref(ts, :pipe)
+        fr_pr = initial_nodal_pressure(ts, ref(ts, :pipe, key, "fr_node"))
+        to_pr = initial_nodal_pressure(ts, ref(ts, :pipe, key, "to_node"))
+        pr_mean = (fr_pr + to_pr) / 2
+        rho_mean = get_density(ts, pr_mean)
+        term = (fr_pr  - to_pr) * rho_mean - pipe["length"] *  pipe["friction_factor"] / (2 * pipe["diameter"] ) * pipe["fr_mass_flux"] * abs(pipe["fr_mass_flux"])
+        err_p = max(err_p, abs(term))
+    end
+    err = max(err_node, err_c, err_p)
+    @info "Error in initial condition is $err"
+    
     return
 end

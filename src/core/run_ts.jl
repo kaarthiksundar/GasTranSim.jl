@@ -4,6 +4,7 @@ function run_simulator!(ts::TransientSimulator;
     showprogress::Bool = true, 
     progress_dt = 1.0)
 
+
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     ts.params[:load_adjust] = load_adjust
     if  params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
@@ -28,7 +29,8 @@ function run_simulator!(ts::TransientSimulator;
         desc = "Sim. progress: ")
     if showprogress == false
         prog = ProgressUnknown(desc="Sim. status ", spinner=true)
-    end 
+    end
+    p_prev = form_pressure_vector(ts)
     for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
@@ -43,6 +45,11 @@ function run_simulator!(ts::TransientSimulator;
         else 
             next!(prog)
         end 
+        p_curr = form_pressure_vector(ts)
+        error = maximum( abs.(p_curr .- p_prev) )/length(p_curr)
+        if error < 1e-3
+            println(error)
+        end
     end
 
     finish!(prog)
@@ -92,5 +99,14 @@ function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symb
     key_array = collect(keys(ref(ts, :pipe)))
     _execute_task!(_advance_pipe_mass_flux_internal!, ts, key_array, run_type)
     return
+end
+
+function form_pressure_vector(ts::TransientSimulator)::Vector{Float64}
+    key_array = sort(collect(keys(ref(ts, :node))))
+    pressure_vector = Vector{Float64}(undef, length(key_array))
+    for i = 1: length(key_array)
+        pressure_vector[i] = ref(ts, :node, key_array[i])["pressure"]
+    end
+    return pressure_vector
 end
 

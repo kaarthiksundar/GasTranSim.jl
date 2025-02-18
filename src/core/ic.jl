@@ -5,18 +5,54 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
     ic[:pipe] = Dict("mass_flow" => Dict(), "pressure" => Dict())
     ic[:compressor] = Dict() 
 
-    for (i, value) in get(data, "initial_nodal_pressure", [])
+
+    
+    if haskey(data, "initial_nodal_pressure") && haskey(data, "nodal_pressure")
+        (throw(ICException("Both keys nodal pressure and initial_nodal_pressure present")))
+    end
+
+    if haskey(data, "initial_nodal_pressure")
+        nodal_key = "initial_nodal_pressure"
+    else
+        nodal_key = "nodal_pressure"
+    end
+
+    for (i, value) in get(data, nodal_key, [])
         id = parse(Int64, i)
         ic[:node][id] = value
-    end 
+    end
+    
+
 
     # this is not a mandatory initial condition - will be computed if not provided
-    for (i, value) in get(data, "initial_compressor_flow", [])
+    if haskey(data, "initial_compressor_flow") && haskey(data, "compressor_flow")
+        (throw(ICException("Both keys compressor_flow  and initial_compressor_flow present")))
+    end
+
+    if haskey(data, "initial_compressor_flow")
+        comp_key = "initial_compressor_flow"
+    else
+        comp_key = "compressor_flow"
+    end
+
+    for (i, value) in get(data, comp_key, [])
         id = parse(Int64, i)
         ic[:compressor][id] = value
-    end 
+    end
+    
 
-    for (i, value) in get(data, "initial_pipe_flow", [])
+
+    if haskey(data, "initial_pipe_flow") && haskey(data, "pipe_flow")
+        (throw(ICException("Both keys pipe_flow  and initial_pipe_flow present")))
+    end
+
+    if haskey(data, "initial_pipe_flow")
+        pipe_key = "initial_pipe_flow"
+    else
+        pipe_key = "pipe_flow"
+    end
+
+    for (i, value) in get(data, pipe_key, [])
         id = parse(Int64, i)
         L = data["pipes"][i]["length"]
         if (isa(value, Number))
@@ -28,27 +64,14 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
             val = value["value"]
             ic[:pipe]["mass_flow"][id] = Spline1D(distance, val, k=1)
         end 
-    end 
+    end
+    
 
     for (i, value) in get(data, "initial_pipe_pressure", [])
         id = parse(Int64, i)
         distance = value["distance"]
         val = value["value"]
         ic[:pipe]["pressure"][id] = Spline1D(distance, val, k=1)
-    end 
-
-    if isempty(get(data, "initial_pipe_pressure", []))
-        for (i, pipe) in data["pipes"]
-            id = parse(Int64, i)
-            L = pipe["length"]
-            distance = [0.0, L]
-            fr_node = pipe["from_node"]
-            to_node = pipe["to_node"]
-            fr_pressure = ic[:node][fr_node]
-            to_pressure = ic[:node][to_node]
-            val = [fr_pressure, to_pressure]
-            ic[:pipe]["pressure"][id] = Spline1D(distance, val, k=1)
-        end 
     end 
 
     # compressor flow initial condition is not mandatory

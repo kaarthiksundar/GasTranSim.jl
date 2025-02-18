@@ -29,7 +29,7 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
-    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow"]
+    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow", "nodal_pressure", "pipe_flow", "compressor_flow"]
     filter!(p -> p.first in allowable_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
@@ -158,18 +158,18 @@ function process_data!(data::Dict{String,Any})
     else 
         params[:nominal_pressure]
     end
-    nominal_values[:density] = 
-    if isnan(params[:nominal_density]) 
-        nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
-    else 
-        params[:nominal_density]
-    end 
     nominal_values[:velocity] =
     if isnan(params[:nominal_velocity])
        ceil(nominal_values[:sound_speed]/2)
     else
         params[:nominal_velocity]
     end
+    nominal_values[:density] = 
+    if isnan(params[:nominal_density]) 
+        nominal_values[:pressure] / (nominal_values[:velocity]^2)
+    else 
+        params[:nominal_density]
+    end 
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
     nominal_values[:time] = nominal_values[:length] / nominal_values[:velocity]
