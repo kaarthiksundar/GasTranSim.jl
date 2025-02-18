@@ -172,6 +172,9 @@ end
 
 function initialize_pipe_state!(ts::TransientSimulator)
     is_steady = false 
+    # we are assuming initial pipe pressures will not be provided only for steady initial conditions 
+    # the case where initial pipe flow is unsteady, explicitly computing initial pipe pressures is very tedious and hence not done 
+    # when initial pipe flow in unsteady, we assume initial pipe pressure are provided.
     if isempty(ts.initial_conditions[:pipe]["pressure"])
         @info "Pipes do not have initial pressure profile, will be computed assuming steady state flow"
         is_steady = true
@@ -287,20 +290,21 @@ end
 
 function test_ic(ts::TransientSimulator)
     err_node = 0.0
-    for (node_id, junction) in ref(ts, :node)
+    # error in nodal flow balance conditions
+    for (node_id, _) in ref(ts, :node)
         if ref(ts, :node, node_id)["is_slack"] == 1
             continue
         end
-        ctrl_type, term = control(ts, :node, node_id, 0)
+        _, term = control(ts, :node, node_id, 0)
 
         out_p = ref(ts, :outgoing_pipes, node_id)
         in_p = ref(ts, :incoming_pipes, node_id)
         for i in out_p
-            term += ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") #withdrawal positive
+            term += ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") # withdrawal positive
         end
 
         for i in in_p
-            term -= ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") #withdrawal positive
+            term -= ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") # withdrawal positive
         end
 
         out_c = ref(ts, :outgoing_compressors, node_id)
@@ -314,12 +318,14 @@ function test_ic(ts::TransientSimulator)
             term -= ref(ts, :compressor, i)["flow"]
         end
 
-        
         err_node = max(err_node, abs(term))
     end
 
     err_c = 0.0
-    for (key, compressor) in ref(ts, :compressor)
+    # error in compressor ratio equation (only if ctrl_type == 0)
+    for (key, _) in ref(ts, :compressor)
+        # 10 is used as a last argument to prevent assertion error in types.jl line 114 
+        # TODO: fix this later
         ctrl_type, alpha = control(ts, :compressor, key, 10)
         if  ctrl_type == 0
             fr_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "fr_node"))
@@ -329,7 +335,7 @@ function test_ic(ts::TransientSimulator)
         end
     end
 
-
+    # pipe equation error 
     err_p = 0.0
     for (key, pipe) in ref(ts, :pipe)
         fr_pr = initial_nodal_pressure(ts, ref(ts, :pipe, key, "fr_node"))
@@ -340,7 +346,7 @@ function test_ic(ts::TransientSimulator)
         err_p = max(err_p, abs(term))
     end
     err = max(err_node, err_c, err_p)
-    @info "Error in initial condition is $err"
+    @debug "If the initial condition was steady, then the error in initial condition is $err"
     
     return
 end

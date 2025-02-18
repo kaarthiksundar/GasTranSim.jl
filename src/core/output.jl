@@ -191,8 +191,6 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
             pressure_convertor(output.final_state["nodal_pressure"][key])
     end
 
-
-
     if params(ts, :load_adjust) == true
         for (i, _) in ref(ts, :node)
             sol["nodes"][string(i)]["load_reduction"] = Vector{Float64}()
@@ -205,7 +203,6 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
             push!(sol["load_reduction_nodes"], string(node_id))
         end
     end
-
 
     sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
     sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()

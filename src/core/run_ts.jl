@@ -8,12 +8,10 @@ function run_simulator!(ts::TransientSimulator;
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     ts.params[:load_adjust] = load_adjust
     if  params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
-        throw(DomainError(minimum_pressure_limit, "Load adjustment requires minimum_pressure_limit > 0"))  
+        throw(DomainError(minimum_pressure_limit, "load adjustment requires minimum_pressure_limit > 0"))  
     end
 
-    if params(ts, :load_adjust) == true
-        ts.ref[:load_reduction_nodes] = Vector{Int64}()
-    end
+    (params(ts, :load_adjust) == true) && (ts.ref[:load_reduction_nodes] = Vector{Int64}())
 
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
@@ -30,7 +28,7 @@ function run_simulator!(ts::TransientSimulator;
     if showprogress == false
         prog = ProgressUnknown(desc="Sim. status ", spinner=true)
     end
-    p_prev = form_pressure_vector(ts)
+    nodal_pressure_previous = form_nodal_pressure_vector(ts)
     for _ in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
@@ -45,11 +43,13 @@ function run_simulator!(ts::TransientSimulator;
         else 
             next!(prog)
         end 
-        p_curr = form_pressure_vector(ts)
-        error = maximum( abs.(p_curr .- p_prev) )/length(p_curr)
-        if error < 1e-3
-            println(error)
-        end
+        nodal_pressure_current = form_nodal_pressure_vector(ts)
+        error = maximum( abs.(nodal_pressure_current .- nodal_pressure_previous) )/length(nodal_pressure_current)
+        
+        # commented out temporarily, can be used for debugging code later 
+        # if error < 1e-3
+        #     println(error)
+        # end
     end
 
     finish!(prog)
@@ -101,10 +101,10 @@ function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symb
     return
 end
 
-function form_pressure_vector(ts::TransientSimulator)::Vector{Float64}
+function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
     key_array = sort(collect(keys(ref(ts, :node))))
     pressure_vector = Vector{Float64}(undef, length(key_array))
-    for i = 1: length(key_array)
+    for i in eachindex(key_array)
         pressure_vector[i] = ref(ts, :node, key_array[i])["pressure"]
     end
     return pressure_vector
