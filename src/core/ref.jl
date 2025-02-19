@@ -22,7 +22,10 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id] = Dict()
         @assert id == pipe["pipe_id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = pipe["from_node"]
+        ref[name][id]["fr_node"] = get(pipe, "from_node", get(pipe, "fr_node", false))  
+        if (ref[name][id]["fr_node"] == false) 
+            throw(MissingDataException("from node for pipe $i"))
+        end 
         ref[name][id]["to_node"] = pipe["to_node"]
         ref[name][id]["diameter"] = pipe["diameter"]
         ref[name][id]["area"] = pipe["area"]
@@ -43,7 +46,10 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         @assert id == compressor["comp_id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
-        ref[name][id]["fr_node"] = compressor["from_node"]
+        ref[name][id]["fr_node"] = get(compressor, "from_node", get(compressor, "fr_node", false))  
+        if (ref[name][id]["fr_node"] == false) 
+            throw(MissingDataException("from node for compressor $i"))
+        end 
         ref[name][id]["control_type"] = unknown_control
         ref[name][id]["c_ratio"] = NaN
         ref[name][id]["discharge_pressure"] = NaN
