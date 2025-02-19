@@ -29,7 +29,7 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
-    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow"]
+    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow", "nodal_pressure", "pipe_flow", "compressor_flow", "pipe_pressure"]
     filter!(p -> p.first in allowable_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
@@ -57,17 +57,16 @@ function process_data!(data::Dict{String,Any})
      "nominal_length", "nominal_velocity", "nominal_pressure","nominal_density", 
         "units", "t_0", "t_f", "dt",
         "courant_number", "output_dt", "output_dx", 
-        "save_final_state", "minimum_pressure_limit"
+        "save_final_state", "minimum_pressure_limit", "maximum_pressure_limit"
 
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
-        1000.0, 0, 101325.0
-    ]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 
+    0.95, 3600.0, 1000.0, 0, 0, 100e6]
 
-    simulation_params = data["simulation_params"]
+    simulation_params = get(data, "simulation_params", get(data, "params", Dict()))
+    (isempty(simulation_params)) && (throw(MissingDataException("simulation params")))
     
-
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
@@ -76,7 +75,7 @@ function process_data!(data::Dict{String,Any})
             (key_map["specific_heat_capacity_ratio"] = k)
         occursin("length", k) && (key_map["nominal_length"] = k)
         occursin("velocity", k) && (key_map["nominal_velocity"] = k)
-        occursin("pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("nominal pressure", k) && (key_map["nominal_pressure"] = k)
         occursin("density", k) && (key_map["nominal_density"] = k)
         occursin("units", k) && (key_map["units"] = k)
         occursin("Initial time", k) && (key_map["t_0"] = k)
@@ -86,7 +85,8 @@ function process_data!(data::Dict{String,Any})
         occursin("dt", k) && (key_map["output_dt"] = k)
         occursin("dx", k) && (key_map["output_dx"] = k)
         occursin("final state", k) && (key_map["save_final_state"] = k)
-        occursin("minimum pressure", k) && (key_map["minimum_pressure_limit"] = k)
+        occursin("Minimum pressure", k) && (key_map["minimum_pressure_limit"] = k)
+        occursin("Maximum pressure", k) && (key_map["maximum_pressure_limit"] = k)
     end
 
     # add "area" key to pipes in data
@@ -157,18 +157,18 @@ function process_data!(data::Dict{String,Any})
     else 
         params[:nominal_pressure]
     end
-    nominal_values[:density] = 
-    if isnan(params[:nominal_density]) 
-        nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
-    else 
-        params[:nominal_density]
-    end 
     nominal_values[:velocity] =
     if isnan(params[:nominal_velocity])
        ceil(nominal_values[:sound_speed]/2)
     else
         params[:nominal_velocity]
     end
+    nominal_values[:density] = 
+    if isnan(params[:nominal_density]) 
+        nominal_values[:pressure] / (nominal_values[:velocity]^2)
+    else 
+        params[:nominal_density]
+    end 
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
     nominal_values[:time] = nominal_values[:length] / nominal_values[:velocity]

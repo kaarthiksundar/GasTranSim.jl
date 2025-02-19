@@ -27,6 +27,10 @@ mutable struct ControlException <: Exception
     var::AbstractString 
 end 
 
+mutable struct MissingDataException <: Exception 
+    var::AbstractString 
+end 
+
 Base.showerror(io::IO, e::CFLException) = print(io, "CFL condition fails, time-step too large for component ", e.var, "!")
 
 Base.showerror(io::IO, e::NetworkException) = print(io, "Network topology incompatible with simulator; ", e.var, "!")
@@ -34,6 +38,8 @@ Base.showerror(io::IO, e::NetworkException) = print(io, "Network topology incomp
 Base.showerror(io::IO, e::ICException) = print(io, "Initial condition missing: ", e.var, "!")
 
 Base.showerror(io::IO, e::ControlException) = print(io, "Control values: ", e.var, "!")
+
+Base.showerror(io::IO, e::MissingDataException) = print(io, "Data: ", e.var, "missing!")
 
 ref(ts::TransientSimulator) = ts.ref
 ref(ts::TransientSimulator, key::Symbol) = ts.ref[key]

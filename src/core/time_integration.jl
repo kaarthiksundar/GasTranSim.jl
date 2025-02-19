@@ -103,10 +103,28 @@ function _calculate_pressure_for_node_without_incoming_discharge_pressure_contro
     rho = rho_prev + (t2 -withdrawal  + s2) / (t1 + s1)
 
     pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
-    rho_min = get_density(ts, pressure_min)
-    rho = max(rho, rho_min)
-    withdrawal_new = (rho_prev - rho) * (t1 + s1) + s2 + t2
-    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal - withdrawal_new)
+    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
+    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_max = get_density(ts, pressure_max)
+    
+    
+    if !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        throw(DomainError(rho, "Density bound ($rho_min, $rho_max) violation at node $node_id"))
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        ref(ts, :node, node_id)["load_reduction"] = 0.0
+    
+    elseif !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        rho  = (rho <= rho_min) ? rho_min : rho_max
+        withdrawal_new = (rho_prev - rho) * (t1 + s1) + s2 + t2
+        ref(ts, :node, node_id)["load_reduction"] =  (withdrawal - withdrawal_new)
+        if !(node_id in ref(ts, :load_reduction_nodes))
+            push!(ref(ts, :load_reduction_nodes), node_id)
+        end
+    end
 
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
@@ -126,10 +144,27 @@ function _set_pressure_for_node_with_single_flow_control_compressor!(node_id::In
     rho = rho_prev + ( (t2 - net_withdrawal)  / t1) 
 
     pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
-    rho_min = get_density(ts, pressure_min)
-    rho = max(rho, rho_min)
-    node_withdrawal_new = (rho_prev - rho) * t1  + t2 - compressor_flow_withdrawal
-    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (node_withdrawal - node_withdrawal_new)
+    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0.0
+    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_max = get_density(ts, pressure_max)
+    
+    if !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        throw(DomainError(rho, "Density bound ($rho_min, $rho_max) violation at node $node_id"))
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        ref(ts, :node, node_id)["load_reduction"] = 0.0
+    
+    elseif !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        rho  = (rho <= rho_min) ? rho_min : rho_max
+        node_withdrawal_new = (rho_prev - rho) * t1  + t2 - compressor_flow_withdrawal
+        ref(ts, :node, node_id)["load_reduction"] =  (node_withdrawal - node_withdrawal_new)
+        if !(node_id in ref(ts, :load_reduction_nodes))
+            push!(ref(ts, :load_reduction_nodes), node_id)
+        end
+    end
 
     pressure = get_pressure(ts, rho)
     _set_pressure_at_node!(node_id, pressure, ts)
@@ -172,10 +207,27 @@ function _calculate_pressure_for_node_with_incoming_discharge_pressure_control!(
     rho = rho_prev + (t2 - withdrawal_1 +  (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 - withdrawal_2 + s2) / t1
     
     pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
-    rho_min = get_density(ts, pressure_min)
-    rho = max(rho, rho_min)
-    withdrawal_1_new = (rho_prev - rho) * t1 + t2  + (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2 - withdrawal_2
-    ref(ts, :node, node_id)["total_withdrawal_reduction"] +=  (withdrawal_1 - withdrawal_1_new)
+    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
+    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_max = get_density(ts, pressure_max)
+    
+    if !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        throw(DomainError(rho, "Density bound ($rho_min, $rho_max) violation at node $node_id"))
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == false)
+        
+    
+    elseif (rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        ref(ts, :node, node_id)["load_reduction"] = 0.0
+    
+    elseif !(rho_min < rho < rho_max) && (params(ts, :load_adjust) == true)
+        rho  = (rho <= rho_min) ? rho_min : rho_max
+        withdrawal_1_new = (rho_prev - rho) * t1 + t2  + (r1 + s1) * (discharge_rho_prev - discharge_rho) + r2 + s2 - withdrawal_2
+        ref(ts, :node, node_id)["load_reduction"] =  (withdrawal_1 - withdrawal_1_new)
+        if !(node_id in ref(ts, :load_reduction_nodes))
+            push!(ref(ts, :load_reduction_nodes), node_id)
+        end
+    end
 
     pressure = get_pressure(ts, rho)
 
