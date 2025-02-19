@@ -4,15 +4,12 @@ function run_simulator!(ts::TransientSimulator;
     showprogress::Bool = true, 
     progress_dt = 1.0)
 
-
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     ts.params[:load_adjust] = load_adjust
     if  params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
         throw(DomainError(minimum_pressure_limit, "load adjustment requires minimum_pressure_limit > 0"))  
     end
-
     (params(ts, :load_adjust) == true) && (ts.ref[:load_reduction_nodes] = Vector{Int64}())
-
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)

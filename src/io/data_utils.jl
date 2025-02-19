@@ -54,11 +54,9 @@ function process_data!(data::Dict{String,Any})
     params = Dict{Symbol,Any}()
 
     params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
-     "nominal_length", "nominal_velocity", "nominal_pressure","nominal_density", 
-        "units", "t_0", "t_f", "dt",
-        "courant_number", "output_dt", "output_dx", 
+        "nominal_length", "nominal_velocity", "nominal_pressure", "nominal_density", 
+        "units", "t_0", "t_f", "dt", "courant_number", "output_dt", "output_dx", 
         "save_final_state", "minimum_pressure_limit", "maximum_pressure_limit"
-
     ]
 
     defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 

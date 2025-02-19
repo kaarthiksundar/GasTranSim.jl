@@ -3,7 +3,9 @@
 ## Staged
 
 ## v0.2.3 
-- Allow for load shedding if pressure falls below 1 atm.
+- Allow for load shedding if pressure falls below minimum pressure in params 
+- Allow for injection shedding if pressure goes above maximum pressure in params 
+- Add a `load_adjust` keyword argument to `run_ts` to activate this feature
 
 ## v0.2.2 
 - Bug fix in level computation of nodes 
