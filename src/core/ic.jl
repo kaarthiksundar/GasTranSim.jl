@@ -9,10 +9,8 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
     if haskey(data, "initial_nodal_pressure") && haskey(data, "nodal_pressure")
         (throw(ICException("both keys nodal pressure and initial_nodal_pressure present")))
     end
-
-    nodal_pressure_key = haskey(data, "initial_nodal_pressure") ? "initial_nodal_pressure" : "nodal_pressure"
     
-    for (i, value) in get(data, nodal_pressure_key, [])
+    for (i, value) in get(data, "initial_nodal_pressure", get(data, "nodal_pressure", []))
         id = parse(Int64, i)
         ic[:node][id] = value
     end
@@ -38,9 +36,7 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
         (throw(ICException("both keys pipe_flow  and initial_pipe_flow present")))
     end
 
-    pipe_flow_key = haskey(data, "initial_pipe_flow") ? "initial_pipe_flow" : "pipe_flow"
-
-    for (i, value) in get(data, pipe_flow_key, [])
+    for (i, value) in get(data, "initial_pipe_flow", get(data, "pipe_flow", []))
         id = parse(Int64, i)
         L = data["pipes"][i]["length"]
         # if steady state (Number) else transient
@@ -56,7 +52,12 @@ function build_ic(data::Dict{String,Any})::Dict{Symbol,Any}
     end
     
     # if not given, computed later (this is not mandatory)
-    for (i, value) in get(data, "initial_pipe_pressure", [])
+    # initial conditions file should not have both "pipe_pressure" and "initial_pipe_pressure"
+    if haskey(data, "initial_pipe_pressure") && haskey(data, "pipe_pressure")
+        (throw(ICException("both keys pipe_pressure  and initial_pipe_pressure present")))
+    end
+
+    for (i, value) in get(data, "initial_pipe_pressure", get(data, "pipe_pressure", []))
         id = parse(Int64, i)
         distance = value["distance"]
         val = value["value"]

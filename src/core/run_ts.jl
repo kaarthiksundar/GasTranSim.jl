@@ -53,7 +53,6 @@ function run_simulator!(ts::TransientSimulator;
     end
 
     finish!(prog)
-    # TODO: add total withdrawal reduction into output state later 
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 end

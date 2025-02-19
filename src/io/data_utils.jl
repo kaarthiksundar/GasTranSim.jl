@@ -29,7 +29,7 @@ function parse_data(data_folder::AbstractString;
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
-    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow", "nodal_pressure", "pipe_flow", "compressor_flow"]
+    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow", "nodal_pressure", "pipe_flow", "compressor_flow", "pipe_pressure"]
     filter!(p -> p.first in allowable_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
@@ -61,13 +61,12 @@ function process_data!(data::Dict{String,Any})
 
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 0.95, 3600.0,
-        1000.0, 0, 0, 100e6
-    ]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 
+    0.95, 3600.0, 1000.0, 0, 0, 100e6]
 
-    simulation_params = data["simulation_params"]
+    simulation_params = get(data, "simulation_params", get(data, "params", Dict()))
+    (isempty(simulation_params)) && (throw(MissingDataException("simulation params")))
     
-
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
