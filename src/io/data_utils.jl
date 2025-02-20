@@ -63,7 +63,7 @@ function process_data!(data::Dict{String,Any})
     0.95, 3600.0, 1000.0, 0, 0, 100e6]
 
     simulation_params = get(data, "simulation_params", get(data, "params", Dict()))
-    (isempty(simulation_params)) && (throw(MissingDataException("simulation params")))
+    (isempty(simulation_params)) && (throw(MissingDataException(" simulation params ")))
     
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
