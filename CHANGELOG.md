@@ -2,7 +2,8 @@
 
 ## Staged
 - Add `turnoffprogressbar` keyword argument to `run_simulator!` 
-- Modify tests to improve coverage
+- Modify tests to improve coverage 
+- New exception `MissingDataException` for missing data errors
 
 ## v0.2.4 
 - Allow for injection shedding if pressure goes above maximum pressure in params 
