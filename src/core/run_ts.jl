@@ -1,22 +1,28 @@
 function run_simulator!(ts::TransientSimulator; 
     run_type::Symbol = :serial, 
+    steady_state::Bool = false,
     load_adjust::Bool = false,
     showprogress::Bool = true, 
     turnoffprogressbar::Bool = false,
     progress_dt = 1.0)
-
+    #
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     ts.params[:load_adjust] = load_adjust
+    #
     if  params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
         throw(DomainError(minimum_pressure_limit, "load adjustment requires minimum_pressure_limit > 0"))  
     end
+    #
     (params(ts, :load_adjust) == true) && (ts.ref[:load_reduction_nodes] = Vector{Int64}())
+    #
     output_state = initialize_output_state(ts)
     dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     t_0 = params(ts, :t_0)
     num_steps = Int(round((t_f-t_0)/dt))
+    #
     output_data = OutputData(ts)
+    #
     prog = Progress(num_steps;
         dt = progress_dt,
         barglyphs = get_barglyphs(),
@@ -26,8 +32,13 @@ function run_simulator!(ts::TransientSimulator;
     if showprogress == false
         prog = ProgressUnknown(desc="Sim. status ", spinner=true)
     end
-    nodal_pressure_previous = form_nodal_pressure_vector(ts)
+    # This block is used only for computing steady-state solution
+    if steady_state == true
+        nodal_pressure_previous = form_nodal_pressure_vector(ts)
+    end
+    #
     for step in 1:num_steps
+        #
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
@@ -36,24 +47,31 @@ function run_simulator!(ts::TransientSimulator;
         _compute_compressor_flows!(ts)
     	#  if current_time is one where output needs to be saved, check and do now
         update_output_state!(ts, output_state)
+        #
         if showprogress == false
             (turnoffprogressbar == false) && (next!(prog, spinner="🌑🌒🌓🌔🌕🌖🌗🌘"))
         else 
             (turnoffprogressbar == false) && (next!(prog))
         end 
         
-        
-        # commented out temporarily, can be used for debugging code later 
-        if (step % floor(num_steps/10) == 0) || (step == num_steps)
-            nodal_pressure_current = form_nodal_pressure_vector(ts)
-            error = maximum( abs.(nodal_pressure_current - nodal_pressure_previous) )
-            nodal_pressure_previous = nodal_pressure_current
-            println(error)
-            if error < 1e-3
-                @info "Steady state attained"
-                break
+        # This block is used only for computing steady-state solution
+        if steady_state == true
+            if (step % floor(num_steps/10) == 0) 
+                nodal_pressure_current = form_nodal_pressure_vector(ts)
+                error = maximum( abs.(nodal_pressure_current - nodal_pressure_previous) )
+                nodal_pressure_previous = nodal_pressure_current
+                println(error)
+                if error < 1e-5
+                    @info "Steady state attained"
+                    break
+                end
+            end
+            #
+            if (step == num_steps)
+                @info "Steady-state not yet attained ! Consider increasing final time"
             end
         end
+
     end
 
     (turnoffprogressbar == false) && (finish!(prog))
