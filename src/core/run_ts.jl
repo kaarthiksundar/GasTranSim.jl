@@ -26,7 +26,7 @@ function run_simulator!(ts::TransientSimulator;
         prog = ProgressUnknown(desc="Sim. status ", spinner=true)
     end
     nodal_pressure_previous = form_nodal_pressure_vector(ts)
-    for _ in 1:num_steps
+    for step in 1:num_steps
     	advance_current_time!(ts, dt)
     	#  if current_time is where some disruption occurs, modify ts.ref now
     	advance_pipe_density_internal!(ts, run_type) # (n+1) level
@@ -40,13 +40,19 @@ function run_simulator!(ts::TransientSimulator;
         else 
             next!(prog)
         end 
-        nodal_pressure_current = form_nodal_pressure_vector(ts)
-        error = maximum( abs.(nodal_pressure_current .- nodal_pressure_previous) )/length(nodal_pressure_current)
+        
         
         # commented out temporarily, can be used for debugging code later 
-        # if error < 1e-3
-        #     println(error)
-        # end
+        if (step % floor(num_steps/10) == 0) || (step == num_steps)
+            nodal_pressure_current = form_nodal_pressure_vector(ts)
+            error = maximum( abs.(nodal_pressure_current - nodal_pressure_previous) )
+            nodal_pressure_previous = nodal_pressure_current
+            println(error)
+            if error < 1e-3
+                @info "Steady state attained"
+                break
+            end
+        end
     end
 
     finish!(prog)

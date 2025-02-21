@@ -26,6 +26,11 @@ function parse_data(data_folder::AbstractString;
     else 
         bc_file = bc_file * ".json"
     end 
+    @info "Using params file $params_file"
+    @info "Using network file $network_file"
+    @info "Using ic file $ic_file"
+    @info "Using bc file $bc_file"
+    
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
@@ -39,7 +44,7 @@ end
 
 function _get_nominal_pressure(data::Dict{String,Any}, units)
     nodal_pressures = []
-    for (_, value) in get(data, "initial_nodal_pressure", [])
+    for (_, value) in get(data, "initial_nodal_pressure", get(data, "nodal_pressure", []))
         push!(nodal_pressures, value)
     end 
 
