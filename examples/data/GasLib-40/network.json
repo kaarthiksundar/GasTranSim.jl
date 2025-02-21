@@ -1,0 +1,675 @@
+{
+  "nodes": {
+    "32": {
+      "y_coord": 7.1514568006,
+      "x_coord": 47.7026244783,
+      "id": 32,
+      "slack_bool": 0,
+      "name": "n32"
+    },
+    "29": {
+      "y_coord": 6.40592572072,
+      "x_coord": 48.8791502097,
+      "id": 29,
+      "slack_bool": 0,
+      "name": "n29"
+    },
+    "1": {
+      "y_coord": 8.46216553204,
+      "x_coord": 48.6811671875,
+      "id": 1,
+      "slack_bool": 0,
+      "name": "n1"
+    },
+    "24": {
+      "y_coord": 6.98540104932,
+      "x_coord": 48.9965039215,
+      "id": 24,
+      "slack_bool": 0,
+      "name": "n24"
+    },
+    "12": {
+      "y_coord": 7.44437553119,
+      "x_coord": 46.9361991326,
+      "id": 12,
+      "slack_bool": 0,
+      "name": "n12"
+    },
+    "20": {
+      "y_coord": 6.73248116159,
+      "x_coord": 48.459701438,
+      "id": 20,
+      "slack_bool": 0,
+      "name": "n20"
+    },
+    "4": {
+      "y_coord": 8.94117028284,
+      "x_coord": 49.7403095041,
+      "id": 4,
+      "slack_bool": 0,
+      "name": "n4"
+    },
+    "2": {
+      "y_coord": 8.583339554,
+      "x_coord": 49.3334858508,
+      "id": 2,
+      "slack_bool": 0,
+      "name": "n2"
+    },
+    "25": {
+      "y_coord": 7.37537769742,
+      "x_coord": 47.0633496609,
+      "id": 25,
+      "slack_bool": 0,
+      "name": "n25"
+    },
+    "6": {
+      "y_coord": 7.17535860736,
+      "x_coord": 48.4488696592,
+      "id": 6,
+      "slack_bool": 0,
+      "name": "n6"
+    },
+    "23": {
+      "y_coord": 6.70412987914,
+      "x_coord": 47.0460984698,
+      "id": 23,
+      "slack_bool": 0,
+      "name": "n23"
+    },
+    "22": {
+      "y_coord": 7.39141172381,
+      "x_coord": 47.0380264306,
+      "id": 22,
+      "slack_bool": 0,
+      "name": "n22"
+    },
+    "11": {
+      "y_coord": 8.42123710095,
+      "x_coord": 48.6971572817,
+      "id": 11,
+      "slack_bool": 0,
+      "name": "n11"
+    },
+    "35": {
+      "y_coord": 7.06050754884,
+      "x_coord": 47.3369727255,
+      "id": 35,
+      "slack_bool": 0,
+      "name": "n35"
+    },
+    "13": {
+      "y_coord": 7.44570784066,
+      "x_coord": 48.5215554511,
+      "id": 13,
+      "slack_bool": 0,
+      "name": "n13"
+    },
+    "27": {
+      "y_coord": 6.68272868748,
+      "x_coord": 47.7185810751,
+      "id": 27,
+      "slack_bool": 0,
+      "name": "n27"
+    },
+    "31": {
+      "y_coord": 6.97077467828,
+      "x_coord": 48.885442716,
+      "id": 31,
+      "slack_bool": 0,
+      "name": "n31"
+    },
+    "5": {
+      "y_coord": 8.90117691783,
+      "x_coord": 49.7568273333,
+      "id": 5,
+      "slack_bool": 0,
+      "name": "n5"
+    },
+    "15": {
+      "y_coord": 6.89011537273,
+      "x_coord": 48.5065941308,
+      "id": 15,
+      "slack_bool": 0,
+      "name": "n15"
+    },
+    "33": {
+      "y_coord": 7.16001963256,
+      "x_coord": 47.443686524,
+      "id": 33,
+      "slack_bool": 0,
+      "name": "n33"
+    },
+    "28": {
+      "y_coord": 8.52297468917,
+      "x_coord": 49.5990665066,
+      "id": 28,
+      "slack_bool": 0,
+      "name": "n28"
+    },
+    "16": {
+      "y_coord": 9.43465849075,
+      "x_coord": 48.4333749364,
+      "id": 16,
+      "slack_bool": 0,
+      "name": "n16"
+    },
+    "14": {
+      "y_coord": 7.53102691462,
+      "x_coord": 48.5489388283,
+      "id": 14,
+      "slack_bool": 0,
+      "name": "n14"
+    },
+    "39": {
+      "y_coord": 6.03796563153,
+      "x_coord": 48.8195473681,
+      "id": 39,
+      "slack_bool": 0,
+      "name": "n39"
+    },
+    "40": {
+      "y_coord": 8.97279305602,
+      "x_coord": 49.7619017195,
+      "id": 40,
+      "slack_bool": 0,
+      "name": "n40"
+    },
+    "38": {
+      "y_coord": 6.83756607565,
+      "x_coord": 48.9636070987,
+      "id": 38,
+      "slack_bool": 1,
+      "name": "n38"
+    },
+    "21": {
+      "y_coord": 7.29728251758,
+      "x_coord": 47.8567226888,
+      "id": 21,
+      "slack_bool": 0,
+      "name": "n21"
+    },
+    "7": {
+      "y_coord": 6.07663431277,
+      "x_coord": 48.8104610444,
+      "id": 7,
+      "slack_bool": 0,
+      "name": "n7"
+    },
+    "34": {
+      "y_coord": 7.01216228711,
+      "x_coord": 47.3275079104,
+      "id": 34,
+      "slack_bool": 0,
+      "name": "n34"
+    },
+    "8": {
+      "y_coord": 6.99100680564,
+      "x_coord": 48.8570163856,
+      "id": 8,
+      "slack_bool": 0,
+      "name": "n8"
+    },
+    "36": {
+      "y_coord": 7.33432182486,
+      "x_coord": 47.6849157863,
+      "id": 36,
+      "slack_bool": 0,
+      "name": "n36"
+    },
+    "26": {
+      "y_coord": 7.12595044104,
+      "x_coord": 48.4394407366,
+      "id": 26,
+      "slack_bool": 0,
+      "name": "n26"
+    },
+    "17": {
+      "y_coord": 7.22930308682,
+      "x_coord": 47.6232526053,
+      "id": 17,
+      "slack_bool": 0,
+      "name": "n17"
+    },
+    "10": {
+      "y_coord": 8.22677735937,
+      "x_coord": 48.7974633765,
+      "id": 10,
+      "slack_bool": 0,
+      "name": "n10"
+    },
+    "19": {
+      "y_coord": 8.56821772295,
+      "x_coord": 49.3632855469,
+      "id": 19,
+      "slack_bool": 0,
+      "name": "n19"
+    },
+    "37": {
+      "y_coord": 6.61723223779,
+      "x_coord": 47.5761839373,
+      "id": 37,
+      "slack_bool": 0,
+      "name": "n37"
+    },
+    "9": {
+      "y_coord": 6.55671455828,
+      "x_coord": 46.9192512725,
+      "id": 9,
+      "slack_bool": 0,
+      "name": "n9"
+    },
+    "18": {
+      "y_coord": 6.64669590696,
+      "x_coord": 47.488271936,
+      "id": 18,
+      "slack_bool": 0,
+      "name": "n18"
+    },
+    "30": {
+      "y_coord": 6.48271145481,
+      "x_coord": 48.6858521349,
+      "id": 30,
+      "slack_bool": 0,
+      "name": "n30"
+    },
+    "3": {
+      "y_coord": 8.52259820008,
+      "x_coord": 49.3537539296,
+      "id": 3,
+      "slack_bool": 0,
+      "name": "n3"
+    }
+  },
+  "pipes": {
+    "32": {
+      "length": 65057.174267899994,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p32",
+      "id": 32,
+      "to_node": 2,
+      "diameter": 0.8,
+      "fr_node": 10
+    },
+    "29": {
+      "length": 32449.372045300002,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p29",
+      "id": 29,
+      "to_node": 5,
+      "diameter": 1.0,
+      "fr_node": 28
+    },
+    "1": {
+      "length": 13071.085229699998,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p1",
+      "id": 1,
+      "to_node": 31,
+      "diameter": 1.0,
+      "fr_node": 38
+    },
+    "24": {
+      "length": 12766.7034136,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p24",
+      "id": 24,
+      "to_node": 15,
+      "diameter": 1.0,
+      "fr_node": 20
+    },
+    "12": {
+      "length": 76893.5507568,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p12",
+      "id": 12,
+      "to_node": 16,
+      "diameter": 0.8,
+      "fr_node": 1
+    },
+    "20": {
+      "length": 36061.0098747,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p20",
+      "id": 20,
+      "to_node": 30,
+      "diameter": 0.8,
+      "fr_node": 15
+    },
+    "4": {
+      "length": 47488.2838523,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p4",
+      "id": 4,
+      "to_node": 8,
+      "diameter": 0.8,
+      "fr_node": 26
+    },
+    "2": {
+      "length": 20322.205425900003,
+      "friction_factor": 0.002183190871781998,
+      "name": "p2",
+      "id": 2,
+      "to_node": 21,
+      "diameter": 0.6,
+      "fr_node": 32
+    },
+    "25": {
+      "length": 32921.259815,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p25",
+      "id": 25,
+      "to_node": 7,
+      "diameter": 0.8,
+      "fr_node": 30
+    },
+    "6": {
+      "length": 39036.0418114,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p6",
+      "id": 6,
+      "to_node": 23,
+      "diameter": 0.8,
+      "fr_node": 34
+    },
+    "23": {
+      "length": 21557.5661917,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p23",
+      "id": 23,
+      "to_node": 13,
+      "diameter": 1.0,
+      "fr_node": 6
+    },
+    "22": {
+      "length": 31179.6191038,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p22",
+      "id": 22,
+      "to_node": 20,
+      "diameter": 0.8,
+      "fr_node": 30
+    },
+    "11": {
+      "length": 14043.1135378,
+      "friction_factor": 0.0023585366114688474,
+      "name": "p11",
+      "id": 11,
+      "to_node": 33,
+      "diameter": 0.4,
+      "fr_node": 35
+    },
+    "35": {
+      "length": 58218.9695531,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p35",
+      "id": 35,
+      "to_node": 10,
+      "diameter": 0.8,
+      "fr_node": 14
+    },
+    "13": {
+      "length": 20634.698268800006,
+      "friction_factor": 0.002183190871781998,
+      "name": "p13",
+      "id": 13,
+      "to_node": 17,
+      "diameter": 0.6,
+      "fr_node": 33
+    },
+    "27": {
+      "length": 3479.45466552,
+      "friction_factor": 0.001621776749018228,
+      "name": "p27",
+      "id": 27,
+      "to_node": 3,
+      "diameter": 0.8,
+      "fr_node": 19
+    },
+    "5": {
+      "length": 3802.58667705,
+      "friction_factor": 0.002183190871781998,
+      "name": "p5",
+      "id": 5,
+      "to_node": 35,
+      "diameter": 0.6,
+      "fr_node": 34
+    },
+    "31": {
+      "length": 18136.5972918,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p31",
+      "id": 31,
+      "to_node": 11,
+      "diameter": 1.0,
+      "fr_node": 10
+    },
+    "15": {
+      "length": 10452.031178000001,
+      "friction_factor": 0.002183190871781998,
+      "name": "p15",
+      "id": 15,
+      "to_node": 36,
+      "diameter": 0.6,
+      "fr_node": 17
+    },
+    "33": {
+      "length": 65532.2127112,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p33",
+      "id": 33,
+      "to_node": 3,
+      "diameter": 0.8,
+      "fr_node": 10
+    },
+    "28": {
+      "length": 3418.00825125,
+      "friction_factor": 0.0015650165308335974,
+      "name": "p28",
+      "id": 28,
+      "to_node": 5,
+      "diameter": 1.0,
+      "fr_node": 4
+    },
+    "16": {
+      "length": 12397.352163599999,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p16",
+      "id": 16,
+      "to_node": 24,
+      "diameter": 0.8,
+      "fr_node": 31
+    },
+    "14": {
+      "length": 10586.1294733,
+      "friction_factor": 0.002183190871781998,
+      "name": "p14",
+      "id": 14,
+      "to_node": 32,
+      "diameter": 0.6,
+      "fr_node": 17
+    },
+    "39": {
+      "length": 35218.8390867,
+      "friction_factor": 0.002183190871781998,
+      "name": "p39",
+      "id": 39,
+      "to_node": 32,
+      "diameter": 0.6,
+      "fr_node": 27
+    },
+    "21": {
+      "length": 22224.1532472,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p21",
+      "id": 21,
+      "to_node": 29,
+      "diameter": 0.8,
+      "fr_node": 30
+    },
+    "38": {
+      "length": 10022.7829812,
+      "friction_factor": 0.002183190871781998,
+      "name": "p38",
+      "id": 38,
+      "to_node": 18,
+      "diameter": 0.6,
+      "fr_node": 37
+    },
+    "7": {
+      "length": 38659.824363,
+      "friction_factor": 0.0023585366114688474,
+      "name": "p7",
+      "id": 7,
+      "to_node": 25,
+      "diameter": 0.4,
+      "fr_node": 35
+    },
+    "34": {
+      "length": 6998.05377872,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p34",
+      "id": 34,
+      "to_node": 14,
+      "diameter": 1.0,
+      "fr_node": 13
+    },
+    "8": {
+      "length": 18017.8496012,
+      "friction_factor": 0.002183190871781998,
+      "name": "p8",
+      "id": 8,
+      "to_node": 9,
+      "diameter": 0.6,
+      "fr_node": 23
+    },
+    "36": {
+      "length": 86690.2655668,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p36",
+      "id": 36,
+      "to_node": 27,
+      "diameter": 0.8,
+      "fr_node": 26
+    },
+    "26": {
+      "length": 49866.1483875,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p26",
+      "id": 26,
+      "to_node": 19,
+      "diameter": 0.8,
+      "fr_node": 4
+    },
+    "17": {
+      "length": 19303.1920196,
+      "friction_factor": 0.002183190871781998,
+      "name": "p17",
+      "id": 17,
+      "to_node": 21,
+      "diameter": 0.6,
+      "fr_node": 36
+    },
+    "10": {
+      "length": 12015.8748344,
+      "friction_factor": 0.0023585366114688474,
+      "name": "p10",
+      "id": 10,
+      "to_node": 12,
+      "diameter": 0.4,
+      "fr_node": 22
+    },
+    "19": {
+      "length": 18969.412711099998,
+      "friction_factor": 0.0019887845904475896,
+      "name": "p19",
+      "id": 19,
+      "to_node": 15,
+      "diameter": 1.0,
+      "fr_node": 26
+    },
+    "37": {
+      "length": 16579.3259985,
+      "friction_factor": 0.002183190871781998,
+      "name": "p37",
+      "id": 37,
+      "to_node": 37,
+      "diameter": 0.6,
+      "fr_node": 27
+    },
+    "9": {
+      "length": 3067.54743994,
+      "friction_factor": 0.002183190871781998,
+      "name": "p9",
+      "id": 9,
+      "to_node": 22,
+      "diameter": 0.6,
+      "fr_node": 25
+    },
+    "18": {
+      "length": 66036.5946309,
+      "friction_factor": 0.002183190871781998,
+      "name": "p18",
+      "id": 18,
+      "to_node": 21,
+      "diameter": 0.6,
+      "fr_node": 26
+    },
+    "30": {
+      "length": 26427.4816453,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p30",
+      "id": 30,
+      "to_node": 19,
+      "diameter": 0.8,
+      "fr_node": 28
+    },
+    "3": {
+      "length": 32868.2025259,
+      "friction_factor": 0.0020703759154527684,
+      "name": "p3",
+      "id": 3,
+      "to_node": 34,
+      "diameter": 0.8,
+      "fr_node": 18
+    }
+  },
+  "compressors": {
+    "4": {
+      "id": 4,
+      "to_node": 4,
+      "name": "c4",
+      "fr_node": 40
+    },
+    "1": {
+      "id": 1,
+      "to_node": 26,
+      "name": "c1",
+      "fr_node": 6
+    },
+    "5": {
+      "id": 5,
+      "to_node": 7,
+      "name": "c5",
+      "fr_node": 39
+    },
+    "2": {
+      "id": 2,
+      "to_node": 1,
+      "name": "c2",
+      "fr_node": 11
+    },
+    "6": {
+      "id": 6,
+      "to_node": 8,
+      "name": "c6",
+      "fr_node": 31
+    },
+    "3": {
+      "id": 3,
+      "to_node": 2,
+      "name": "c3",
+      "fr_node": 19
+    }
+  }
+}

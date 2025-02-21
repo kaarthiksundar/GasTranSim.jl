@@ -5,7 +5,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == node["node_id"]
+        @assert id == get(node, "id", get(node, "node_id", [])) 
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]
         ref[name][id]["is_updated"] = false
@@ -20,7 +20,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == pipe["pipe_id"]
+        @assert id == get(pipe, "id", get(pipe, "pipe_id", []))
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = get(pipe, "from_node", get(pipe, "fr_node", false))  
         if (ref[name][id]["fr_node"] == false) 
@@ -43,7 +43,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == compressor["comp_id"]
+        @assert id == get(compressor, "id", get(compressor, "comp_id", []))
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
         ref[name][id]["fr_node"] = get(compressor, "from_node", get(compressor, "fr_node", false))  

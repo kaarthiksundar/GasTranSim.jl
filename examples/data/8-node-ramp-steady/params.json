@@ -1,7 +1,7 @@
 {
     "simulation_params": {
-        "Temperature (K):": 288.70599999999996,
-        "Gas specific gravity (G):": 0.6,
+        "Temperature (K)": 288.70599999999996,
+        "Gas specific gravity (G)": 0.6,
         "Specific heat capacity ratio": 1.4,
         "units (SI = 0, standard = 1)": 0.0,
         "Initial time": 0.0,
