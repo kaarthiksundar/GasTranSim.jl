@@ -23,7 +23,7 @@
     # run for 12 to 24 hours 
     ts_b = initialize_simulator(folder; 
         case_name="second_half", case_types=[:params, :ic])
-    run_simulator!(ts_b)
+    run_simulator!(ts_b, showprogress=false)
     final_state = Dict(
         key => value for (key, value) in ts_b.sol["final_state"]
     )

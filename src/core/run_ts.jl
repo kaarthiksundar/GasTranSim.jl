@@ -2,6 +2,7 @@ function run_simulator!(ts::TransientSimulator;
     run_type::Symbol = :serial, 
     load_adjust::Bool = false,
     showprogress::Bool = true, 
+    turnoffprogressbar::Bool = false,
     progress_dt = 1.0)
 
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
@@ -36,9 +37,9 @@ function run_simulator!(ts::TransientSimulator;
     	#  if current_time is one where output needs to be saved, check and do now
         update_output_state!(ts, output_state)
         if showprogress == false
-            next!(prog, spinner="🌑🌒🌓🌔🌕🌖🌗🌘")
+            (turnoffprogressbar == false) && (next!(prog, spinner="🌑🌒🌓🌔🌕🌖🌗🌘"))
         else 
-            next!(prog)
+            (turnoffprogressbar == false) && (next!(prog))
         end 
         
         
@@ -55,7 +56,7 @@ function run_simulator!(ts::TransientSimulator;
         end
     end
 
-    finish!(prog)
+    (turnoffprogressbar == false) && (finish!(prog))
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 end
