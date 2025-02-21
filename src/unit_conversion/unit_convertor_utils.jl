@@ -77,18 +77,22 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
 
     initial_pipe_flow_units = Dict{String,Function}(
         "initial_pipe_flow" => rescale_mass_flow, 
+        "pipe_flow" => rescale_mass_flow
     )
 
     initial_node_pressure_units = Dict{String,Function}(
-        "initial_nodal_pressure" => rescale_pressure
+        "initial_nodal_pressure" => rescale_pressure, 
+        "nodal_pressure" => rescale_pressure
     )
 
     initial_compressor_flow_units = Dict{String,Function}(
-        "initial_compressor_flow" => rescale_mass_flow
+        "initial_compressor_flow" => rescale_mass_flow, 
+        "compressor_flow" => rescale_mass_flow
     )
 
     initial_pipe_pressure_units = Dict{String,Function}(
-        "initial_pipe_pressure" => rescale_pressure
+        "initial_pipe_pressure" => rescale_pressure, 
+        "pipe_pressure" => rescale_pressure
     )
 
     boundary_flow_units = Dict{String,Function}(
