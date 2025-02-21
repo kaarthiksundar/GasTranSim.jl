@@ -1,0 +1,23 @@
+{
+  "boundary_pslack": {
+    "1": 3.5e6
+  },
+  "boundary_nonslack_flow": {
+    "5": 150,
+    "3": 150
+  },
+  "boundary_compressor": {
+    "1": {
+      "control_type": 0,
+      "value": 1.529
+    },
+    "2": {
+      "control_type": 0,
+      "value": 1.112
+    },
+    "3": {
+      "control_type": 0,
+      "value": 1.22
+    }
+  }
+}
