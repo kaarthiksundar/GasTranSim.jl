@@ -1,13 +1,14 @@
 # GasTransSim.jl 
 
 ## Staged
-- Add `turnoffprogressbar` keyword argument to `run_simulator!` 
-- Modify tests to improve coverage 
-- New exception `MissingDataException` for missing data errors
+- Adds `turnoffprogressbar` keyword argument to `run_simulator!` 
+- Modifies tests to improve coverage 
+- Adds new exception `MissingDataException` for missing data errors
+- Adds a steady state option to run a transient simulator to get steady state solution
 
 ## v0.2.4 
 - Allow for injection shedding if pressure goes above maximum pressure in params 
-- Add a `load_adjust` keyword argument to `run_ts` to activate this feature
+- Adds a `load_adjust` keyword argument to `run_ts` to activate this feature
 
 
 ## v0.2.3 

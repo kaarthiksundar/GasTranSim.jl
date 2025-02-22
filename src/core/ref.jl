@@ -43,7 +43,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == get(compressor, "id", get(compressor, "compressor_id", []))
+        @assert id == get(compressor, "id", get(compressor, "comp_id", []))
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
         ref[name][id]["fr_node"] = get(compressor, "from_node", get(compressor, "fr_node", false))  

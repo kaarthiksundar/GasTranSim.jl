@@ -13,7 +13,6 @@ write_output(ts; output_path = output_json,
 sol = parse_json(output_json * "model30_output_steady_delete.json")
 t = sol["time_points"] / 3600.0 # hrs
 
-
 for i in keys(get(sol, "nodes", []))
 	pr_node = sol["nodes"][i]["pressure"]
 	error = maximum( abs.(pr_node .- pr_node[1]) )/pr_node[1]
