@@ -71,7 +71,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
 
     # forbid topology if compressor delivers to slack node
     if ref(ts, :node, node_id)["is_slack"] == true && length(ref(ts, :incoming_compressors, node_id)) > 0
-        throw(NetworkException("Compressor delivering to slack node"))
+        throw(NetworkException("Compressor delivering to slack node $node_id"))
     end
 
     if length(ref(ts, :incoming_compressors, node_id)) > 1
@@ -102,20 +102,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         return
     end
 
-    for ci in ref(ts, :incoming_compressors, node_id)
-        node_across_ci = ref(ts, :compressor, ci, "fr_node")
-        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  >  1
-            throw(NetworkException("3 compressors are in series"))
-        end
-    end
-
-    for ci in ref(ts, :outgoing_compressors, node_id)
-        node_across_ci = ref(ts, :compressor, ci, "to_node")
-        if length(ref(ts, :incoming_compressors, node_across_ci)) + length(ref(ts, :outgoing_compressors, node_across_ci))  > 1
-            throw(NetworkException("3 compressors are in series"))
-        end
-    end
-
+    # if we are here, then we have at least two compressors connected to the node so node is level 2
     ref(ts, :node, node_id)["level"] = 2
     return
 end
@@ -124,6 +111,20 @@ function add_node_level_flag!(ts::TransientSimulator)
     for (node_id, _) in ref(ts, :node)
         _evaluate_level_of_node!(ts, node_id)
     end
+
+    # Go to each compressor and check if any have level 2 vertices
+    num_bad_edges = 0
+    for (comp, _) in ref(ts, :compressor)
+        fr_node = ref(ts, :compressor, comp, "fr_node")
+        to_node = ref(ts, :compressor, comp, "to_node")
+        if ref(ts, :node, fr_node)["level"] == 2 && ref(ts, :node, to_node)["level"] == 2
+            @info "Compressor $comp connects Level 2 nodes $fr_node and $to_node"
+            num_bad_edges += 1
+        end
+    end
+
+    # check network pathology
+    num_bad_edges > 0 && throw(NetworkException("Level 2 nodes connected by compressor"))
     return
 end
 

@@ -35,6 +35,7 @@ function run_simulator!(ts::TransientSimulator;
     # This block is used only for computing steady-state solution
     if steady_state == true
         nodal_pressure_previous = form_nodal_pressure_vector(ts)
+        @info "Change in nodal pressure will be computed after 10%, 20%,...100% of total steps"
     end
     
     for step in 1:num_steps
@@ -59,7 +60,7 @@ function run_simulator!(ts::TransientSimulator;
                 nodal_pressure_current = form_nodal_pressure_vector(ts)
                 error = maximum( abs.(nodal_pressure_current - nodal_pressure_previous) )
                 nodal_pressure_previous = nodal_pressure_current
-                @info "Steady state pressure error across 10 time steps: $(round(error; digits=8))"
+                @info "Max change in nodal pressure: $(round(error; digits=8))"
                 if error < 1e-5
                     @info "Steady state attained"
                     break
