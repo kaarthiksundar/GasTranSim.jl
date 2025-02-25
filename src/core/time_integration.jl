@@ -77,7 +77,7 @@ function _solve_for_pressure_at_node_and_neighbours!(node_id::Int64, withdrawal:
     in_c = ref(ts, :incoming_compressors, node_id)
     index = findfirst(ci -> control(ts, :compressor, ci, t)[1] == discharge_pressure_control, in_c)
 
-    # we know there can be at most one such compressor
+    # we know there can be at most one such compressor due to our network restrictions
     if isa(index, Nothing)
         _calculate_pressure_for_node_without_incoming_discharge_pressure_control!(node_id, withdrawal, ts)
     else

@@ -92,10 +92,24 @@ end
 function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
     t = ref(ts, :current_time)
     # DO NOT parallelize this (race condition)
-    # for (key, junction) in ref(ts, :node)
+    # Do level 2 first
     for (key, junction) in ref(ts, :node)
         (ref(ts, :node, key)["is_updated"] == true) && (continue)
-        (ref(ts, :node, key)["level"] == 2) && (continue)
+        (ref(ts, :node, key)["level"] != 2) && (continue) # if not level 2, skip
+        # p(t), but q(t - dt/2) taken care of inside
+        ctrl_type, val = control(ts, :node, key, t)
+        if ctrl_type == pressure_control
+            _set_pressure_at_node!(key, val, ts)
+            _set_pressure_at_node_across_compressors!(key, val, ts)
+        elseif ctrl_type == flow_control
+            _solve_for_pressure_at_node_and_neighbours!(key, val, ts)
+        else
+            throw(ControlException("control type unknown at advance_pressure_mass_flux_node"))
+        end
+    end
+    # Do level 0 and level 1 now, level 2 already done
+    for (key, junction) in ref(ts, :node)
+        (ref(ts, :node, key)["is_updated"] == true) && (continue)
         # p(t), but q(t - dt/2) taken care of inside
         ctrl_type, val = control(ts, :node, key, t)
         if ctrl_type == pressure_control

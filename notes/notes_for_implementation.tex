@@ -84,7 +84,7 @@ Same process is followed if we have multiple compressors at a node $i_0$ with co
 
 \subsection{Compressor ratios given}
 
-For reasons that will become clear subsequently, we assume that our network is such that if a compressor $c$ has nodes $i$ and $j$, at least one of $i$ or $j$  must be such that $c$ is the only compressor attached to that node. Let us record the implication of this statement  carefully.
+For reasons that will become clear subsequently, we assume that our network is such that if a compressor $c$ has nodes $i$ and $j$, at least one of $i$ or $j$  must be such that $c$ \emph{is the only compressor attached to that node, i.e., one of the nodes must be what we define subsequently as a Level 1 node}. Let us record the implication of this statement  carefully.
 This statement \emph{does not} rule out nodes where multiple compressors connect. Neither does it prohibit  such nodes from being neighbours. It only prevents the connecting edge between two such nodes from being a compressor. Stated another way, if nodes $i, j$ have multiple compressors, our assumption rules out a compressor connecting $i,j$, but a pipe may still connect $i, j$. 
 
 Given a network satisfying the restriction, let us start by considering all \emph{slack} nodes first.
@@ -93,7 +93,7 @@ At a slack node $i_0$, if there is a compressor $c$ with compressor ratio $\alph
 
 
 Now for a non-slack node $i_0$, we have multiple incoming/outgoing, incoming compressor $ic$ and outgoing compressor $oc$ whose ends are nodes $I$ and $O$ respectively.
-Let us suppose that at the other end of $ic$, which is node $I$, there is supply $q_{I}(t)$, and pipes $e(I)$ and similarly for compressor $oc$ at node $O$.
+Let us suppose that at the other end of $ic$, which is node $I$, there is supply $q_{I}(t)$, and pipes $e(I)$ and similarly for compressor $oc$ at node $O$. In subsequent sections, we will see that $i_0$ is a Level 2 node connected to Level 1 nodes $I$ and $O$. The formula we derive can be easily simplified for the case when the node $i_0$ is a Level 1 node.
 
 Then, we have $\rho^{n+1}(i_0) = N/D$ 
 where
@@ -135,10 +135,16 @@ Note that if there are two compressors delivering to same node with a given deli
 \emph{we shall not consider networks where, at a node more than one compressor delivers with specified pressure.}
 
 \subsection{Combination of above given}
-Let us introduce the terms Level 0 and Level 1 vertices to formalize the network restrictions alluded to in the previous section. At a Level 0 vertex there are no incoming or outgoing compressors. At a Level 1 vertex, there can be compressors attached, but the vertex at the other end of each compressor has \emph{no other} compressors incoming or outgoing. If this is not true, then it is a Level 2 vertex.
-Thus, for compressors attached at a Level 1 vertex, the other ends are all Level 2 vertices. 
+Let us introduce the terms Level 0, Level 1 and Level 2 vertices to formalize the network restrictions alluded to in the previous section. 
+A Level 0 vertex has no attached compressors while at a Level 1 vertex, there is exactly one compressor attached. 
+A Level 2 vertex can have 2 or more compressors attached.
+ 
 
-The idea behind the classification is that to solve for pressure/density at a Level 0 vertex, information at that particular vertex alone is sufficient. At a Level 1 vertex, on the other hand, one needs information at that vertex, and information at the vertices that are the ends of the compressors incoming/outgoing. 
+The idea behind the classification is that to solve for pressure/density at a Level 0 vertex, information at that particular vertex alone is sufficient. At a Level 1 vertex, on the other hand, one needs information at that vertex as well as at the one vertex that is at the other  end of the attached compressor. 
+At a Level 2 vertex, one needs information at that vertex as well as every vertex at the other end of every attached compressor (since we have assumed they are all Level 1 nodes).
+Clearly, computation at a Level 2 vertex is tedious but manageable as it is restricted to immediate neighbours. However, the stencil would become intractable if Level 2 vertices were connected by compressors.
+Thus, we assume certain restrictions on the network topology as follows.
+
 
 
 \begin{figure}[htb]
@@ -149,11 +155,11 @@ The idea behind the classification is that to solve for pressure/density at a Le
 \end{figure}
 
 We shall assume that the network satisfies three conditions: \\
-(1) Two Level 2 vertices cannot be neighbours, i.e., Level 2 vertices can only have Level 1 neighbours. This condition can be stated  alternatively as: there can be at most two compressor elements in series in the network. \\
+(1) Two Level 2 vertices cannot be connected by a compressor, i.e., at a  Level 2 vertex, the other end of every compressor must be Level 1. This condition can be stated  alternatively as: there can be at most two compressor elements in series in the network. \\
 (2) A vertex cannot be the delivery end of two  compressors with delivery pressure controls. \\
 (3) A compressor cannot deliver to a slack node. \\
 These conditions are not very restrictive in reality and are simply pathological cases we want to avoid (See Figure~\ref{fig:pathologies}).
-For networks that satisfy the above restrictions, we shall write down the equations for the pressure of a  general Level 1 vertex (and its Level 2 neighbours) in two common configurations (Figure~\ref{fig:configs}). Thus, if we can cycle through all Level 1 vertices of the network and calculate the densities, then all Level 2 neighbour vertices can be updated automatically, ensuring all vertices do get updated. 
+For networks that satisfy the above restrictions, we shall write down the equations for the pressure of a  general Level 2 vertex (and its Level 1 neighbours) in two common configurations (Figure~\ref{fig:configs}). Thus, if we cycle through all  Level 2 vertices of the network and calculate the densities, then all Level 2 neighbour vertices can be updated automatically, ensuring all vertices do get updated. 
 
 
 The fourth condition depicted in Figure~\ref{fig:pathologies} has to do with postprocessing to compute the compressor flows and will be detailed in Section~\ref{sec:compressor-flow}.
@@ -164,7 +170,7 @@ The fourth condition depicted in Figure~\ref{fig:pathologies} has to do with pos
 \centering
 \subfloat[Configuration 1]{\includegraphics[scale=1]{fig1} \label{fig:config1}}\\
 \subfloat[Configuration 2]{\includegraphics[scale=1]{fig2} \label{fig:config2}}
-\caption{Considering vertex $i$, which is a Level 1 vertex, we determine vertex densities at $i$ and its neighbours $j_2, j_3, j_4, j_5$  which are Level 2 vertices connected to $i$ by compressors. The network restrictions stated earlier imply that for these configurations, $c_4$ and $c_5$ can be outgoing compressors, but they cannot both be incoming compressors, and $p_5, p_4$ in Figure~\ref{fig:config1} and $p_5, p_i$ in
+\caption{Considering vertex $i$, which is a Level 2 vertex, we determine vertex densities at $i$ and its neighbours $j_2, j_3, j_4, j_5$  which are Level 1 vertices connected to $i$ by compressors. The network restrictions stated earlier imply that for these configurations, $c_4$ and $c_5$ can be outgoing compressors, but they cannot both be incoming compressors, and $p_5, p_4$ in Figure~\ref{fig:config1} and $p_5, p_i$ in
 Figure~\ref{fig:config2} cannot be slack nodes.}
 \label{fig:configs}
 \end{figure}
@@ -181,7 +187,7 @@ The density at vertex $i$ in the configuration in Figure~\ref{fig:config1} is de
 \end{align}
 
 Since $\rho^{(n+1)}(j_4), \rho^{(n+1)}(j_5)$ are already known, once $\rho^{(n+1)}(i)$ is determined from \eqref{eqn:config1}, $\rho^{(n+1)}(j_2)$ is also found. 
-In this configuration (Figure~\ref{fig:config1}), we \emph{do not} solve for $\rho^{(n+1)}(j_3)$ but it will be determined separately when we land at vertex $j_3$. The treatment of vertex $j_3$ is different because the compressor $c_3$ has mass-flow specified, and thus it is treated similar to the injection $q(i)$  at the vertex $i$. In practice, we will directly solve for $\rho^{(n+1)}(j_3)$ to ensure that all Level 2 neighbours of $i$ are updated. This is necessary because our strategy is built around visiting  Level 0/1 nodes alone, and simply skipping Level 2 nodes.
+In this configuration (Figure~\ref{fig:config1}), we \emph{do not} solve for $\rho^{(n+1)}(j_3)$ but it will be determined separately when we land at vertex $j_3$. The treatment of vertex $j_3$ is different because the compressor $c_3$ has mass-flow specified, and thus it is treated similar to the injection $q(i)$  at the vertex $i$. In practice, we will directly solve for $\rho^{(n+1)}(j_3)$ to ensure that all Level 1 neighbours of $i$ are updated. This is necessary because our strategy is built around visiting  Level 2 nodes first, and then doing Level 1 and Level 0 nodes.
 
 
 

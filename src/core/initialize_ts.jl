@@ -112,7 +112,7 @@ function add_node_level_flag!(ts::TransientSimulator)
         _evaluate_level_of_node!(ts, node_id)
     end
 
-    # Go to each compressor and check if any have level 2 vertices
+    # Go to each compressor and check if they connect level 2 vertices
     num_bad_edges = 0
     for (comp, _) in ref(ts, :compressor)
         fr_node = ref(ts, :compressor, comp, "fr_node")
@@ -125,6 +125,7 @@ function add_node_level_flag!(ts::TransientSimulator)
 
     # check network pathology
     num_bad_edges > 0 && throw(NetworkException("Level 2 nodes connected by compressor"))
+    
     return
 end
 
