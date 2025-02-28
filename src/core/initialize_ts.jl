@@ -115,10 +115,12 @@ function add_node_level_flag!(ts::TransientSimulator)
     # Go to each compressor and check if they connect level 2 vertices
     num_bad_edges = 0
     for (comp, _) in ref(ts, :compressor)
+        ctrl_type, _ = control(ts, :compressor, comp, 0)
+        ctrl_type == 2 && continue  # flow ctrl compressor is like a pipe
         fr_node = ref(ts, :compressor, comp, "fr_node")
         to_node = ref(ts, :compressor, comp, "to_node")
         if ref(ts, :node, fr_node)["level"] == 2 && ref(ts, :node, to_node)["level"] == 2
-            @info "Compressor $comp connects Level 2 nodes $fr_node and $to_node"
+            @info "Compressor $comp (not of type flow-control) connects Level 2 nodes $fr_node and $to_node"
             num_bad_edges += 1
         end
     end
@@ -324,17 +326,19 @@ function test_ic(ts::TransientSimulator)
     end
 
     err_c = 0.0
-    # error in compressor ratio equation (only if ctrl_type == 0)
+    # error in compressor ratio equation (only if ctrl_type == 0 or 1)
     for (key, _) in ref(ts, :compressor)
-        # 10 is used as a last argument to prevent assertion error in types.jl line 114 
-        # TODO: fix this later
-        ctrl_type, alpha = control(ts, :compressor, key, 10)
+        ctrl_type, val = control(ts, :compressor, key, 0)
+        term = 0.0
         if  ctrl_type == 0
             fr_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "fr_node"))
             to_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "to_node"))
-            term = abs(alpha * fr_pr - to_pr)
-            err_c = max(err_c, term)
+            term = abs(val * fr_pr - to_pr)
+        elseif ctrl_type == 1
+            to_pr = initial_nodal_pressure(ts, ref(ts, :compressor, key, "to_node"))
+            term = abs(val - to_pr)
         end
+        err_c = max(err_c, term)
     end
 
     # pipe equation error 

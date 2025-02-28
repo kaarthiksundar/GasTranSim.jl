@@ -7,19 +7,19 @@ This function converts a steady state control to a ramp boundary condition
 to perform a transient simulation. The transient simulation will converge 
 to the steady state given enough time. 
 """
-function create_datafile_for_steady_state_time_marching(folder_in::AbstractString, folder_out::AbstractString; t_initial::Float64=0.0, t_ramp::Float64=21600.0, t_final::Float64=86400.0) 
+function create_datafile_for_steady_state_time_marching(folder_in::AbstractString, folder_out::AbstractString; network_filename::AbstractString="network.json", bc_steady_filename::AbstractString="bc.json", params_steady_filename::AbstractString="params.json", t_initial::Float64=0.0, t_ramp::Float64=21600.0, t_final::Float64=86400.0, p_init::Float64=1.0e6, flow_init::Float64=0.0, cmpr_init::Float64=1.0) 
 
     # folder_in = "/Users/shrirams/Documents/GasSteadySim.jl/examples/data/GasLib-40/"
     # folder_out = "./GasLib-40/"
 
-    network_file = folder_in * "network_new.json"
-    bc_steady_file = folder_in * "bc_new.json"
-    params_steady_file = folder_in * "params_new.json"
+    network_file = folder_in * network_filename
+    bc_steady_file = folder_in * bc_steady_filename
+    params_steady_file = folder_in * params_steady_filename
     
-    t_initial = 0.0
-    t_ramp = 3600.0 * 6.0
-    t_final = 3600 * 24.0 
-    p_init = 1e5
+    # t_initial = 0.0
+    # t_ramp = 3600.0 * 6.0
+    # t_final = 3600 * 24.0 
+    # p_init = 1e5
 
     ic_filename = folder_out * "ic_ramp.json"
     bc_filename =  folder_out * "bc_ramp.json"
@@ -33,11 +33,6 @@ function create_datafile_for_steady_state_time_marching(folder_in::AbstractStrin
 
     bc_steady_data = parse_json(bc_steady_file)
 
-    for (_, p_val) in get(bc_steady_data, "boundary_pslack", [])
-         p_init = p_val
-        break
-    end
-
     for (key, p_slack) in get(bc_steady_data, "boundary_pslack", [])
         bc_ramp["boundary_pslack"][key] = Dict{String, Any}()
         bc_ramp["boundary_pslack"][key]["time"] = [t_initial, t_ramp, t_final] 
@@ -47,16 +42,16 @@ function create_datafile_for_steady_state_time_marching(folder_in::AbstractStrin
     for (key, flow_val) in get(bc_steady_data, "boundary_nonslack_flow", [])
         bc_ramp["boundary_nonslack_flow"][key] = Dict{String, Any}()
         bc_ramp["boundary_nonslack_flow"][key]["time"] = [t_initial, t_ramp, t_final] 
-        bc_ramp["boundary_nonslack_flow"][key]["value"] = [0, flow_val, flow_val]
+        bc_ramp["boundary_nonslack_flow"][key]["value"] = [flow_init, flow_val, flow_val]
     end
 
     for (key, compressor_dict) in get(bc_steady_data, "boundary_compressor", [])
         bc_ramp["boundary_compressor"][key] = Dict{String, Any}()
         bc_ramp["boundary_compressor"][key]["time"] = [t_initial, t_ramp, t_final]
         ctrl = compressor_dict["control_type"]
-        val = compressor_dict["value"]
+        cmpr_val = compressor_dict["value"]
         bc_ramp["boundary_compressor"][key]["control_type"] = [ctrl, ctrl, ctrl]
-        bc_ramp["boundary_compressor"][key]["value"] = [1.0, val, val]
+        bc_ramp["boundary_compressor"][key]["value"] = [cmpr_init, cmpr_val, cmpr_val]
     end
 
 
@@ -77,11 +72,11 @@ function create_datafile_for_steady_state_time_marching(folder_in::AbstractStrin
     end
 
     for (pipe_id, _) in network_data["pipes"]
-        ic_data["pipe_flow"][pipe_id] = 0
+        ic_data["pipe_flow"][pipe_id] = flow_init
     end
 
     for (comp_id, _) in network_data["compressors"]
-        ic_data["compressor_flow"][comp_id] = 0
+        ic_data["compressor_flow"][comp_id] = flow_init
     end
 
     open(ic_filename, "w") do f
@@ -92,14 +87,16 @@ function create_datafile_for_steady_state_time_marching(folder_in::AbstractStrin
 
     params_dict = Dict{String, Any}("simulation_params" => Dict())
 
-    params_dict["simulation_params"] = params_steady_data["params"]
+    params_dict["simulation_params"] = get(params_steady_data, "params", get(params_steady_data, "simulation_params", ""))
     params_dict["simulation_params"]["Initial time"] = t_initial
     params_dict["simulation_params"]["Final time"] = t_final
-    params_dict["simulation_params"]["Discretization time step"] = (t_final - t_initial)/1000
+    params_dict["simulation_params"]["Discretization time step"] = 3 #(t_final - t_initial)/1000
     params_dict["simulation_params"]["Output dx"] =  1000
-    params_dict["simulation_params"]["Courant number (must be between 0 and 1, recommended value is 0.9"] = 0.5
+    params_dict["simulation_params"]["Courant number (must be between 0 and 1, recommended value is 0.9"] = 0.95
     params_dict["simulation_params"]["Save final state"]=  1
     params_dict["simulation_params"]["Output dt"] =  3600
+    params_dict["simulation_params"]["Minimum pressure limit"] =  0
+
 
     open(params_filename, "w") do f
         JSON.print(f, params_dict, 2)
