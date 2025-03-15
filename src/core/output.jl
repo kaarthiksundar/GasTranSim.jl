@@ -207,7 +207,11 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
     sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
     sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
 
-    for (i, _) in get(data, "pipes", [])
+    for (i, pipe) in get(data, "pipes", [])
+        dx = params(ts, :output_dx)
+        pipe_length = pipe["length"]
+        num_discretization_points = Int(floor(pipe_length/dx)) + 1 
+        distance = collect(range(0, pipe_length, length=num_discretization_points)) 
         key =  isa(i, String) ? parse(Int64, i) : i
         area = ref(ts, :pipe, key, "area")
         fr_flux_spl = output.pipe[key]["fr_mass_flux"]
@@ -221,14 +225,16 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         sol["pipes"][i]["in_pressure"] = sol["nodes"][fr_node]["pressure"]
         sol["pipes"][i]["out_pressure"] = sol["nodes"][to_node]["pressure"]
         flow_spl = output.final_state["pipe_flow"][key]
+        flow = [flow_spl(x) for x in distance]
         pressure_spl = output.final_state["pipe_pressure"][key]
+        pressure = [pressure_spl(x) for x in distance]
         sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
-            "distance" => length_convertor.(get_knots(flow_spl)), 
-            "value" => flow_convertor.(get_coeffs(flow_spl))
+            "distance" => length_convertor.(distance), 
+            "value" => flow_convertor.(flow)
         )
         sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
-            "distance" => length_convertor.(get_knots(pressure_spl)), 
-            "value" => pressure_convertor.(get_coeffs(pressure_spl))
+            "distance" => length_convertor.(distance), 
+            "value" => pressure_convertor.(pressure)
         )
     end 
     sol["final_state"]["initial_compressor_flow"] = Dict{String,Any}()
