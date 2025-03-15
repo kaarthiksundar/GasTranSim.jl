@@ -114,7 +114,7 @@ function add_node_level_flag!(ts::TransientSimulator)
 
     # Go to each compressor and check if they connect level 2 vertices
     num_bad_edges = 0
-    for (comp, _) in ref(ts, :compressor)
+    for (comp, _) in get(ref(ts), :compressor, [])
         ctrl_type, _ = control(ts, :compressor, comp, 0)
         ctrl_type == 2 && continue  # flow ctrl compressor is like a pipe
         fr_node = ref(ts, :compressor, comp, "fr_node")
