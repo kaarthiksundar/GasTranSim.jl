@@ -327,7 +327,7 @@ function test_ic(ts::TransientSimulator)
 
     err_c = 0.0
     # error in compressor ratio equation (only if ctrl_type == 0 or 1)
-    for (key, _) in ref(ts, :compressor)
+    for (key, _) in get(ref(ts), :compressor, [])
         ctrl_type, val = control(ts, :compressor, key, 0)
         term = 0.0
         if  ctrl_type == 0
