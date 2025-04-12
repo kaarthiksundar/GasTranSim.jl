@@ -59,13 +59,16 @@ function process_data!(data::Dict{String,Any})
     params = Dict{Symbol,Any}()
 
     params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
-        "nominal_length", "nominal_velocity", "nominal_pressure", "nominal_density", 
+        "nominal_length", "nominal_velocity", 
+        "nominal_pressure", "nominal_density", "nominal_time", 
         "units", "t_0", "t_f", "dt", "courant_number", "output_dt", "output_dx", 
         "save_final_state", "minimum_pressure_limit", "maximum_pressure_limit"
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000, NaN, NaN, NaN, 0, 0.0, 3600.0, 1.0, 
-    0.95, 3600.0, 1000.0, 0, 0, 100e6]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 
+        5000.0, NaN, NaN, NaN, NaN, 
+        0, 0.0, 3600.0, 1.0, 
+        0.95, 3600.0, 1000.0, 0, 0, 100e6]
 
     simulation_params = get(data, "simulation_params", get(data, "params", Dict()))
     (isempty(simulation_params)) && (throw(MissingDataException(" simulation params ")))
@@ -78,7 +81,8 @@ function process_data!(data::Dict{String,Any})
             (key_map["specific_heat_capacity_ratio"] = k)
         occursin("length", k) && (key_map["nominal_length"] = k)
         occursin("velocity", k) && (key_map["nominal_velocity"] = k)
-        occursin("nominal pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("Nominal pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("Nominal time", k) && (key_map["nominal_time"] = k)
         occursin("density", k) && (key_map["nominal_density"] = k)
         occursin("units", k) && (key_map["units"] = k)
         occursin("Initial time", k) && (key_map["t_0"] = k)
@@ -174,7 +178,12 @@ function process_data!(data::Dict{String,Any})
     end 
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
-    nominal_values[:time] = nominal_values[:length] / nominal_values[:velocity]
+    nominal_values[:time] = 
+        if isnan(params[:nominal_time]) 
+            nominal_values[:length] / nominal_values[:velocity]
+        else 
+            params[:nominal_time]
+        end 
     nominal_values[:euler_num] = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
     nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
     
