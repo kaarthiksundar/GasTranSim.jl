@@ -1,11 +1,3 @@
-mutable struct OutputData
-    initial_time::Float64 
-    final_time::Float64 
-    node::Dict{Int64,Any}
-    pipe::Dict{Int64,Any}
-    compressor::Dict{Int64,Any}
-    final_state::Dict{Any,Any}
-end 
 
 function OutputData(ts::TransientSimulator)::OutputData 
     initial_time = ref(ts, :current_time)
@@ -32,14 +24,6 @@ function OutputData(ts::TransientSimulator)::OutputData
     end 
 
     return OutputData(initial_time, final_time, node, pipe, compressor, final_state)
-end 
-
-struct OutputState
-    time_pressure::Vector{Float64}
-    time_flux::Vector{Float64}
-    node::Dict{Int64,Any}
-    pipe::Dict{Int64,Any}
-    compressor::Dict{Int64,Any}
 end 
 
 function initialize_output_state(ts::TransientSimulator)::OutputState 
@@ -154,6 +138,37 @@ function update_output_data!(ts::TransientSimulator,
     end 
 end 
 
+function update_output_data_final_state_only!(ts::TransientSimulator, data::OutputData)
+    data.initial_time = params(ts, :t_0)
+    data.final_time = ref(ts, :current_time)
+    for (i, _) in ref(ts, :node)
+        data.final_state["nodal_pressure"][i] = ref(ts, :node, i, "pressure")
+    end 
+
+
+    for (i, pipe) in ref(ts, :pipe)
+        n = pipe["num_discretization_points"]
+        dx = pipe["dx"]
+        L = pipe["length"]
+        area = pipe["area"]
+        x_rho = LinRange(0, L, n)
+        x_mid = x_rho[1:n-1] .+ dx/2.0
+        # this is what needs to be done to replicate
+        # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
+        x_phi = [0.0, x_mid..., L]
+        rho = pipe["density_profile"] # len n
+        pressure = [get_pressure(ts, val) for val in rho]
+        phi = pipe["mass_flux_profile"] # len n+1
+        flow = phi .* area
+
+        data.final_state["pipe_flow"][i] = Spline1D(x_phi, flow, k=1)
+        data.final_state["pipe_pressure"][i] = Spline1D(x_rho, pressure, k=1)
+    end 
+    for i in keys(get(ref(ts), :compressor, []))
+        data.final_state["compressor_flow"][i] = ref(ts, :compressor, i, "flow")
+    end 
+end 
+
 function populate_solution!(ts::TransientSimulator, output::OutputData)
     dt = params(ts, :output_dt)
     times = collect(range(params(ts, :t_0), params(ts, :t_f), step=dt)) 
@@ -248,6 +263,76 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         flow_spl = output.compressor[key]["flow"]
         flow = [flow_spl(t) for t in times]
         sol["compressors"][i]["flow"] = flow_convertor.(flow)
+        sol["final_state"]["initial_compressor_flow"][i] = 
+            flow_convertor(output.final_state["compressor_flow"][key])
+    end 
+
+    sol["time_step"] = time_convertor(params(ts, :dt))
+    sol["time_points"] = time_convertor.(times)
+    return
+end 
+
+function populate_solution_final_state_only!(ts::TransientSimulator, output::OutputData)
+    dt = params(ts, :output_dt)
+    times = collect(range(params(ts, :t_0), params(ts, :t_f), step=dt)) 
+    data = ts.data
+    sol = ts.sol
+    units = params(ts, :units)
+
+    function pressure_convertor(pu) 
+        (units == 0) && (return pu * nominal_values(ts, :pressure)) 
+        return pascal_to_psi(pu * nominal_values(ts, :pressure))
+    end 
+
+    function flow_convertor(pu)
+        kgps_to_mmscfd = get_kgps_to_mmscfd_conversion_factor(params(ts))
+        (units == 0) && (return pu * nominal_values(ts, :mass_flow)) 
+        return pu * nominal_values(ts, :mass_flow) * kgps_to_mmscfd
+    end 
+
+    time_convertor(pu) = pu * nominal_values(ts, :time)
+    
+    function length_convertor(pu) 
+        (units == 0) && (return pu * nominal_values(ts, :length))
+        return m_to_miles(pu * nominal_values(ts, :length))
+    end 
+
+    sol["final_state"]["time"] = time_convertor(ref(ts, :current_time))
+    sol["final_state"]["initial_nodal_pressure"] = Dict{String,Any}()
+    
+    for (i, _) in get(data, "nodes", [])
+        key =  isa(i, String) ? parse(Int64, i) : i
+        sol["final_state"]["initial_nodal_pressure"][i] = 
+            pressure_convertor(output.final_state["nodal_pressure"][key])
+    end
+
+    
+
+    sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
+    sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
+
+    for (i, pipe) in get(data, "pipes", [])
+        dx = params(ts, :output_dx)
+        pipe_length = pipe["length"]
+        num_discretization_points = Int(floor(pipe_length/dx)) + 1 
+        distance = collect(range(0, pipe_length, length=num_discretization_points)) 
+        key =  isa(i, String) ? parse(Int64, i) : i
+        flow_spl = output.final_state["pipe_flow"][key]
+        flow = [flow_spl(x) for x in distance]
+        pressure_spl = output.final_state["pipe_pressure"][key]
+        pressure = [pressure_spl(x) for x in distance]
+        sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
+            "distance" => length_convertor.(distance), 
+            "value" => flow_convertor.(flow)
+        )
+        sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
+            "distance" => length_convertor.(distance), 
+            "value" => pressure_convertor.(pressure)
+        )
+    end 
+    sol["final_state"]["initial_compressor_flow"] = Dict{String,Any}()
+    for (i, _) in get(data, "compressors", [])
+        key =  isa(i, String) ? parse(Int64, i) : i
         sol["final_state"]["initial_compressor_flow"][i] = 
             flow_convertor(output.final_state["compressor_flow"][key])
     end 

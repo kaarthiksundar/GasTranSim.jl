@@ -246,12 +246,15 @@ function _assemble_pipe_contributions_to_node(node_id::Int64, withdrawal::Real, 
     term1 = 0.0
     term2 = -1.0 * withdrawal # in input data, withdrawal is positive, but we want inflow positive
     pipe = ref(ts, :pipe)
+    
     for p in out_p
-        term1 += mult_factor * pipe[p]["dx"] * pipe[p]["area"] / params(ts, :dt)
+        dx = pipe[p]["dx"] # can adjust with dx/2 for ghost point if needed
+        term1 += mult_factor * ( dx ) * pipe[p]["area"] / params(ts, :dt)
         term2 -= pipe[p]["fr_minus_mass_flux"] * pipe[p]["area"]
     end
     for p in in_p
-        term1 += mult_factor * pipe[p]["dx"] * pipe[p]["area"] / params(ts, :dt)
+        dx = pipe[p]["dx"] # can adjust with dx/2 for ghost point if needed
+        term1 += mult_factor * ( dx ) * pipe[p]["area"] / params(ts, :dt)
         term2 += pipe[p]["to_minus_mass_flux"] * pipe[p]["area"]
     end
     return term1, term2
@@ -395,6 +398,8 @@ function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int6
     a_vec = params(ts, :dt) * beta ./ (rho[2:n] + rho[1:n-1])
     y_vec = phi[2:n] - (c * params(ts, :dt) / ref(ts, :pipe, pipe_id, "dx")) *
             ( get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:n-1]) ) - a_vec .* phi[2:n] .* abs.(phi[2:n])
+   
+
     phi[2:n] = _invert_quadratic.(a_vec, y_vec)
     # update field
     ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] = phi[2]
@@ -406,7 +411,7 @@ end
     Compute fluxes and densities at both ends of the pipe
 """
 function _compute_pipe_end_fluxes_densities!(ts::TransientSimulator, pipe_id::Int64)
-    dx = ref(ts, :pipe, pipe_id)["dx"]
+    dx = ref(ts, :pipe, pipe_id)["dx"]  # can adjust with dx/2 for ghost point if needed
     dt = params(ts, :dt)
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     from_node_id = ref(ts, :pipe, pipe_id)["fr_node"]

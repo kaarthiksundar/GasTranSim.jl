@@ -1,10 +1,15 @@
 function run_simulator!(ts::TransientSimulator; 
     run_type::Symbol = :serial, 
+    sol_snapshot::Bool = false,
+    snapshot_period::Int64 = 10, 
+    snapshot_path::AbstractString = "./",
+    snapshot_filename::AbstractString = "sol-snapshot",
     steady_state::Bool = false,
     load_adjust::Bool = false,
     showprogress::Bool = true, 
     turnoffprogressbar::Bool = false,
     progress_dt = 1.0)
+    
     
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     ts.params[:load_adjust] = load_adjust
@@ -37,7 +42,9 @@ function run_simulator!(ts::TransientSimulator;
         nodal_pressure_previous = form_nodal_pressure_vector(ts)
         @info "Change in nodal pressure will be computed after 10%, 20%,...100% of total steps"
     end
-    
+    # Saving snapshot of initial condition
+    snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, 0)
+    # Time marching loop
     for step in 1:num_steps
         #
     	advance_current_time!(ts, dt)
@@ -48,6 +55,11 @@ function run_simulator!(ts::TransientSimulator;
         _compute_compressor_flows!(ts)
     	#  if current_time is one where output needs to be saved, check and do now
         update_output_state!(ts, output_state)
+        #
+        #  This block is used only for saving snapshot of solution
+        if ( (step % floor(num_steps/snapshot_period) == 0 ) || (step == num_steps) ) && (sol_snapshot == true)
+            snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
+        end
         #
         if showprogress == false
             (turnoffprogressbar == false) && (next!(prog, spinner="🌑🌒🌓🌔🌕🌖🌗🌘"))
@@ -76,6 +88,10 @@ function run_simulator!(ts::TransientSimulator;
     (turnoffprogressbar == false) && (finish!(prog))
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
+
+    if sol_snapshot == true
+        @info "Number of solution snapshots is $(snapshot_count)"
+    end
 end
 
 function advance_current_time!(ts::TransientSimulator, tau::Real)
@@ -144,3 +160,10 @@ function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
     return pressure_vector
 end
 
+function save_snapshot(ts::TransientSimulator, output_data::OutputData, snapshot_path::AbstractString, snapshot_filename::AbstractString, snapshot_count::Int64)::Int64
+    update_output_data_final_state_only!(ts, output_data)
+    populate_solution_final_state_only!(ts, output_data)
+    write_final_state(ts; output_path = snapshot_path, 
+    final_state_file = "$(snapshot_filename)-$(snapshot_count).json")
+    return snapshot_count + 1
+end

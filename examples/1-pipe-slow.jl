@@ -1,15 +1,17 @@
 
 using GasTranSim
-using GLMakie
+# using GLMakie
 
 save_figures = false
 
 base_path = split(Base.active_project(), "Project.toml")[1]
-folder = base_path * "data/1-pipe-slow-transients/"
+folder = base_path * "examples/data/1-pipe-slow-transients/"
 output_plot = base_path * "output/plots/"
-output_json = base_path * "output/solution/"
+output_json = base_path * "examples/output/solution/"
 tmp = base_path * "tmp/"
 
+
+println(base_path, "\n", folder)
 """ 
     Note: Temp for ideal gas case set to 239.11 K, 
     nonideal 288.7K to match pressure and density
@@ -18,7 +20,8 @@ tmp = base_path * "tmp/"
 ## === Run with ideal eq. of state === ##
 
 ts = initialize_simulator(folder; eos = :ideal)
-run_simulator!(ts)
+run_simulator!(ts; sol_snapshot = true, snapshot_period = 3, snapshot_path = output_json, snapshot_filename = "sol-snapshot-test")
+
 @info "ideal run completed"
 
 nominal_density = nominal_values(ts, :density)
@@ -70,6 +73,7 @@ inlet_velocity_cnga = inlet_mass_flux_cnga ./ inlet_density_cnga
 outlet_mass_flux_cnga = pipe_solution["1"]["out_flow"] / area
 outlet_velocity_cnga = outlet_mass_flux_cnga ./ outlet_density_cnga
 
+#=
 ##=== Plot results ===##
 
 function add_legend(ax, data, key)
@@ -146,3 +150,6 @@ cnga = scatterlines!(axmain, t_cnga, round.(outlet_velocity_cnga; digits=2),
 
 (save_figures) && save(output_plot * "1-pipe-slow.png", f)
 save(tmp * "1-pipe-slow.png", f)
+
+
+=#

@@ -11,6 +11,23 @@ struct TransientSimulator
     pu_density_to_pu_pressure::Function
 end
 
+struct OutputState
+    time_pressure::Vector{Float64}
+    time_flux::Vector{Float64}
+    node::Dict{Int64,Any}
+    pipe::Dict{Int64,Any}
+    compressor::Dict{Int64,Any}
+end
+
+mutable struct OutputData
+    initial_time::Float64 
+    final_time::Float64 
+    node::Dict{Int64,Any}
+    pipe::Dict{Int64,Any}
+    compressor::Dict{Int64,Any}
+    final_state::Dict{Any,Any}
+end 
+
 mutable struct CFLException <: Exception
     var::AbstractString
 end
