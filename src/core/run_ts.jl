@@ -1,9 +1,9 @@
 function run_simulator!(ts::TransientSimulator; 
     run_type::Symbol = :serial, 
     sol_snapshot::Bool = false,
-    snapshot_period::Int64 = 10, 
+    snapshot_percent::Float64 = 10.0, 
     snapshot_path::AbstractString = "./",
-    snapshot_filename::AbstractString = "sol-snapshot",
+    snapshot_filename::AbstractString = "solution-snapshot",
     steady_state::Bool = false,
     load_adjust::Bool = false,
     showprogress::Bool = true, 
@@ -57,7 +57,8 @@ function run_simulator!(ts::TransientSimulator;
         update_output_state!(ts, output_state)
         #
         #  This block is used only for saving snapshot of solution
-        if ( (step % floor(num_steps/snapshot_period) == 0 ) || (step == num_steps) ) && (sol_snapshot == true)
+        save_snapshot = ( (step % floor(float(num_steps) * snapshot_percent) == 0 ) || (step == num_steps) ) && (sol_snapshot == true)
+        if save_snapshot
             snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
         end
         #
