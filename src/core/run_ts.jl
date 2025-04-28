@@ -43,7 +43,8 @@ function run_simulator!(ts::TransientSimulator;
         @info "Change in nodal pressure will be computed after 10%, 20%,...100% of total steps"
     end
     # Saving snapshot of initial condition
-    snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, 0)
+    snapshot_count = 0
+    snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
     # Time marching loop
     for step in 1:num_steps
         #
@@ -57,8 +58,11 @@ function run_simulator!(ts::TransientSimulator;
         update_output_state!(ts, output_state)
         #
         #  This block is used only for saving snapshot of solution
-        save_snapshot = ( (step % floor(float(num_steps) * snapshot_percent) == 0 ) || (step == num_steps) ) && (sol_snapshot == true)
-        if save_snapshot
+        should_save_snapshot = ( 
+                (step % floor(float(num_steps) * snapshot_percent/100.0) == 0 ) || 
+                (step == num_steps) 
+                ) && (sol_snapshot == true)
+        if should_save_snapshot
             snapshot_count = save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
         end
         #
@@ -161,7 +165,12 @@ function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
     return pressure_vector
 end
 
-function save_snapshot(ts::TransientSimulator, output_data::OutputData, snapshot_path::AbstractString, snapshot_filename::AbstractString, snapshot_count::Int64)::Int64
+function save_snapshot(ts::TransientSimulator, 
+    output_data::OutputData, 
+    snapshot_path::AbstractString, 
+    snapshot_filename::AbstractString, 
+    snapshot_count::Int64)::Int64
+    @show snapshot_filename, snapshot_count
     update_output_data_final_state_only!(ts, output_data)
     populate_solution_final_state_only!(ts, output_data)
     write_final_state(ts; output_path = snapshot_path, 
