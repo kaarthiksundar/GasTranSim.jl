@@ -31,4 +31,5 @@ Manifest.toml
 *ic_final.json
 
 examples/tmp/*
+examples/python-plotting/.venv 
 !*.gitkeep

@@ -1,5 +1,8 @@
-function si_to_pu!(data::Dict{String,Any},
-    params::Dict{Symbol,Any}, nominal_values::Dict{Symbol,Any})
+function si_to_pu!(
+    data::Dict{String,Any},
+    params::Dict{Symbol,Any},
+    nominal_values::Dict{Symbol,Any},
+)
 
     rescale_mass_flow = x -> Float64(x/nominal_values[:mass_flow])
     rescale_mass_flux = x -> Float64(x/nominal_values[:mass_flux])
@@ -15,13 +18,20 @@ function si_to_pu!(data::Dict{String,Any},
         for i in eachindex(type)
             (type[i] == 1) && (value[i] = rescale_pressure(value[i]))
             (type[i] == 2) && (value[i] = rescale_mass_flow(value[i]))
-        end 
-    end 
+        end
+    end
 
-    rescale_functions = [rescale_mass_flow, rescale_mass_flux, 
-        rescale_time, rescale_pressure, rescale_length, rescale_density, 
-        rescale_diameter, rescale_area, rescale_compressor_boundary_conditions!]
-    
+    rescale_functions = [
+        rescale_mass_flow,
+        rescale_mass_flux,
+        rescale_time,
+        rescale_pressure,
+        rescale_length,
+        rescale_density,
+        rescale_diameter,
+        rescale_area,
+        rescale_compressor_boundary_conditions!,
+    ]
+
     _rescale_data!(data, params, rescale_functions)
-end 
-
+end

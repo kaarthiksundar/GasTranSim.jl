@@ -13,7 +13,8 @@
 @inline sq_m_to_sq_inches(sq_m) = sq_m / (0.0254 * 0.0254)
 @inline get_universal_R() = 8.314
 @inline get_universal_R(params::Dict{Symbol,Any}) = get(params, :R, get_universal_R())
-@inline get_gas_specific_gravity(params::Dict{Symbol,Any}) = get(params, :gas_specific_gravity, 0.6)
+@inline get_gas_specific_gravity(params::Dict{Symbol,Any}) =
+    get(params, :gas_specific_gravity, 0.6)
 @inline get_temperature(params::Dict{Symbol,Any}) = get(params, :temperature, 288.7060)
 @inline get_sound_speed(params::Dict{Symbol,Any}) = get(params, :sound_speed, 371.6643)
 @inline get_molecular_mass_of_air() = 0.02896
@@ -31,11 +32,13 @@ function get_mmscfd_to_kgps_conversion_factor(params::Dict{Symbol,Any})::Number
     cubic_ft_to_cubic_m = 0.02832
     volumetric_flow_rate_in_si = cubic_ft_to_cubic_m * 1e6 / 86400.0
     molecular_mass_of_gas = get_gas_specific_gravity(params) * get_molecular_mass_of_air()
-    density_at_standard_conditions = standard_pressure * molecular_mass_of_gas / standard_temperature / R
+    density_at_standard_conditions =
+        standard_pressure * molecular_mass_of_gas / standard_temperature / R
     return density_at_standard_conditions * volumetric_flow_rate_in_si
 end
 
-get_kgps_to_mmscfd_conversion_factor(params::Dict{Symbol,Any})::Number = 1 / get_mmscfd_to_kgps_conversion_factor(params)
+get_kgps_to_mmscfd_conversion_factor(params::Dict{Symbol,Any})::Number =
+    1 / get_mmscfd_to_kgps_conversion_factor(params)
 
 function get_data_units(rescale_functions)::Dict{Symbol,Any}
 
@@ -50,17 +53,17 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     rescale_area = rescale_functions[8]
     params_units = Dict{String,Function}(
         "t_0" => rescale_time,
-        "t_f" => rescale_time, 
-        "dt" => rescale_time, 
+        "t_f" => rescale_time,
+        "dt" => rescale_time,
         "output_dx" => rescale_length,
-        "output_dt" => rescale_time
+        "output_dt" => rescale_time,
     )
 
     node_units = Dict{String,Function}(
         "min_pressure" => rescale_pressure,
-        "max_pressure" => rescale_pressure, 
-        "min_injection" => rescale_mass_flow, 
-        "max_injection" => rescale_mass_flow, 
+        "max_pressure" => rescale_pressure,
+        "min_injection" => rescale_mass_flow,
+        "max_injection" => rescale_mass_flow,
     )
 
     pipe_units = Dict{String,Function}(
@@ -70,48 +73,43 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     )
 
     compressor_units = Dict{String,Function}(
-        "max_power" => rescale_mass_flow, 
-        "min_flow" => rescale_mass_flow, 
-        "max_flow" => rescale_mass_flow, 
+        "max_power" => rescale_mass_flow,
+        "min_flow" => rescale_mass_flow,
+        "max_flow" => rescale_mass_flow,
     )
 
     initial_pipe_flow_units = Dict{String,Function}(
-        "initial_pipe_flow" => rescale_mass_flow, 
-        "pipe_flow" => rescale_mass_flow
+        "initial_pipe_flow" => rescale_mass_flow,
+        "pipe_flow" => rescale_mass_flow,
     )
 
     initial_node_pressure_units = Dict{String,Function}(
-        "initial_nodal_pressure" => rescale_pressure, 
-        "nodal_pressure" => rescale_pressure
+        "initial_nodal_pressure" => rescale_pressure,
+        "nodal_pressure" => rescale_pressure,
     )
 
     initial_compressor_flow_units = Dict{String,Function}(
-        "initial_compressor_flow" => rescale_mass_flow, 
-        "compressor_flow" => rescale_mass_flow
+        "initial_compressor_flow" => rescale_mass_flow,
+        "compressor_flow" => rescale_mass_flow,
     )
 
     initial_pipe_pressure_units = Dict{String,Function}(
-        "initial_pipe_pressure" => rescale_pressure, 
-        "pipe_pressure" => rescale_pressure
+        "initial_pipe_pressure" => rescale_pressure,
+        "pipe_pressure" => rescale_pressure,
     )
 
-    boundary_flow_units = Dict{String,Function}(
-        "boundary_nonslack_flow" => rescale_mass_flow 
-    )
+    boundary_flow_units =
+        Dict{String,Function}("boundary_nonslack_flow" => rescale_mass_flow)
 
-    boundary_pressure_units = Dict{String,Function}(
-        "boundary_pslack" => rescale_pressure
-    )
+    boundary_pressure_units = Dict{String,Function}("boundary_pslack" => rescale_pressure)
 
-    node_disruption_units = Dict{String,Function}(
-        "disrupt_time" => rescale_time,
-        "valve_delay" => rescale_time,
-    )
+    node_disruption_units =
+        Dict{String,Function}("disrupt_time" => rescale_time, "valve_delay" => rescale_time)
 
     pipe_disruption_units = Dict{String,Function}(
         "disrupt_time" => rescale_time,
         "valve_delay" => rescale_time,
-        "distance" => rescale_length
+        "distance" => rescale_length,
     )
 
     units[:params_units] = params_units
@@ -122,22 +120,25 @@ function get_data_units(rescale_functions)::Dict{Symbol,Any}
     units[:initial_pipe_pressure_units] = initial_pipe_pressure_units
     units[:initial_node_pressure_units] = initial_node_pressure_units
     units[:initial_compressor_flow_units] = initial_compressor_flow_units
-    units[:boundary_flow_units] = boundary_flow_units 
+    units[:boundary_flow_units] = boundary_flow_units
     units[:boundary_pressure_units] = boundary_pressure_units
-    units[:node_disruption_units] = node_disruption_units 
+    units[:node_disruption_units] = node_disruption_units
     units[:pipe_disruption_units] = pipe_disruption_units
 
     return units
-end 
+end
 
-function _rescale_data!(data::Dict{String,Any}, 
-    params::Dict{Symbol,Any}, rescale_functions::Vector{Function})
+function _rescale_data!(
+    data::Dict{String,Any},
+    params::Dict{Symbol,Any},
+    rescale_functions::Vector{Function},
+)
 
     units = get_data_units(rescale_functions)
     params_units = units[:params_units]
     node_units = units[:node_units]
     pipe_units = units[:pipe_units]
-    compressor_units = units[:compressor_units] 
+    compressor_units = units[:compressor_units]
     initial_pipe_flow_units = units[:initial_pipe_flow_units]
     initial_pipe_pressure_units = units[:initial_pipe_pressure_units]
     initial_node_pressure_units = units[:initial_node_pressure_units]
@@ -157,69 +158,69 @@ function _rescale_data!(data::Dict{String,Any},
     rescale_area = rescale_functions[8]
     rescale_boundary_compressor = rescale_functions[9]
 
-    for (param, f) in params_units         
+    for (param, f) in params_units
         value = params[Symbol(param)]
         params[Symbol(param)] = f(value)
-    end 
+    end
 
     for (_, node) in get(data, "nodes", [])
         for (param, f) in node_units
             (!haskey(node, param)) && (continue)
             value = node[param]
             node[param] = f(value)
-        end 
-    end 
+        end
+    end
 
     for (_, pipe) in get(data, "pipes", [])
         for (param, f) in pipe_units
             (!haskey(pipe, param)) && (continue)
             value = pipe[param]
             pipe[param] = f(value)
-        end 
-    end 
-    
+        end
+    end
+
     for (_, compressor) in get(data, "compressors", [])
         for (param, f) in compressor_units
             (!haskey(Dict(compressor), param)) && (continue)
             value = compressor[param]
             compressor[param] = f(value)
-        end 
-    end 
+        end
+    end
 
     for (param, f) in initial_node_pressure_units
         for (i, value) in get(data, param, [])
             data[param][i] = f(value)
-        end 
+        end
     end
 
     for (param, f) in initial_compressor_flow_units
         for (i, value) in get(data, param, [])
             data[param][i] = f(value)
-        end 
-    end  
+        end
+    end
 
     for (param, f) in merge(initial_pipe_flow_units, initial_pipe_pressure_units)
         for (i, value) in get(data, param, [])
             if isa(data[param][i], Number)
                 data[param][i] = f(value)
-            else 
+            else
                 data[param][i]["distance"] = rescale_length.(value["distance"])
                 data[param][i]["value"] = f.(value["value"])
-            end 
-        end 
-    end 
+            end
+        end
+    end
 
     for (param, f) in merge(boundary_flow_units, boundary_pressure_units)
         for (i, value) in get(data, param, [])
             data[param][i]["time"] = rescale_time.(value["time"])
             data[param][i]["value"] = f.(value["value"])
-        end 
-    end 
+        end
+    end
 
-    for (i, value) in get(data, "boundary_compressor", []) 
+    for (i, value) in get(data, "boundary_compressor", [])
         data["boundary_compressor"][i]["time"] = rescale_time.(value["time"])
         rescale_boundary_compressor(value["control_type"], value["value"])
-    end 
+    end
 
     for (i, disruption) in get(data, "disruption", [])
         if (i == "node_disruption")
@@ -227,16 +228,16 @@ function _rescale_data!(data::Dict{String,Any},
                 for (i, node_disruption) in disruption
                     value = node_disruption[param]
                     node_disruption[param] = f(value)
-                end 
-            end 
-        end 
+                end
+            end
+        end
         if (i == "pipe_disruption")
             for (param, f) in pipe_disruption_units
                 for (i, pipe_disruption) in disruption
                     value = pipe_disruption[param]
                     pipe_disruption[param] = f(value)
-                end 
-            end 
-        end 
-    end 
-end 
+                end
+            end
+        end
+    end
+end
