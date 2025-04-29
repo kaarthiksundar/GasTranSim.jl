@@ -1,84 +1,124 @@
-function parse_data(data_folder::AbstractString; 
-    case_name::AbstractString="", 
-    case_types::Vector{Symbol}=Symbol[])
+function parse_data(
+    data_folder::AbstractString;
+    case_name::AbstractString = "",
+    case_types::Vector{Symbol} = Symbol[],
+)
     network_file = data_folder * "network.json"
     params_file = data_folder * "params"
     disruptions_file = data_folder * "disruptions"
-    ic_file = data_folder * "ic" 
+    ic_file = data_folder * "ic"
     bc_file = data_folder * "bc"
     if (:params in case_types)
         params_file = params_file * "_" * case_name * ".json"
-    else 
+    else
         params_file = params_file * ".json"
-    end 
+    end
     if (:disruptions in case_types)
         disruptions_file = disruptions_file * "_" * case_name * ".json"
-    else 
+    else
         disruptions_file = disruptions_file * ".json"
-    end 
+    end
     if (:ic in case_types)
         ic_file = ic_file * "_" * case_name * ".json"
-    else 
+    else
         ic_file = ic_file * ".json"
-    end 
+    end
     if (:bc in case_types)
         bc_file = bc_file * "_" * case_name * ".json"
-    else 
+    else
         bc_file = bc_file * ".json"
-    end 
+    end
     @info "Using params file $params_file"
     @info "Using network file $network_file"
     @info "Using ic file $ic_file"
     @info "Using bc file $bc_file"
-    
+
     network_data = parse_json(network_file)
     params_data = parse_json(params_file)
     ic_data = parse_json(ic_file)
-    allowable_ic_fields = ["initial_nodal_pressure", "initial_pipe_flow", "initial_pipe_pressure", "initial_compressor_flow", "nodal_pressure", "pipe_flow", "compressor_flow", "pipe_pressure"]
+    allowable_ic_fields = [
+        "initial_nodal_pressure",
+        "initial_pipe_flow",
+        "initial_pipe_pressure",
+        "initial_compressor_flow",
+        "nodal_pressure",
+        "pipe_flow",
+        "compressor_flow",
+        "pipe_pressure",
+    ]
     filter!(p -> p.first in allowable_ic_fields, ic_data)
     bc_data = parse_json(bc_file)
     disruptions_data = parse_json(disruptions_file)
     data = merge(network_data, params_data, ic_data, bc_data, disruptions_data)
     return data
-end 
+end
 
 function _get_nominal_pressure(data::Dict{String,Any}, units)
     nodal_pressures = []
     for (_, value) in get(data, "initial_nodal_pressure", get(data, "nodal_pressure", []))
         push!(nodal_pressures, value)
-    end 
+    end
 
     @assert length(nodal_pressures) != 0
-    (units == 1) && (return minimum(nodal_pressures) *  6894.75729)
+    (units == 1) && (return minimum(nodal_pressures) * 6894.75729)
     return minimum(nodal_pressures)
-end 
+end
 
 
 function process_data!(data::Dict{String,Any})
     nominal_values = Dict{Symbol,Any}()
     params = Dict{Symbol,Any}()
 
-    params_exhaustive = ["temperature", "gas_specific_gravity", "specific_heat_capacity_ratio",
-        "nominal_length", "nominal_velocity", 
-        "nominal_pressure", "nominal_density", "nominal_time", 
-        "units", "t_0", "t_f", "dt", "courant_number", "output_dt", "output_dx", 
-        "save_final_state", "minimum_pressure_limit", "maximum_pressure_limit"
+    params_exhaustive = [
+        "temperature",
+        "gas_specific_gravity",
+        "specific_heat_capacity_ratio",
+        "nominal_length",
+        "nominal_velocity",
+        "nominal_pressure",
+        "nominal_density",
+        "nominal_time",
+        "units",
+        "t_0",
+        "t_f",
+        "dt",
+        "courant_number",
+        "output_dt",
+        "output_dx",
+        "save_final_state",
+        "minimum_pressure_limit",
+        "maximum_pressure_limit",
     ]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 
-        5000.0, NaN, NaN, NaN, NaN, 
-        0, 0.0, 3600.0, 1.0, 
-        0.95, 3600.0, 1000.0, 0, 0, 100e6]
+    defaults_exhaustive = [
+        288.706,
+        0.6,
+        1.4,
+        5000.0,
+        NaN,
+        NaN,
+        NaN,
+        NaN,
+        0,
+        0.0,
+        3600.0,
+        1.0,
+        0.95,
+        3600.0,
+        1000.0,
+        0,
+        0,
+        100e6,
+    ]
 
     simulation_params = get(data, "simulation_params", get(data, "params", Dict()))
     (isempty(simulation_params)) && (throw(MissingDataException(" simulation params ")))
-    
+
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
         occursin("Temperature", k) && (key_map["temperature"] = k)
         occursin("Gas", k) && (key_map["gas_specific_gravity"] = k)
-        occursin("Specific heat", k) &&
-            (key_map["specific_heat_capacity_ratio"] = k)
+        occursin("Specific heat", k) && (key_map["specific_heat_capacity_ratio"] = k)
         occursin("length", k) && (key_map["nominal_length"] = k)
         occursin("velocity", k) && (key_map["nominal_velocity"] = k)
         occursin("Nominal pressure", k) && (key_map["nominal_pressure"] = k)
@@ -131,11 +171,11 @@ function process_data!(data::Dict{String,Any})
             if haskey(key_map, param)
                 value = Int(simulation_params[key_map[param]])
                 params[Symbol(param)] = value
-            else 
+            else
                 params[Symbol(param)] = default
             end
             continue
-        end 
+        end
         key = get(key_map, param, false)
         if key != false
             value = simulation_params[key]
@@ -154,39 +194,38 @@ function process_data!(data::Dict{String,Any})
 
     # sound speed (m/s): v = sqrt(R_g * T); 
     # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
-    nominal_values[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
-    
+    nominal_values[:sound_speed] =
+        sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
+
     nominal_values[:length] = params[:nominal_length]
     nominal_values[:area] = 1.0
-    nominal_values[:pressure] = 
-    if isnan(params[:nominal_pressure]) 
-        _get_nominal_pressure(data, params[:units]) 
-    else 
+    nominal_values[:pressure] = if isnan(params[:nominal_pressure])
+        _get_nominal_pressure(data, params[:units])
+    else
         params[:nominal_pressure]
     end
-    nominal_values[:velocity] =
-    if isnan(params[:nominal_velocity])
-       ceil(nominal_values[:sound_speed]/2)
+    nominal_values[:velocity] = if isnan(params[:nominal_velocity])
+        ceil(nominal_values[:sound_speed]/2)
     else
         params[:nominal_velocity]
     end
-    nominal_values[:density] = 
-    if isnan(params[:nominal_density]) 
+    nominal_values[:density] = if isnan(params[:nominal_density])
         nominal_values[:pressure] / (nominal_values[:velocity]^2)
-    else 
+    else
         params[:nominal_density]
-    end 
+    end
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
-    nominal_values[:time] = 
-        if isnan(params[:nominal_time]) 
-            nominal_values[:length] / nominal_values[:velocity]
-        else 
-            params[:nominal_time]
-        end 
-    nominal_values[:euler_num] = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    nominal_values[:time] = if isnan(params[:nominal_time])
+        nominal_values[:length] / nominal_values[:velocity]
+    else
+        params[:nominal_time]
+    end
+    nominal_values[:euler_num] =
+        nominal_values[:pressure] /
+        (nominal_values[:density] * nominal_values[:sound_speed]^2)
     nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
-    
+
     # nominal_values[:length] = 5000.0
     # nominal_values[:area] = 1.0
     # nominal_values[:pressure] = 3500000.0 # 507.63 psi

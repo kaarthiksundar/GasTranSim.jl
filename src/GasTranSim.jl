@@ -11,9 +11,7 @@ import LoggingExtras
 include("logging.jl")
 function __init__()
     global _DEFAULT_LOGGER = Logging.current_logger()
-    global _LOGGER = Logging.ConsoleLogger(;
-        meta_formatter = GasTranSim._gts_metafmt,
-    )
+    global _LOGGER = Logging.ConsoleLogger(; meta_formatter = GasTranSim._gts_metafmt)
     return Logging.global_logger(_LOGGER)
 end
 
