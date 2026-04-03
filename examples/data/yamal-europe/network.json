@@ -31,7 +31,7 @@
             "to_node": 2,
             "diameter": 1.422,
             "length": 122000,
-            "friction_factor": 0.03,
+            "friction_factor": 0.01065,
             "disc_seg": 0
         }
     }

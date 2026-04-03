@@ -74,6 +74,17 @@ class Controller:
     def plot():
         Controller.set_rc_params()
         pressure, flux, time = Controller.load_data()
+
+        #--------save data as csv-----------------------
+        import pandas as pd
+        data = {}
+        data["outlet_pressure"] = pressure[:,-1] * 1e-5
+        data["time"] = time
+        df = pd.DataFrame(data)
+        df.to_csv("gastransim.csv", index=False)
+        #-----------------------------------------------
+        np.savetxt("gastransim-p.txt", pressure[:,-1] * 1e-5)
+        np.savetxt("gastransim-hrs.txt", time)
         fig, (ax1, ax2, ax3) = plt.subplots(figsize=(5, 6), nrows=3)
         ax1.set_title('Yamal Europe Pipeline Network Solution')
         # plot
@@ -93,7 +104,7 @@ class Controller:
         ax2.set_yticks(())
         # ax1.set_ylim([0, 12])
 
-        ax3.set_ylabel("Pressure (MPa)")
+        ax3.set_ylabel("Pressure (bar)")
         ax3.set_xlabel("Time (hrs)")
         ax3.set_xticks([0,2,4,6,8,10,12,14,16,18,20,22,24])
 
@@ -102,6 +113,7 @@ class Controller:
         fig.colorbar(pos2, ax=ax2, location='right', anchor=(0, 0.3), shrink=0.7)
         plt.tight_layout(pad=1.0, w_pad=0.5, h_pad=1.0)
         plt.savefig(f'{Controller.get_plot_path()}/yamal-europe.png', dpi=600)
+        plt.show()
 
 def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s--: %(message)s', 

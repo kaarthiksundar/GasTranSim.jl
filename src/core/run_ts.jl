@@ -12,7 +12,18 @@ function run_simulator!(
     progress_dt = 1.0,
 )
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
+    output_dt = params(ts, :output_dt)
     ts.params[:load_adjust] = load_adjust
+
+    if output_dt <= 0.0
+        throw(DomainError(output_dt, "output_dt must be > 0"))
+    end
+
+    if save_snapshots == true && snapshot_percent <= 0.0
+        throw(
+            DomainError(snapshot_percent, "snapshot_percent must be > 0 when saving snapshots"),
+        )
+    end
 
     if params(ts, :load_adjust) == true && !(minimum_pressure_limit > 0)
         throw(
@@ -32,6 +43,8 @@ function run_simulator!(
     num_steps = Int(round((t_f-t_0)/dt))
     #
     output_data = OutputData(ts)
+    previous_step_state = capture_step_state(ts)
+    penultimate_step_state = previous_step_state
     #
     prog = Progress(
         num_steps;
@@ -51,7 +64,9 @@ function run_simulator!(
     end
     # Saving snapshot of initial condition
     snapshot_count = 0
-    if save_snapshot == true
+    snapshot_interval = (t_f - t_0) * snapshot_percent / 100.0
+    next_snapshot_time = t_0 + snapshot_interval
+    if save_snapshots == true
         snapshot_count =
             save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
     end
@@ -65,14 +80,16 @@ function run_simulator!(
         advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
         _compute_compressor_flows!(ts)
         #  if current_time is one where output needs to be saved, check and do now
-        update_output_state!(ts, output_state)
+        current_step_state = capture_step_state(ts)
+        update_output_state!(ts, output_state, previous_step_state, current_step_state)
         #
         #  This block is used only for saving snapshot of solution
         should_save_snapshot =
+            save_snapshots == true &&
             (
-                (step % floor(float(num_steps) * snapshot_percent/100.0) == 0) ||
-                (step == num_steps)
-            ) && (save_snapshots == true)
+                _should_save_snapshot_at_time(ref(ts, :current_time), t_f, next_snapshot_time) ||
+                step == num_steps
+            )
         if should_save_snapshot
             snapshot_count = save_snapshot(
                 ts,
@@ -81,7 +98,14 @@ function run_simulator!(
                 snapshot_filename,
                 snapshot_count,
             )
+            next_snapshot_time = _next_snapshot_time(
+                ref(ts, :current_time),
+                next_snapshot_time,
+                snapshot_interval,
+            )
         end
+        penultimate_step_state = previous_step_state
+        previous_step_state = current_step_state
         #
         if showprogress == false
             (turnoffprogressbar == false) && (next!(prog, spinner = "🌑🌒🌓🌔🌕🌖🌗🌘"))
@@ -108,12 +132,41 @@ function run_simulator!(
 
     end
     (turnoffprogressbar == false) && (finish!(prog))
+    update_output_state!(
+        ts,
+        output_state,
+        penultimate_step_state,
+        previous_step_state,
+        finalize = true,
+    )
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 
     if save_snapshots == true
         @info "Number of solution snapshots is $(snapshot_count)"
     end
+end
+
+function _should_save_snapshot_at_time(
+    current_time::Float64,
+    final_time::Float64,
+    next_snapshot_time::Float64,
+)::Bool
+    if current_time >= final_time
+        return false
+    end
+    return current_time >= next_snapshot_time
+end
+
+function _next_snapshot_time(
+    current_time::Float64,
+    next_snapshot_time::Float64,
+    snapshot_interval::Float64,
+)::Float64
+    while next_snapshot_time <= current_time
+        next_snapshot_time += snapshot_interval
+    end
+    return next_snapshot_time
 end
 
 function advance_current_time!(ts::TransientSimulator, tau::Real)
