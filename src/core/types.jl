@@ -11,17 +11,28 @@ struct TransientSimulator
     pu_density_to_pu_pressure::Function
 end
 
-struct OutputState
-    time_pressure::Vector{Float64}
-    time_flux::Vector{Float64}
+mutable struct OutputState
+    time_points::Vector{Float64}
     node::Dict{Int64,Any}
     pipe::Dict{Int64,Any}
     compressor::Dict{Int64,Any}
+    next_output_time::Float64
+end
+
+struct StepState
+    pressure_time::Float64
+    flux_time::Float64
+    node_pressure::Dict{Int64,Float64}
+    node_load_reduction::Dict{Int64,Float64}
+    pipe_fr_mass_flux::Dict{Int64,Float64}
+    pipe_to_mass_flux::Dict{Int64,Float64}
+    compressor_flow::Dict{Int64,Float64}
 end
 
 mutable struct OutputData
     initial_time::Float64
     final_time::Float64
+    time_points::Vector{Float64}
     node::Dict{Int64,Any}
     pipe::Dict{Int64,Any}
     compressor::Dict{Int64,Any}
