@@ -13,10 +13,19 @@ function run_simulator!(
 )
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     output_dt = params(ts, :output_dt)
+    base_dt = params(ts, :base_dt)
     ts.params[:load_adjust] = load_adjust
 
     if output_dt <= 0.0
         throw(DomainError(output_dt, "output_dt must be > 0"))
+    end
+
+    if base_dt <= 0.0
+        throw(DomainError(base_dt, "base_dt must be > 0"))
+    end
+
+    if params(ts, :t_f) < params(ts, :t_0)
+        throw(DomainError(params(ts, :t_f), "t_f must be >= t_0"))
     end
 
     if save_snapshots == true && snapshot_percent <= 0.0
@@ -37,17 +46,16 @@ function run_simulator!(
     (params(ts, :load_adjust) == true) && (ts.ref[:load_reduction_nodes] = Vector{Int64}())
 
     output_state = initialize_output_state(ts)
-    dt = params(ts, :dt)
     t_f = params(ts, :t_f)
     t_0 = params(ts, :t_0)
-    num_steps = Int(round((t_f-t_0)/dt))
+    total_time = t_f - t_0
     #
     output_data = OutputData(ts)
     previous_step_state = capture_step_state(ts)
-    penultimate_step_state = previous_step_state
     #
+    progress_total = 1000
     prog = Progress(
-        num_steps;
+        progress_total;
         dt = progress_dt,
         barglyphs = get_barglyphs(),
         barlen = 10,
@@ -60,20 +68,26 @@ function run_simulator!(
     # This block is used only for computing steady-state solution
     if steady_state == true
         nodal_pressure_previous = form_nodal_pressure_vector(ts)
-        @info "Change in nodal pressure will be computed after 10%, 20%,...100% of total steps"
+        @info "Change in nodal pressure will be computed after 10%, 20%,...100% of total time"
     end
     # Saving snapshot of initial condition
     snapshot_count = 0
     snapshot_interval = (t_f - t_0) * snapshot_percent / 100.0
     next_snapshot_time = t_0 + snapshot_interval
+    steady_state_check_interval = total_time / 10.0
+    next_steady_state_check_time = t_0 + steady_state_check_interval
     if save_snapshots == true
         snapshot_count =
             save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
     end
     # Time marching loop
-    for step = 1:num_steps
+    step = 0
+    while ref(ts, :current_time) < t_f - TOL
+        step += 1
+        dt_step = min(base_dt, t_f - ref(ts, :current_time))
+        ts.params[:dt] = dt_step
         #
-        advance_current_time!(ts, dt)
+        advance_current_time!(ts, dt_step)
         #  if current_time is where some disruption occurs, modify ts.ref now
         advance_pipe_density_internal!(ts, run_type) # (n+1) level
         advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
@@ -81,14 +95,20 @@ function run_simulator!(
         _compute_compressor_flows!(ts)
         #  if current_time is one where output needs to be saved, check and do now
         current_step_state = capture_step_state(ts)
-        update_output_state!(ts, output_state, previous_step_state, current_step_state)
+        update_output_state!(
+            ts,
+            output_state,
+            previous_step_state,
+            current_step_state;
+            finalize = (ref(ts, :current_time) >= t_f - TOL),
+        )
         #
         #  This block is used only for saving snapshot of solution
         should_save_snapshot =
             save_snapshots == true &&
             (
                 _should_save_snapshot_at_time(ref(ts, :current_time), t_f, next_snapshot_time) ||
-                step == num_steps
+                ref(ts, :current_time) >= t_f - TOL
             )
         if should_save_snapshot
             snapshot_count = save_snapshot(
@@ -104,17 +124,20 @@ function run_simulator!(
                 snapshot_interval,
             )
         end
-        penultimate_step_state = previous_step_state
         previous_step_state = current_step_state
         #
         if showprogress == false
             (turnoffprogressbar == false) && (next!(prog, spinner = "🌑🌒🌓🌔🌕🌖🌗🌘"))
         else
-            (turnoffprogressbar == false) && (next!(prog))
+            progress_fraction =
+                (total_time <= TOL) ? 1.0 : (ref(ts, :current_time) - t_0) / total_time
+            progress_fraction = min(max(progress_fraction, 0.0), 1.0)
+            progress_value = round(Int, progress_fraction * progress_total)
+            (turnoffprogressbar == false) && (update!(prog, progress_value))
         end
         # This block is used only for computing steady-state solution
-        if steady_state == true
-            if (step % floor(num_steps/10) == 0)
+        if steady_state == true && steady_state_check_interval > TOL
+            while next_steady_state_check_time <= ref(ts, :current_time) + TOL
                 nodal_pressure_current = form_nodal_pressure_vector(ts)
                 error = maximum(abs.(nodal_pressure_current - nodal_pressure_previous))
                 nodal_pressure_previous = nodal_pressure_current
@@ -123,22 +146,17 @@ function run_simulator!(
                     @info "Steady state attained"
                     break
                 end
+                next_steady_state_check_time += steady_state_check_interval
             end
             #
-            if (step == num_steps)
+            if ref(ts, :current_time) >= t_f - TOL
                 @info "Steady-state not yet attained! Consider increasing final time."
             end
         end
 
     end
+    ts.params[:dt] = base_dt
     (turnoffprogressbar == false) && (finish!(prog))
-    update_output_state!(
-        ts,
-        output_state,
-        penultimate_step_state,
-        previous_step_state,
-        finalize = true,
-    )
     update_output_data!(ts, output_state, output_data)
     populate_solution!(ts, output_data)
 

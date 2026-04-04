@@ -356,7 +356,7 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
             flow_convertor(output.final_state["compressor_flow"][key])
     end
 
-    sol["time_step"] = time_convertor(params(ts, :dt))
+    sol["base_time_step"] = time_convertor(params(ts, :base_dt))
     sol["time_points"] = time_convertor.(times)
     return
 end
@@ -425,7 +425,7 @@ function populate_solution_final_state_only!(ts::TransientSimulator, output::Out
             flow_convertor(output.final_state["compressor_flow"][key])
     end
 
-    sol["time_step"] = time_convertor(params(ts, :dt))
+    sol["base_time_step"] = time_convertor(params(ts, :base_dt))
     sol["time_points"] = time_convertor.(times)
     return
 end

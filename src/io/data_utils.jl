@@ -186,6 +186,8 @@ function process_data!(data::Dict{String,Any})
     end
 
     # other parameter calculations
+    params[:base_dt] = params[:dt]
+
     # universal gas constant (J/mol/K)
     params[:R] = 8.314
     # molecular mass of natural gas (kg/mol): M_g = M_a * G

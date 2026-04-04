@@ -8,7 +8,7 @@ function write_output(
     solution = ts.sol
     output_string = output_path * output_file
     output_dict = Dict(
-        "time_step" => solution["time_step"],
+        "base_time_step" => solution["base_time_step"],
         "time_points" => solution["time_points"],
         "nodes" => solution["nodes"],
         "pipes" => solution["pipes"],

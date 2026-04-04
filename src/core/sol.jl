@@ -1,6 +1,6 @@
 function initialize_solution(data::Dict{String,Any})::Dict{String,Any}
     sol = Dict{String,Any}()
-    sol["time_step"] = Float64
+    sol["base_time_step"] = Float64
     sol["time_points"] = Vector{Float64}()
     sol["nodes"] = Dict{String,Any}()
     sol["pipes"] = Dict{String,Any}()

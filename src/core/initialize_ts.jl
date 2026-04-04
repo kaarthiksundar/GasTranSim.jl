@@ -60,7 +60,7 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
         # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
         c_inv = nominal_values(ts, :mach_num)
         num_segments =
-            c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :dt)
+            c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :base_dt)
         n = 1
         if num_segments < 1
             throw(CFLException(string(key)))
