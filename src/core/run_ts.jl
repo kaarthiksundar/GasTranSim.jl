@@ -200,45 +200,25 @@ end
 
 function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
     t = ref(ts, :current_time)
-    # DO NOT parallelize this (race condition)
-    # Do level 2 first
-    for (key, junction) in ref(ts, :node)
-        (ref(ts, :node, key)["is_updated"] == true) && (continue)
-        (ref(ts, :node, key)["level"] != 2) && (continue) # if not level 2, skip
-        # p(t), but q(t - dt/2) taken care of inside
-        ctrl_type, val = control(ts, :node, key, t)
-        if ctrl_type == pressure_control
-            _set_pressure_at_node!(key, val, ts)
-            _set_pressure_at_node_across_compressors!(key, val, ts)
-        elseif ctrl_type == flow_control
-            _solve_for_pressure_at_node_and_neighbours!(key, val, ts)
-        else
-            throw(
-                ControlException("control type unknown at advance_pressure_mass_flux_node"),
-            )
-        end
-    end
-    # Do level 0 and level 1 now, level 2 already done
-    for (key, junction) in ref(ts, :node)
-        (ref(ts, :node, key)["is_updated"] == true) && (continue)
-        # p(t), but q(t - dt/2) taken care of inside
-        ctrl_type, val = control(ts, :node, key, t)
-        if ctrl_type == pressure_control
-            _set_pressure_at_node!(key, val, ts)
-            _set_pressure_at_node_across_compressors!(key, val, ts)
-        elseif ctrl_type == flow_control
-            _solve_for_pressure_at_node_and_neighbours!(key, val, ts)
-        else
-            throw(
-                ControlException("control type unknown at advance_pressure_mass_flux_node"),
-            )
-        end
+
+    # initialize a Jacobian matrix of correct size
+    num_nodes = length(ref(ts, :node))
+    J = spzeros(num_nodes, num_nodes)
+    rhs = zeros(num_nodes)
+    assemble_compressor_equations!(ts, J, rhs)
+    assemble_nodal_equations!(ts, J, rhs)
+    # solve nodal density at t+dt using assembled Jacobian and rhs
+    x = J \ rhs
+    # update nodal pressures in ts.ref using solution x
+    for node_id = 1 : length(x)
+        p_val = get_pressure(ts, x[node_id])
+        ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
+        ref(ts, :node, node_id)["pressure"] = p_val
+        ref(ts, :node, node_id)["is_updated"] = true
     end
 
     key_array = collect(keys(ref(ts, :pipe)))
     _execute_task!(_compute_pipe_end_fluxes_densities!, ts, key_array, run_type)
-    key_array = collect(keys(ref(ts, :node)))
-    _execute_task!(_reset_node_flag!, ts, key_array, run_type)
     return
 end
 
@@ -273,3 +253,5 @@ function save_snapshot(
     )
     return snapshot_count + 1
 end
+
+

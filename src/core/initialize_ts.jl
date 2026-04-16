@@ -44,6 +44,7 @@ function initialize_simulator(
     )
 
     add_pipe_grid_to_ref!(ts)
+    add_eqn_number_for_nodes!(ts)
     add_node_level_flag!(ts)
     add_node_ordering_for_compressor_flow_computation!(ts)
     initialize_nodal_state!(ts)
@@ -81,7 +82,7 @@ function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
         return
     end
 
-    # forbid topology if compressor delivers to slack node
+    # forbid topology if compressor delivers to slack node (this is because we cannot compute flow in such a compressor)
     if ref(ts, :node, node_id)["is_slack"] == true &&
        length(ref(ts, :incoming_compressors, node_id)) > 0
         throw(NetworkException("Compressor delivering to slack node $node_id"))
@@ -254,7 +255,7 @@ function _compute_compressor_flows!(ts::TransientSimulator)
         ctrl_type, withdrawal = control(ts, :node, node_id, t)
         @assert ctrl_type == flow_control
         _, net_injection =
-            _assemble_pipe_contributions_to_node(node_id, withdrawal, 1.0, ts)
+            _assemble_pipe_contributions_to_node_new(node_id, withdrawal, ts)
 
         if ref(ts, :node, node_id)["level"] == 1
             # find the outgoing compressor
@@ -376,4 +377,132 @@ function test_ic(ts::TransientSimulator)
     @debug "If the initial condition was steady, then the error in initial condition is $err"
 
     return
+end
+
+
+
+function _collect_compressor_component_nodes(
+    ts::TransientSimulator,
+    start_node::Int64,
+    skip_nodes::Set{Int64},
+)::Vector{Int64}
+    component = Int64[]
+    queue = Int64[start_node]
+    seen = Set{Int64}([start_node])
+    head = 1
+
+    # Breadth-first traversal over nodes connected by non-flow-control compressors.
+    while head <= length(queue)
+        node_id = queue[head]
+        head += 1
+        push!(component, node_id)
+
+        in_c = ref(ts, :incoming_compressors, node_id)
+        out_c = ref(ts, :outgoing_compressors, node_id)
+
+        for c in vcat(in_c, out_c)
+            ctrl_type, _ = control(ts, :compressor, c, 0)
+            (ctrl_type == flow_control) && continue
+
+            fr = ref(ts, :compressor, c, "fr_node")
+            to = ref(ts, :compressor, c, "to_node")
+            for nbr in (fr, to)
+                if (nbr in skip_nodes) || (nbr in seen)
+                    continue
+                end
+                push!(seen, nbr)
+                push!(queue, nbr)
+            end
+        end
+    end
+
+    return component
+end
+
+function add_eqn_number_for_nodes!(ts::TransientSimulator)
+    node_ids = sort(collect(keys(ref(ts, :node))))
+    assignment_vec = falses(length(node_ids))
+    compressors = get(ref(ts), :compressor, Dict())
+
+    # Only non-flow-control compressors contribute compressor equations.
+    num_non_flow_compressors = 0
+    for (comp_id, _) in compressors
+        ctrl_type, _ = control(ts, :compressor, comp_id, 0)
+        (ctrl_type == flow_control) && continue
+        num_non_flow_compressors += 1
+    end
+
+    eqn_init_num = num_non_flow_compressors
+    ts.ref[:num_compressors] = eqn_init_num
+
+    # Nodes reachable from slack nodes through non-flow-control compressors do not
+    # get nodal equations in this reduced formulation.
+    slack_node_list = [n for (n, nd) in ref(ts, :node) if nd["is_slack"] == true]
+    nodes_no_eq_list = collect_no_eqn_nodes_from_slacks(ts, slack_node_list)
+    no_eq_set = Set(nodes_no_eq_list)
+
+    for node_id in nodes_no_eq_list
+        ref(ts, :node, node_id)["eqn_number"] = NaN
+        assignment_vec[node_id] = true
+    end
+
+    # Every connected component through non-flow-control compressors shares one
+    # nodal equation number.
+    for node_id in node_ids
+        assignment_vec[node_id] && continue
+        component = _collect_compressor_component_nodes(ts, node_id, no_eq_set)
+        eqn_init_num += 1
+        for cid in component
+            ref(ts, :node, cid)["eqn_number"] = eqn_init_num
+            assignment_vec[cid] = true
+        end
+    end
+
+    if any(assignment_vec .== false)
+        throw(NetworkException("Not all nodes were assigned an equation number"))
+    end
+    return
+end
+
+"""
+Starting from slack nodes, traverse through non-flow-control compressors and
+collect reachable non-slack nodes into `no_eqn_list`.
+"""
+function collect_no_eqn_nodes_from_slacks(
+    ts::TransientSimulator,
+    slack_nodes::Vector{Int64},
+)::Vector{Int64}
+    explore_list = copy(slack_nodes)
+    no_eqn_list = Int64[]
+
+    seen = Set{Int64}(slack_nodes)
+    head = 1
+
+    while head <= length(explore_list)
+        node_id = explore_list[head]
+        head += 1
+
+        in_c = ref(ts, :incoming_compressors, node_id)
+        out_c = ref(ts, :outgoing_compressors, node_id)
+
+        for c in vcat(in_c, out_c)
+            # Ignore flow-control compressors when building no-equation regions.
+            ctrl_type, _ = control(ts, :compressor, c, 0)
+            (ctrl_type == flow_control) && continue
+
+            fr = ref(ts, :compressor, c, "fr_node")
+            to = ref(ts, :compressor, c, "to_node")
+
+            for nbr in (fr, to)
+                if !(nbr in seen)
+                    push!(seen, nbr)
+                    push!(explore_list, nbr)
+                    push!(no_eqn_list, nbr)
+                end
+            end
+        end
+    end
+
+    slack_set = Set(slack_nodes)
+    return [n for n in no_eqn_list if !(n in slack_set)]
 end

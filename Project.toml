@@ -6,15 +6,17 @@ version = "0.3.0"
 [deps]
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
 Dierckx = "~0.4, ~0.5"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
-ProgressMeter = "~1.10"
 LoggingExtras = "~0.4, ~0.5, ~1"
+ProgressMeter = "~1.10"
 julia = "^1"
 
 [extras]

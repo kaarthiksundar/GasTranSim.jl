@@ -3,6 +3,8 @@ module GasTranSim
 import JSON
 using Dierckx
 using ProgressMeter
+using SparseArrays
+using LinearAlgebra
 
 import Logging
 import LoggingExtras
@@ -30,7 +32,7 @@ include("core/ref.jl")
 include("core/ic.jl")
 include("core/bc.jl")
 include("core/sol.jl")
-include("core/time_integration.jl")
+include("core/assembly.jl")
 include("core/initialize_ts.jl")
 include("core/run_task.jl")
 include("core/run_ts.jl")

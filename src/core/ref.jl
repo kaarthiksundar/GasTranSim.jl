@@ -8,7 +8,6 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         @assert id == get(node, "id", get(node, "node_id", []))
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]
-        ref[name][id]["is_updated"] = false
         ref[name][id]["pressure"] = NaN
         ref[name][id]["pressure_previous"] = NaN
         ref[name][id]["injection"] = NaN
