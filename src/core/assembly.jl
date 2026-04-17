@@ -1,5 +1,9 @@
 
 
+#TODO
+# solve as nonlin system after changing compressor equations to p_i - alpha * p_j = 0 for c_ratio control 
+# do load adjustment for flow control at nodes
+
 function assemble_compressor_equations!(ts::TransientSimulator, J::SparseMatrixCSC{Float64,Int64}, rhs::Vector{Float64})
     for (ci, compressor) in ref(ts, :compressor)
         to_node = compressor["to_node"]

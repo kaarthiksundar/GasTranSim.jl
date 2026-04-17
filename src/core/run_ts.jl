@@ -96,6 +96,7 @@ function run_simulator!(
         advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
         # _compute_compressor_flows!(ts)
         _solve_compressor_flows!(ts, lin_system)
+        calculate_slack_injections!(ts)
         #  if current_time is one where output needs to be saved, check and do now
         current_step_state = capture_step_state(ts)
         update_output_state!(

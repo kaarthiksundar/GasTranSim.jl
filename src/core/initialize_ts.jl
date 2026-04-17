@@ -407,3 +407,27 @@ function form_matrix_for_compressor_flow_solve(ts::TransientSimulator)::Union{Tu
 
     return A, rhs_index
 end
+
+function calculate_slack_injections!(ts::TransientSimulator)
+    for (node_id, node) in ref(ts, :node)
+        if node["is_slack"] == 1
+            
+            _ , flow = _assemble_pipe_contributions_to_node_new(node_id, 0.0, ts)
+    
+            out_c = ref(ts, :outgoing_compressors, node_id)
+            in_c = ref(ts, :incoming_compressors, node_id)
+
+            for i in out_c
+                flow -= ref(ts, :compressor, i)["flow"] #withdrawal positive
+            end
+
+            for i in in_c
+                flow += ref(ts, :compressor, i)["flow"]
+            end
+
+            ref(ts, :node, node_id)["injection"] = -flow
+        end
+
+    end
+    return
+end
