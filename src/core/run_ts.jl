@@ -80,6 +80,8 @@ function run_simulator!(
         snapshot_count =
             save_snapshot(ts, output_data, snapshot_path, snapshot_filename, snapshot_count)
     end
+
+    lin_system = form_matrix_for_compressor_flow_solve(ts)
     # Time marching loop
     step = 0
     while ref(ts, :current_time) < t_f - TOL
@@ -92,7 +94,8 @@ function run_simulator!(
         advance_pipe_density_internal!(ts, run_type) # (n+1) level
         advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
         advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
-        _compute_compressor_flows!(ts)
+        # _compute_compressor_flows!(ts)
+        _solve_compressor_flows!(ts, lin_system)
         #  if current_time is one where output needs to be saved, check and do now
         current_step_state = capture_step_state(ts)
         update_output_state!(

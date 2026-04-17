@@ -45,8 +45,6 @@ function initialize_simulator(
 
     add_pipe_grid_to_ref!(ts)
     add_eqn_number_for_nodes!(ts)
-    add_node_level_flag!(ts)
-    add_node_ordering_for_compressor_flow_computation!(ts)
     initialize_nodal_state!(ts)
     initialize_pipe_state!(ts)
     initialize_compressor_state!(ts)
@@ -73,114 +71,6 @@ function add_pipe_grid_to_ref!(ts::TransientSimulator)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
         ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64, n+1)
     end
-    return
-end
-
-function _evaluate_level_of_node!(ts::TransientSimulator, node_id::Int64)
-    if !haskey(ref(ts), :compressor)
-        ref(ts, :node, node_id)["level"] = 0
-        return
-    end
-
-    # forbid topology if compressor delivers to slack node (this is because we cannot compute flow in such a compressor)
-    if ref(ts, :node, node_id)["is_slack"] == true &&
-       length(ref(ts, :incoming_compressors, node_id)) > 0
-        throw(NetworkException("Compressor delivering to slack node $node_id"))
-    end
-
-    if length(ref(ts, :incoming_compressors, node_id)) > 1
-        num_slack_fr_nodes = 0
-        for ci in ref(ts, :incoming_compressors, node_id)
-            node_across_ci = ref(ts, :compressor, ci, "fr_node")
-            if ref(ts, :node, node_across_ci)["is_slack"] == true
-                num_slack_fr_nodes += 1
-            end
-        end
-        if num_slack_fr_nodes > 1
-            throw(
-                NetworkException("Two slack nodes connected by two compressors in series"),
-            )
-        end
-    end
-
-    if length(ref(ts, :incoming_compressors, node_id)) +
-       length(ref(ts, :outgoing_compressors, node_id)) == 0
-        ref(ts, :node, node_id)["level"] = 0
-        return
-    end
-
-    if length(ref(ts, :incoming_compressors, node_id)) +
-       length(ref(ts, :outgoing_compressors, node_id)) == 1
-        if length(ref(ts, :incoming_compressors, node_id)) == 1
-            ref(ts, :node, node_id)["level"] = -1
-        end
-        if length(ref(ts, :outgoing_compressors, node_id)) == 1
-            ref(ts, :node, node_id)["level"] = 1
-        end
-        return
-    end
-
-    # if we are here, then we have at least two compressors connected to the node so node is level 2
-    ref(ts, :node, node_id)["level"] = 2
-    return
-end
-
-function add_node_level_flag!(ts::TransientSimulator)
-    for (node_id, _) in ref(ts, :node)
-        _evaluate_level_of_node!(ts, node_id)
-    end
-
-    # Go to each compressor and check if they connect level 2 vertices
-    num_bad_edges = 0
-    for (comp, _) in get(ref(ts), :compressor, [])
-        ctrl_type, _ = control(ts, :compressor, comp, 0)
-        ctrl_type == 2 && continue  # flow ctrl compressor is like a pipe
-        fr_node = ref(ts, :compressor, comp, "fr_node")
-        to_node = ref(ts, :compressor, comp, "to_node")
-        if ref(ts, :node, fr_node)["level"] == 2 && ref(ts, :node, to_node)["level"] == 2
-            @info "Compressor $comp (not of type flow-control) connects Level 2 nodes $fr_node and $to_node"
-            num_bad_edges += 1
-        end
-    end
-
-    # check network pathology
-    num_bad_edges > 0 && throw(NetworkException("Level 2 nodes connected by compressor"))
-
-    return
-end
-
-function add_node_ordering_for_compressor_flow_computation!(ts::TransientSimulator)
-    compressors = get(ref(ts), :compressor, Dict())
-    (isempty(compressors)) && (return)
-    compressor_ids = keys(compressors) |> collect
-    num_compressors = length(compressors)
-    compressors_accounted_for = Vector{Int64}()
-    compressors_remaining = Vector{Int64}()
-    used_node_ids = Vector{Int64}()
-
-    for c_id in compressor_ids
-        fr_id = ref(ts, :compressor, c_id)["fr_node"]
-        to_id = ref(ts, :compressor, c_id)["to_node"]
-        if abs(ref(ts, :node, fr_id)["level"]) == 1 &&
-           ref(ts, :node, fr_id)["is_slack"] == false
-            push!(compressors_accounted_for, c_id)
-            push!(used_node_ids, fr_id)
-            continue
-        elseif abs(ref(ts, :node, to_id)["level"]) == 1 # to_id cannot be slack
-            push!(compressors_accounted_for, c_id)
-            push!(used_node_ids, to_id)
-            continue
-        else
-            push!(compressors_remaining, c_id)
-        end
-    end
-
-    if length(compressors_accounted_for) < num_compressors
-        @debug "The flows in some compressors $compressors_remaining cannot be calculated without knowing  other compressor flows"
-    end
-
-    ref(ts)[:node_ordering_for_compressor_flow_calculation] = used_node_ids
-    ref(ts)[:compressor_ids_second_round_calculation] = compressors_remaining
     return
 end
 
@@ -248,53 +138,29 @@ function initialize_pipe_state!(ts::TransientSimulator)
     return
 end
 
-function _compute_compressor_flows!(ts::TransientSimulator)
-
-    for node_id in get(ref(ts), :node_ordering_for_compressor_flow_calculation, [])
-        t = ref(ts, :current_time)
-        ctrl_type, withdrawal = control(ts, :node, node_id, t)
-        @assert ctrl_type == flow_control
-        _, net_injection =
-            _assemble_pipe_contributions_to_node_new(node_id, withdrawal, ts)
-
-        if ref(ts, :node, node_id)["level"] == 1
-            # find the outgoing compressor
-            out_c = ref(ts, :outgoing_compressors)[node_id]
-            ref(ts, :compressor, out_c[1])["flow"] = net_injection
-        end
-        if ref(ts, :node, node_id)["level"] == -1
-            # find the incoming compressor
-            in_c = ref(ts, :incoming_compressors)[node_id]
-            ref(ts, :compressor, in_c[1])["flow"] = -net_injection
-        end
+function _solve_compressor_flows!(ts::TransientSimulator, lin_system::Union{Tuple,Nothing})
+    if isnothing(lin_system)
+        return
+    else
+        A, rhs_index = lin_system
     end
+    b = zeros(length(rhs_index))
 
-    # Network topology conditions imply following calculation cannot fail
-    # Flows of other compressors at node must be known
-    # Compressor has unknown flow must mean one end is slack and other end is level 2
-    # Both ends cannot be level 2 or slack, if one end was level 1 non-slack, would already be finished
-    for c_id in get(ref(ts), :compressor_ids_second_round_calculation, [])
-        to_id = ref(ts, :compressor, c_id)["to_node"]
-        # to_id cannot be slack, so focus on that
-        t = ref(ts, :current_time)
-        ctrl_type, withdrawal = control(ts, :node, to_id, t)
-        @assert ctrl_type == flow_control
-        _, net_injection = _assemble_pipe_contributions_to_node(to_id, withdrawal, 1.0, ts)
-        in_c = ref(ts, :incoming_compressors)[to_id]
-        out_c = ref(ts, :outgoing_compressors)[to_id]
-        for id in in_c
-            if id == c_id # c_id is incoming
-                continue
-            end
-            net_injection += ref(ts, :compressor, id)["flow"]
-        end
-        for id in out_c
-            net_injection -= ref(ts, :compressor, id)["flow"]
-        end
-        ref(ts, :compressor, c_id)["flow"] = -net_injection
+    for i = 1:length(rhs_index)
+        node_id = rhs_index[i]
+        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
+        _ , bi = _assemble_pipe_contributions_to_node_new(node_id, ctrl_val, ts)
+        b[i] = -bi
     end
+    x  = A \ b
+
+    for c_id = 1:length(rhs_index)
+        ref(ts, :compressor, c_id)["flow"] = x[c_id]
+    end
+    
     return
 end
+
 
 function initialize_compressor_state!(ts::TransientSimulator)
     isempty(get(ref(ts), :compressor, [])) && return
@@ -306,7 +172,8 @@ function initialize_compressor_state!(ts::TransientSimulator)
         return
     end
     @info "compressor does not have initial flows, computing them"
-    _compute_compressor_flows!(ts)
+    lin_system = form_matrix_for_compressor_flow_solve(ts)
+    _solve_compressor_flows!(ts, lin_system)
     return
 end
 
@@ -437,7 +304,7 @@ function add_eqn_number_for_nodes!(ts::TransientSimulator)
 
     # Nodes reachable from slack nodes through non-flow-control compressors do not
     # get nodal equations in this reduced formulation.
-    slack_node_list = [n for (n, nd) in ref(ts, :node) if nd["is_slack"] == true]
+    slack_node_list = [n for (n, nd) in ref(ts, :node) if nd["is_slack"] == 1]
     nodes_no_eq_list = collect_no_eqn_nodes_from_slacks(ts, slack_node_list)
     no_eq_set = Set(nodes_no_eq_list)
 
@@ -505,4 +372,38 @@ function collect_no_eqn_nodes_from_slacks(
 
     slack_set = Set(slack_nodes)
     return [n for n in no_eqn_list if !(n in slack_set)]
+end
+
+
+function form_matrix_for_compressor_flow_solve(ts::TransientSimulator)::Union{Tuple{SparseMatrixCSC{Float64,Int64}, Vector{Int64}}, Nothing}
+    @info "Assuming that compressors alone do not form cycles. Else compressor flows cannot be determined uniquely"
+    compressors = get(ref(ts), :compressor, Dict())
+    (isempty(compressors)) && return nothing
+    num_compressors = length(compressors)
+    A = spzeros(num_compressors, num_compressors)
+    rhs_index = Vector{Int64}()
+
+    for i = 1 : num_compressors
+        fr_node = ref(ts, :compressor, i, "fr_node")
+        to_node = ref(ts, :compressor, i, "to_node")
+        
+        if ref(ts, :node, fr_node)["is_slack"] == 0 && !(fr_node in rhs_index)
+            push!(rhs_index, fr_node)
+        elseif ref(ts, :node, to_node)["is_slack"] == 0 && !(to_node in rhs_index)
+            push!(rhs_index, to_node)
+        else
+            throw(NetworkException("Cannot solve for flow in Compressor $i "))
+        end
+    end
+
+    for i = 1: length(rhs_index)
+        for c_id in ref(ts, :incoming_compressors, rhs_index[i])
+            A[i, c_id] = 1.0
+        end
+        for c_id in ref(ts, :outgoing_compressors, rhs_index[i])
+            A[i, c_id] = -1.0
+        end
+    end
+
+    return A, rhs_index
 end
