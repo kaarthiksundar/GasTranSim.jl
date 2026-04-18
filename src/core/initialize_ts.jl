@@ -149,7 +149,7 @@ function _solve_compressor_flows!(ts::TransientSimulator, lin_system::Union{Tupl
     for i = 1:length(rhs_index)
         node_id = rhs_index[i]
         ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
-        _ , bi = _assemble_pipe_contributions_to_node_new(node_id, ctrl_val, ts)
+        _ , bi = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
         b[i] = -bi
     end
     x  = A \ b
@@ -412,7 +412,7 @@ function calculate_slack_injections!(ts::TransientSimulator)
     for (node_id, node) in ref(ts, :node)
         if node["is_slack"] == 1
             
-            _ , flow = _assemble_pipe_contributions_to_node_new(node_id, 0.0, ts)
+            _ , flow = _assemble_pipe_contributions_to_node(node_id, 0.0, ts)
     
             out_c = ref(ts, :outgoing_compressors, node_id)
             in_c = ref(ts, :incoming_compressors, node_id)

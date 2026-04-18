@@ -202,20 +202,54 @@ function advance_pipe_density_internal!(ts::TransientSimulator, run_type::Symbol
     return
 end
 
-function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
-    t = ref(ts, :current_time)
+function solve_newton_basic!(
+    x::Vector{Float64},
+    residual_fun!::Function,
+    Jacobian_fun!::Function;
+    tol::Float64 = 1e-8,
+    max_iter::Int = 20,
+)::Tuple{Vector{Float64},Bool,Int,Float64}
+    n = length(x)
+    residual = zeros(Float64, n)
+    J = spzeros(n, n)
 
-    # initialize a Jacobian matrix of correct size
-    num_nodes = length(ref(ts, :node))
-    J = spzeros(num_nodes, num_nodes)
-    rhs = zeros(num_nodes)
-    assemble_compressor_equations!(ts, J, rhs)
-    assemble_nodal_equations!(ts, J, rhs)
-    # solve nodal density at t+dt using assembled Jacobian and rhs
-    x = J \ rhs
-    # update nodal pressures in ts.ref using solution x
-    for node_id = 1 : length(x)
-        p_val = get_pressure(ts, x[node_id])
+    for iter = 1:max_iter
+        fill!(residual, 0.0)
+        residual_fun!(residual, x)
+        res_norm = maximum(abs, residual)
+
+        if res_norm <= tol
+            return x, true, iter, res_norm
+        end
+
+        fill!(J.nzval, 0.0)
+        Jacobian_fun!(J, x)
+        delta_x = J \ (-residual)
+        x .+= delta_x
+
+        step_norm = maximum(abs, delta_x)
+        if step_norm <= tol
+            return x, true, iter, res_norm
+        end
+    end
+
+    fill!(residual, 0.0)
+    residual_fun!(residual, x)
+    return x, false, max_iter, maximum(abs, residual)
+end
+
+function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
+    x_node = get_density.(Ref(ts), form_nodal_pressure_vector(ts)) #Ref(x) wraps x as a 0-dim scalar so that this is used as is in broadcasting
+    residual_fun! = (r, x) -> assemble_junction_residual!(ts, x, r)
+    Jacobian_fun! = (J, x) -> assemble_junction_Jacobian!(ts, x, J)
+
+    x_node, converged, iter, res_norm = solve_newton_basic!(x_node, residual_fun!, Jacobian_fun!)
+
+    converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
+
+    # update nodal pressures in ts.ref using the density solution x_node
+    for node_id = 1:length(x_node)
+        p_val = get_pressure(ts, x_node[node_id])
         ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
         ref(ts, :node, node_id)["pressure"] = p_val
         ref(ts, :node, node_id)["is_updated"] = true
@@ -231,6 +265,7 @@ function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symb
     _execute_task!(_advance_pipe_mass_flux_internal!, ts, key_array, run_type)
     return
 end
+
 
 function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
     key_array = sort(collect(keys(ref(ts, :node))))

@@ -115,6 +115,16 @@ get_pressure(ts::TransientSimulator, density) =
 get_density(ts::TransientSimulator, pressure) =
     ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
+function get_pressure_prime(ts::TransientSimulator, density)
+    b1, b2 = get_eos_coeffs(ts)
+    if isapprox(b2, 0.0; atol = eps(Float64), rtol = 0.0)
+        return density .* 0.0 .+ 1.0 / b1
+    end
+    return inv.(sqrt.(b1 * b1 .+ 4.0 * b2 .* density))
+end
+
+
+
 TOL = 1.0e-5
 
 function get_nodal_control(

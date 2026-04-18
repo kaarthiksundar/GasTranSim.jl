@@ -1,10 +1,22 @@
 
 
 #TODO
-# solve as nonlin system after changing compressor equations to p_i - alpha * p_j = 0 for c_ratio control 
-# do load adjustment for flow control at nodes
 
-function assemble_compressor_equations!(ts::TransientSimulator, J::SparseMatrixCSC{Float64,Int64}, rhs::Vector{Float64})
+# do load adjustment for flow control at nodes
+# problem is that we will need to reset all the violated densities, treat them as slacks and solve the junction problem again. this means new Jacobian, new equations. then infer slack injection at these new slacks to get the adjusted load.  However, if in this process new junctions show violation, then ?
+
+function assemble_junction_residual!(ts::TransientSimulator, x_node::AbstractArray, residual_node::AbstractArray)
+    assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts, x_node, residual_node)
+    assemble_residual_for_nodes_WITH_eqn_nos!(ts, x_node, residual_node)
+    return
+end
+
+function assemble_junction_Jacobian!(ts::TransientSimulator, x_node::AbstractArray, Jacobian::SparseMatrixCSC{Float64,Int64})
+    assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts, x_node, Jacobian)
+    assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts, x_node, Jacobian)
+end
+
+function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
     for (ci, compressor) in ref(ts, :compressor)
         to_node = compressor["to_node"]
         from_node = compressor["fr_node"]
@@ -12,12 +24,9 @@ function assemble_compressor_equations!(ts::TransientSimulator, J::SparseMatrixC
         # right now doing rho_i - alpha * rho_j , should be doing
         # p(rho_i) - alpha * p(rho_j) and solve with NR
         if ctrl_type == c_ratio_control
-            J[ci, from_node] = -1.0 * ctrl_val
-            J[ci, to_node]  = 1.0
-            rhs[ci] = 0.0
+            residual_node[ci] = get_pressure(ts, x_node[to_node]) - ctrl_val * get_pressure(ts, x_node[from_node]) 
         elseif ctrl_type == discharge_pressure_control
-            J[ci, to_node] = 1.0
-            rhs[ci] = get_density(ts, ctrl_val)
+            residual_node[ci] = x_node[to_node] - get_density(ts, ctrl_val)
         elseif ctrl_type == flow_control
             # no contribution to Jacobian since flow is known
             continue
@@ -26,8 +35,28 @@ function assemble_compressor_equations!(ts::TransientSimulator, J::SparseMatrixC
     return
 end
 # assemble compressor contribution to Jacobian 
+function assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
+    for (ci, compressor) in ref(ts, :compressor)
+        to_node = compressor["to_node"]
+        from_node = compressor["fr_node"]
+        ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
+        # right now doing rho_i - alpha * rho_j , should be doing
+        # p(rho_i) - alpha * p(rho_j) and solve with NR
+        if ctrl_type == c_ratio_control
+            J[ci, from_node] = -ctrl_val * get_pressure_prime(ts, x_node[from_node])
+            J[ci, to_node]  = get_pressure_prime(ts, x_node[to_node]) 
+        elseif ctrl_type == discharge_pressure_control
+            J[ci, to_node] = 1.0
+        elseif ctrl_type == flow_control
+            # no contribution to Jacobian since flow is known
+            continue
+        end
+    end
+    return
+end
 
-function assemble_nodal_equations!(ts::TransientSimulator, J::SparseMatrixCSC{Float64,Int64}, rhs::Vector{Float64})
+
+function assemble_residual_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
     for (node_id, node) in ref(ts, :node)
 
         eqn_num = ref(ts, :node, node_id)["eqn_number"]
@@ -37,24 +66,43 @@ function assemble_nodal_equations!(ts::TransientSimulator, J::SparseMatrixCSC{Fl
         end
         ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
         if ctrl_type == pressure_control
-            J[eqn_num, node_id] = 1.0
-            rhs[eqn_num] = get_density(ts, ctrl_val)
+            residual_node[eqn_num] = x_node[node_id]- get_density(ts, ctrl_val)
             continue
         elseif ctrl_type == flow_control
-            jac_term, rhs_pipe_term = _assemble_pipe_contributions_to_node_new(node_id, ctrl_val, ts)
+            jac_term, rhs_pipe_term = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
             rhs_compressor_term = _assemble_flow_control_compressor_contribution_to_node(node_id, ts)
-            J[eqn_num, node_id] += jac_term
-            rhs[eqn_num] += rhs_pipe_term + rhs_compressor_term + jac_term * get_density(ts, ref(ts, :node, node_id, "pressure"))
+            residual_node[eqn_num] += jac_term * x_node[node_id]  - jac_term * get_density(ts, ref(ts, :node, node_id, "pressure")) - rhs_pipe_term - rhs_compressor_term 
             continue
         end
     end
     return
 end
 
+function assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
+    for (node_id, node) in ref(ts, :node)
+
+        eqn_num = ref(ts, :node, node_id)["eqn_number"]
+        if  isnan(eqn_num)
+            continue
+        end
+        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
+        if ctrl_type == pressure_control
+            J[eqn_num, node_id] = 1.0
+            continue
+        elseif ctrl_type == flow_control
+            jac_term, _ = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
+            J[eqn_num, node_id] += jac_term
+            continue
+        end
+    end
+    return
+end
+
+
 """
     Assembles all pipe contributions to a node
 """
-function _assemble_pipe_contributions_to_node_new(
+function _assemble_pipe_contributions_to_node(
     node_id::Int64,
     withdrawal::Real,
     ts::TransientSimulator,
