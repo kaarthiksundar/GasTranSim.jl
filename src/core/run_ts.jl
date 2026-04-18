@@ -247,6 +247,8 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
 
     converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
 
+    check_limits(ts, x_node)
+
     # update nodal pressures in ts.ref using the density solution x_node
     for node_id = 1:length(x_node)
         p_val = get_pressure(ts, x_node[node_id])
@@ -254,6 +256,7 @@ function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symb
         ref(ts, :node, node_id)["pressure"] = p_val
         ref(ts, :node, node_id)["is_updated"] = true
     end
+    
 
     key_array = collect(keys(ref(ts, :pipe)))
     _execute_task!(_compute_pipe_end_fluxes_densities!, ts, key_array, run_type)
@@ -294,3 +297,22 @@ function save_snapshot(
 end
 
 
+function check_limits(ts::TransientSimulator, x_node::Vector{Float64})
+
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
+    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_max = get_density(ts, pressure_max)
+
+    violated_nodes = Vector{Int64}()
+    for (index, x)  in enumerate(x_node)
+        if !(rho_min < x < rho_max)
+            push!(violated_nodes, index)
+        end
+    end
+    if !isempty(violated_nodes)
+        throw(DomainError("Density bound ($rho_min, $rho_max) violated at following node(s) $violated_nodes")
+        )
+    end
+    return
+end

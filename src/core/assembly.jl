@@ -21,8 +21,6 @@ function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_
         to_node = compressor["to_node"]
         from_node = compressor["fr_node"]
         ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
-        # right now doing rho_i - alpha * rho_j , should be doing
-        # p(rho_i) - alpha * p(rho_j) and solve with NR
         if ctrl_type == c_ratio_control
             residual_node[ci] = get_pressure(ts, x_node[to_node]) - ctrl_val * get_pressure(ts, x_node[from_node]) 
         elseif ctrl_type == discharge_pressure_control
@@ -40,8 +38,6 @@ function assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_
         to_node = compressor["to_node"]
         from_node = compressor["fr_node"]
         ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
-        # right now doing rho_i - alpha * rho_j , should be doing
-        # p(rho_i) - alpha * p(rho_j) and solve with NR
         if ctrl_type == c_ratio_control
             J[ci, from_node] = -ctrl_val * get_pressure_prime(ts, x_node[from_node])
             J[ci, to_node]  = get_pressure_prime(ts, x_node[to_node]) 
@@ -60,7 +56,6 @@ function assemble_residual_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_nod
     for (node_id, node) in ref(ts, :node)
 
         eqn_num = ref(ts, :node, node_id)["eqn_number"]
-        # println(eqn_num)
         if  isnan(eqn_num)
             continue
         end

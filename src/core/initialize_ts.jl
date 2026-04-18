@@ -142,22 +142,23 @@ function _solve_compressor_flows!(ts::TransientSimulator, lin_system::Union{Tupl
     if isnothing(lin_system)
         return
     else
-        A, rhs_index = lin_system
+        A, rhs_index, compressor_ids = lin_system
     end
     b = zeros(length(rhs_index))
 
     for i = 1:length(rhs_index)
         node_id = rhs_index[i]
         ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
-        _ , bi = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
+        _, bi = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
         b[i] = -bi
     end
-    x  = A \ b
+    x = A \ b
 
-    for c_id = 1:length(rhs_index)
-        ref(ts, :compressor, c_id)["flow"] = x[c_id]
+    for i = 1:length(compressor_ids)
+        c_id = compressor_ids[i]
+        ref(ts, :compressor, c_id)["flow"] = x[i]
     end
-    
+
     return
 end
 
@@ -375,37 +376,77 @@ function collect_no_eqn_nodes_from_slacks(
 end
 
 
-function form_matrix_for_compressor_flow_solve(ts::TransientSimulator)::Union{Tuple{SparseMatrixCSC{Float64,Int64}, Vector{Int64}}, Nothing}
+function form_matrix_for_compressor_flow_solve(ts::TransientSimulator)::Union{Tuple{SparseMatrixCSC{Float64,Int64},Vector{Int64},Vector{Int64}},Nothing}
     @info "Assuming that compressors alone do not form cycles. Else compressor flows cannot be determined uniquely"
     compressors = get(ref(ts), :compressor, Dict())
-    (isempty(compressors)) && return nothing
-    num_compressors = length(compressors)
+    isempty(compressors) && return nothing
+
+    compressor_ids = sort(collect(keys(compressors)))
+    num_compressors = length(compressor_ids)
+
+    # Each compressor needs one unique non-slack endpoint equation; build candidates first.
+    candidate_nodes = Dict{Int64,Vector{Int64}}()
+    for c_id in compressor_ids
+        fr_node = ref(ts, :compressor, c_id, "fr_node")
+        to_node = ref(ts, :compressor, c_id, "to_node")
+
+        cands = Int64[]
+        (ref(ts, :node, fr_node)["is_slack"] == 0) && push!(cands, fr_node)
+        if (ref(ts, :node, to_node)["is_slack"] == 0) && (to_node != fr_node)
+            push!(cands, to_node)
+        end
+
+        isempty(cands) &&
+            throw(NetworkException("Cannot solve for flow in Compressor $c_id: both endpoints are slack"))
+
+        candidate_nodes[c_id] = cands
+    end
+
+    # Order-independent assignment via backtracking on compressors with fewer choices first.
+    assignment_order = sort(compressor_ids, by = c_id -> length(candidate_nodes[c_id]))
+    assigned_node = Dict{Int64,Int64}()
+    used_nodes = Set{Int64}()
+
+    function _assign_rhs_node!(k::Int64)::Bool
+        k > length(assignment_order) && return true
+        c_id = assignment_order[k]
+
+        for node_id in candidate_nodes[c_id]
+            node_id in used_nodes && continue
+            assigned_node[c_id] = node_id
+            push!(used_nodes, node_id)
+
+            _assign_rhs_node!(k + 1) && return true
+
+            delete!(assigned_node, c_id)
+            delete!(used_nodes, node_id)
+        end
+
+        return false
+    end
+
+    _assign_rhs_node!(1) ||
+        throw(NetworkException("Cannot solve compressor flows: no order-independent unique non-slack node assignment exists"))
+
+    rhs_index = [assigned_node[c_id] for c_id in compressor_ids]
+
     A = spzeros(num_compressors, num_compressors)
-    rhs_index = Vector{Int64}()
+    comp_col = Dict{Int64,Int64}(c_id => j for (j, c_id) in enumerate(compressor_ids))
 
-    for i = 1 : num_compressors
-        fr_node = ref(ts, :compressor, i, "fr_node")
-        to_node = ref(ts, :compressor, i, "to_node")
-        
-        if ref(ts, :node, fr_node)["is_slack"] == 0 && !(fr_node in rhs_index)
-            push!(rhs_index, fr_node)
-        elseif ref(ts, :node, to_node)["is_slack"] == 0 && !(to_node in rhs_index)
-            push!(rhs_index, to_node)
-        else
-            throw(NetworkException("Cannot solve for flow in Compressor $i "))
+    for i = 1:length(rhs_index)
+        node_id = rhs_index[i]
+
+        for c_id in ref(ts, :incoming_compressors, node_id)
+            haskey(comp_col, c_id) || continue
+            A[i, comp_col[c_id]] = 1.0
+        end
+        for c_id in ref(ts, :outgoing_compressors, node_id)
+            haskey(comp_col, c_id) || continue
+            A[i, comp_col[c_id]] = -1.0
         end
     end
 
-    for i = 1: length(rhs_index)
-        for c_id in ref(ts, :incoming_compressors, rhs_index[i])
-            A[i, c_id] = 1.0
-        end
-        for c_id in ref(ts, :outgoing_compressors, rhs_index[i])
-            A[i, c_id] = -1.0
-        end
-    end
-
-    return A, rhs_index
+    return A, rhs_index, compressor_ids
 end
 
 function calculate_slack_injections!(ts::TransientSimulator)
