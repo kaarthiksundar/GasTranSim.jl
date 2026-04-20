@@ -303,16 +303,38 @@ function check_limits(ts::TransientSimulator, x_node::Vector{Float64})
     rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
     pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
     rho_max = get_density(ts, pressure_max)
-
+    delta_x_node = zeros(similar(x_node))
     violated_nodes = Vector{Int64}()
     for (index, x)  in enumerate(x_node)
-        if !(rho_min < x < rho_max)
+        if x < rho_min
             push!(violated_nodes, index)
+            delta_x_node[index] = rho_min - x
+        elseif x > rho_max
+            push!(violated_nodes, index)
+            delta_x_node[index] = rho_max - x
         end
     end
+    
+    # check if any non-flow control compressor has ends i, j for which both i, j have delta_x_node nonzero.
+    # if so, then no load adjustment possible because this the compressor equation cannot be satisfied unless it is the unlikely instance where these values are compatible with compressor equation.
+
+    # if only one end of compressor, say i,  has an imposed density change, the compressor eqn now imposes a change at the other end  j too. this change  can be computed, but this means that at j, the new density after change must also be within limits. if not, then load adjustment is not possible. if yes, then load adjustment is possible with change at i and j. (this is step where this method could go wrong)
+
+    # the systematic way to do this is to set violated nodes as new slack nodes  with limiting densities. solve problem agan. if no violations, compute these new "slack injections" at violated nodes
+        
+    #  check if residual of compressor eqns for x_node_new = x_node + delta_x_node is non-zero. is achievable by load adjustment at violated nodes. This requires evaluating J * delta_x_node where J is the Jacobian of the system w.r.t nodal densities, and checking if the required change in injection at violated nodes is compatible with compressor constraints. If not compatible, then throw error that load adjustment cannot fix density violation. If compatible, then update nodal injections at violated nodes accordingly to fix density violation. Note that this load adjustment step is not guaranteed to work and is a heuristic to try to fix density violations when they occur.
+    # now evaluate J * delta_x_node
+
     if !isempty(violated_nodes)
         throw(DomainError("Density bound ($rho_min, $rho_max) violated at following node(s) $violated_nodes")
         )
     end
     return
 end
+
+# problem with load reduction is that it is not local and does not guarantee success.
+# our aim is to reset nodal densities to the limit and check if this can be achieved by adjusting injections at violated nodes. how so ?
+# suppose n nodes exceed bounds..WLOG lower bound. If you set them all to rho_min, then in the discrete system you solved, 
+# you want equations at these nodes to be satisfied  with compensatory effect of change in nodal injection (load reduction).
+# That is, you evaluate J delta_rho in general.  Note that almost all eqns are linear, so most rows of J sre const. For the linear eqns, J delta_rho represents the required change in injection for given changes in nodal density. JHowever, the problem here is that if some of these changes happen at nodes incident by a compressor, then you must have 
+# p(rho_i + delta_rho_i) = alpha * p(rho_j + delta_rho_j). If you are given the increments at both ends, and  proposed density changes are compatible with compressor then load reduction is possible. else not. Alternatively, density changes at one end of the compressor imply a change at other end too. 

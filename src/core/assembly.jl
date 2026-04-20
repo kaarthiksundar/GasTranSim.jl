@@ -17,7 +17,8 @@ function assemble_junction_Jacobian!(ts::TransientSimulator, x_node::AbstractArr
 end
 
 function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
-    for (ci, compressor) in ref(ts, :compressor)
+    for (ci, compressor) in  get(ref(ts), :compressor, Dict())
+
         to_node = compressor["to_node"]
         from_node = compressor["fr_node"]
         ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
@@ -34,7 +35,8 @@ function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_
 end
 # assemble compressor contribution to Jacobian 
 function assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-    for (ci, compressor) in ref(ts, :compressor)
+    for (ci, compressor) in   get(ref(ts), :compressor, Dict())
+
         to_node = compressor["to_node"]
         from_node = compressor["fr_node"]
         ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
