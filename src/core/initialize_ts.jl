@@ -19,8 +19,12 @@ end
 function initialize_simulator(
     data::Dict{String,Any};
     eos::Symbol = :ideal,
+    method::Symbol = :explicit_staggered_grid,
+    # method::Symbol = :implicit_parabolic,
 )::TransientSimulator
+    validate_method_contract!(method)
     params, nominal_values = process_data!(data)
+    params[:method] = method
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(
         data,
@@ -43,122 +47,19 @@ function initialize_simulator(
         get_eos(eos)...,
     )
 
-    add_pipe_grid_to_ref!(ts)
+    initialize_pipe_grid!(ts, method)
     add_eqn_number_for_nodes!(ts)
     initialize_nodal_state!(ts)
-    initialize_pipe_state!(ts)
+    initialize_pipe_state!(ts, method)
     initialize_compressor_state!(ts)
     test_ic(ts)
     return ts
 end
-
-
-function add_pipe_grid_to_ref!(ts::TransientSimulator)
-    for (key, pipe) in ref(ts, :pipe)
-        # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
-        # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
-        c_inv = nominal_values(ts, :mach_num)
-        num_segments =
-            c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :base_dt)
-        n = 1
-        if num_segments < 1
-            throw(CFLException(string(key)))
-        else
-            n = floor(Int64, num_segments) + 1
-        end
-        ref(ts, :pipe, key)["num_discretization_points"] = n
-        ref(ts, :pipe, key)["dx"] = pipe["length"] / (n-1)
-        ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
-        ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64, n+1)
-    end
-    return
-end
-
 function initialize_nodal_state!(ts::TransientSimulator)
     for (key, _) in ref(ts, :node)
         pressure = initial_nodal_pressure(ts, key)
         ref(ts, :node, key)["pressure"] = pressure
     end
-    return
-end
-
-
-function initialize_pipe_state!(ts::TransientSimulator)
-    is_steady = false
-    # we are assuming initial pipe pressures will not be provided only for steady initial conditions 
-    # the case where initial pipe flow is unsteady, explicitly computing initial pipe pressures is very tedious and hence not done 
-    # when initial pipe flow in unsteady, we assume initial pipe pressure are provided.
-    if isempty(ts.initial_conditions[:pipe]["pressure"])
-        @info "Pipes do not have initial pressure profile, will be computed assuming steady state flow"
-        is_steady = true
-    end
-    for (key, pipe) in ref(ts, :pipe)
-        area = pipe["area"]
-        n = pipe["num_discretization_points"]
-        dx = pipe["dx"]
-        L = pipe["length"]
-        fr_node = pipe["fr_node"]
-        to_node = pipe["to_node"]
-        if is_steady
-            initial_mass_flux = initial_pipe_mass_flow(ts, key)(0.0) / area
-            fill!(pipe["mass_flux_profile"], initial_mass_flux)
-            initial_fr_pressure = ref(ts, :node, fr_node, "pressure")
-            initial_to_pressure = ref(ts, :node, to_node, "pressure")
-            density_at_first_sq = get_density(ts, initial_fr_pressure) ^ 2
-            density_at_last_sq = get_density(ts, initial_to_pressure) ^ 2
-            dL = dx / L
-            pipe["density_profile"][1:n] = [
-                sqrt(
-                    density_at_last_sq * (i - 1) * dL + density_at_first_sq * (n - i) * dL,
-                ) for i = 1:n
-            ]
-            pipe["fr_minus_mass_flux"] = initial_mass_flux # (dx/2)
-            pipe["to_minus_mass_flux"] = initial_mass_flux # L-(dx/2)
-            pipe["fr_mass_flux"] = initial_mass_flux # -(dx/2)
-            pipe["to_mass_flux"] = initial_mass_flux # L+(dx/2)
-        else
-            flow_spl = initial_pipe_mass_flow(ts, key)
-            pressure_spl = initial_pipe_pressure(ts, key)
-            x_rho = LinRange(0, L, n)
-            x_mid = x_rho[1:(n-1)] .+ dx/2.0
-            get_coeffs(flow_spl)[1]
-            pipe["mass_flux_profile"] =
-                [
-                    get_coeffs(flow_spl)[1],
-                    [flow_spl(x) for x in x_mid]...,
-                    get_coeffs(flow_spl)[end],
-                ] ./ area
-            pipe["fr_minus_mass_flux"] = pipe["mass_flux_profile"][2]
-            pipe["to_minus_mass_flux"] = pipe["mass_flux_profile"][end-1]
-            pipe["fr_mass_flux"] = pipe["mass_flux_profile"][1]
-            pipe["to_mass_flux"] = pipe["mass_flux_profile"][end]
-            pipe["density_profile"][1:n] = [get_density(ts, pressure_spl(x)) for x in x_rho]
-        end
-    end
-    return
-end
-
-function _solve_compressor_flows!(ts::TransientSimulator, lin_system::Union{Tuple,Nothing})
-    if isnothing(lin_system)
-        return
-    else
-        A, rhs_index, compressor_ids = lin_system
-    end
-    b = zeros(length(rhs_index))
-
-    for i = 1:length(rhs_index)
-        node_id = rhs_index[i]
-        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
-        _, bi = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
-        b[i] = -bi
-    end
-    x = A \ b
-
-    for i = 1:length(compressor_ids)
-        c_id = compressor_ids[i]
-        ref(ts, :compressor, c_id)["flow"] = x[i]
-    end
-
     return
 end
 
@@ -174,7 +75,7 @@ function initialize_compressor_state!(ts::TransientSimulator)
     end
     @info "compressor does not have initial flows, computing them"
     lin_system = form_matrix_for_compressor_flow_solve(ts)
-    _solve_compressor_flows!(ts, lin_system)
+    solve_compressor_flows!(ts, lin_system)
     return
 end
 
@@ -185,29 +86,11 @@ function test_ic(ts::TransientSimulator)
         if ref(ts, :node, node_id)["is_slack"] == 1
             continue
         end
-        _, term = control(ts, :node, node_id, 0)
+        _, withdrawal = control(ts, :node, node_id, 0)
 
-        out_p = ref(ts, :outgoing_pipes, node_id)
-        in_p = ref(ts, :incoming_pipes, node_id)
-        for i in out_p
-            term += ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") # withdrawal positive
-        end
-
-        for i in in_p
-            term -= ref(ts, :pipe, i, "fr_mass_flux") * ref(ts, :pipe, i, "area") # withdrawal positive
-        end
-
-        out_c = ref(ts, :outgoing_compressors, node_id)
-        in_c = ref(ts, :incoming_compressors, node_id)
-
-        for i in out_c
-            term += ref(ts, :compressor, i)["flow"] #withdrawal positive
-        end
-
-        for i in in_c
-            term -= ref(ts, :compressor, i)["flow"]
-        end
-
+        flow_p = add_up_pipe_flows_at_node(node_id, ts)
+        flow_c = add_up_compressor_flows_at_node(node_id, ts)
+        term = flow_p + flow_c - withdrawal # withdrawal positive in input data already
         err_node = max(err_node, abs(term))
     end
 
@@ -252,8 +135,7 @@ end
 function _collect_compressor_component_nodes(
     ts::TransientSimulator,
     start_node::Int64,
-    skip_nodes::Set{Int64},
-)::Vector{Int64}
+    skip_nodes::Set{Int64})::Vector{Int64}
     component = Int64[]
     queue = Int64[start_node]
     seen = Set{Int64}([start_node])
@@ -332,14 +214,15 @@ function add_eqn_number_for_nodes!(ts::TransientSimulator)
     return
 end
 
+
+
 """
 Starting from slack nodes, traverse through non-flow-control compressors and
 collect reachable non-slack nodes into `no_eqn_list`.
 """
 function collect_no_eqn_nodes_from_slacks(
     ts::TransientSimulator,
-    slack_nodes::Vector{Int64},
-)::Vector{Int64}
+    slack_nodes::Vector{Int64})::Vector{Int64}
     explore_list = copy(slack_nodes)
     no_eqn_list = Int64[]
 
@@ -449,26 +332,76 @@ function form_matrix_for_compressor_flow_solve(ts::TransientSimulator)::Union{Tu
     return A, rhs_index, compressor_ids
 end
 
+function solve_compressor_flows!(ts::TransientSimulator, lin_system::Union{Tuple,Nothing})
+    if isnothing(lin_system)
+        return
+    else
+        A, rhs_index, compressor_ids = lin_system
+    end
+    b = zeros(length(rhs_index))
+
+    for i = 1:length(rhs_index)
+        node_id = rhs_index[i]
+        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
+        flow = add_up_pipe_flows_at_node(node_id, ts) 
+        b[i] = -flow + ctrl_val # withdrawal positive in input data already
+    end
+    x = A \ b
+
+    for i = 1:length(compressor_ids)
+        c_id = compressor_ids[i]
+        ref(ts, :compressor, c_id)["flow"] = x[i]
+    end
+
+    return
+end
+
 function calculate_slack_injections!(ts::TransientSimulator)
     for (node_id, node) in ref(ts, :node)
         if node["is_slack"] == 1
             
-            _ , flow = _assemble_pipe_contributions_to_node(node_id, 0.0, ts)
-    
-            out_c = ref(ts, :outgoing_compressors, node_id)
-            in_c = ref(ts, :incoming_compressors, node_id)
-
-            for i in out_c
-                flow -= ref(ts, :compressor, i)["flow"] #withdrawal positive
-            end
-
-            for i in in_c
-                flow += ref(ts, :compressor, i)["flow"]
-            end
-
-            ref(ts, :node, node_id)["injection"] = -flow
+            flow_p = add_up_pipe_flows_at_node(node_id, ts)
+            flow_c = add_up_compressor_flows_at_node(node_id, ts)
+            ref(ts, :node, node_id)["injection"] = -(flow_p + flow_c)
         end
-
     end
     return
+end
+
+
+function add_up_pipe_flows_at_node(node_id::Int64,
+    ts::TransientSimulator)::Real
+    out_p = ref(ts, :outgoing_pipes, node_id)
+    in_p = ref(ts, :incoming_pipes, node_id)
+    flow = 0.0 
+    pipe = ref(ts, :pipe)
+
+    for p in out_p
+        flow -= pipe[p]["fr_mass_flux"] * pipe[p]["area"]
+    end
+    for p in in_p
+        flow += pipe[p]["to_mass_flux"] * pipe[p]["area"]
+    end
+    return flow
+end
+
+function add_up_compressor_flows_at_node(node_id::Int64,
+    ts::TransientSimulator)::Real
+    out_c = ref(ts, :outgoing_compressors, node_id)
+    in_c = ref(ts, :incoming_compressors, node_id)
+    flow = 0.0 
+    t = ref(ts, :current_time)
+    for ci in in_c
+        ctr, cmpr_val = control(ts, :compressor, ci, t)
+        if ctr == flow_control
+            flow += cmpr_val # inflow positive
+        end
+    end
+    for co in out_c
+        ctr, cmpr_val = control(ts, :compressor, co, t)
+        if ctr == flow_control
+            flow += (-1.0 * cmpr_val) # outflow negative
+        end
+    end
+    return flow
 end

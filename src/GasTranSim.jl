@@ -5,7 +5,7 @@ using Dierckx
 using ProgressMeter
 using SparseArrays
 using LinearAlgebra
-
+using ForwardDiff
 import Logging
 import LoggingExtras
 
@@ -32,8 +32,13 @@ include("core/ref.jl")
 include("core/ic.jl")
 include("core/bc.jl")
 include("core/sol.jl")
+include("core/method_contracts.jl")
 include("core/assembly.jl")
+include("core/discretization_methods.jl")
 include("core/initialize_ts.jl")
+include("core/explicit_staggered_grid.jl")
+include("core/implicit_parabolic.jl")
+include("core/step_methods.jl")
 include("core/run_task.jl")
 include("core/run_ts.jl")
 include("core/output.jl")

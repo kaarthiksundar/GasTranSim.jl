@@ -190,6 +190,8 @@ function process_data!(data::Dict{String,Any})
 
     # universal gas constant (J/mol/K)
     params[:R] = 8.314
+    params[:gravity] = 9.81 #(m/s^2)
+
     # molecular mass of natural gas (kg/mol): M_g = M_a * G
     params[:gas_molar_mass] = 0.02896 * params[:gas_specific_gravity]
     params[:warning] = "R, temperature are in SI units. Rest are dimensionless"
@@ -227,14 +229,7 @@ function process_data!(data::Dict{String,Any})
         nominal_values[:pressure] /
         (nominal_values[:density] * nominal_values[:sound_speed]^2)
     nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
-
-    # nominal_values[:length] = 5000.0
-    # nominal_values[:area] = 1.0
-    # nominal_values[:pressure] = 3500000.0 # 507.63 psi
-    # nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
-    # nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:sound_speed]
-    # nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
-    # nominal_values[:time] = nominal_values[:length] / nominal_values[:sound_speed]
+    nominal_values[:froude_num] = nominal_values[:velocity] / sqrt(params[:gravity] * nominal_values[:length])
 
     return params, nominal_values
 end

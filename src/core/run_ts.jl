@@ -1,6 +1,8 @@
 function run_simulator!(
     ts::TransientSimulator;
     run_type::Symbol = :serial,
+    method::Symbol = get(params(ts), :method, :explicit_staggered_grid),
+    # method::Symbol = :implicit_parabolic,
     save_snapshots::Bool = false,
     snapshot_percent::Float64 = 10.0,
     snapshot_path::AbstractString = "./",
@@ -11,6 +13,8 @@ function run_simulator!(
     turnoffprogressbar::Bool = false,
     progress_dt = 1.0,
 )
+    validate_method_contract!(method)
+    ts.params[:method] = method
     minimum_pressure_limit = params(ts, :minimum_pressure_limit)
     output_dt = params(ts, :output_dt)
     base_dt = params(ts, :base_dt)
@@ -91,11 +95,12 @@ function run_simulator!(
         #
         advance_current_time!(ts, dt_step)
         #  if current_time is where some disruption occurs, modify ts.ref now
-        advance_pipe_density_internal!(ts, run_type) # (n+1) level
-        advance_node_pressure_mass_flux!(ts, run_type) # pressure (n+1), flux (n+1/2)
-        advance_pipe_mass_flux_internal!(ts, run_type) # (n + 1 + 1/2) level
-        # _compute_compressor_flows!(ts)
-        _solve_compressor_flows!(ts, lin_system)
+        # Advance one time-step with the configured integration method.
+        # if step % 1000 == 0
+        #     println(step, ":", ts.ref[:current_time])
+        # end
+        step!(ts, method, run_type)
+        solve_compressor_flows!(ts, lin_system)
         calculate_slack_injections!(ts)
         #  if current_time is one where output needs to be saved, check and do now
         current_step_state = capture_step_state(ts)
@@ -172,8 +177,7 @@ end
 function _should_save_snapshot_at_time(
     current_time::Float64,
     final_time::Float64,
-    next_snapshot_time::Float64,
-)::Bool
+    next_snapshot_time::Float64)::Bool
     if current_time >= final_time
         return false
     end
@@ -183,100 +187,11 @@ end
 function _next_snapshot_time(
     current_time::Float64,
     next_snapshot_time::Float64,
-    snapshot_interval::Float64,
-)::Float64
+    snapshot_interval::Float64)::Float64
     while next_snapshot_time <= current_time
         next_snapshot_time += snapshot_interval
     end
     return next_snapshot_time
-end
-
-function advance_current_time!(ts::TransientSimulator, tau::Real)
-    ts.ref[:current_time] += tau
-    return
-end
-
-function advance_pipe_density_internal!(ts::TransientSimulator, run_type::Symbol)
-    key_array = collect(keys(ref(ts, :pipe)))
-    _execute_task!(_advance_pipe_density_internal!, ts, key_array, run_type)
-    return
-end
-
-function solve_newton_basic!(
-    x::Vector{Float64},
-    residual_fun!::Function,
-    Jacobian_fun!::Function;
-    tol::Float64 = 1e-8,
-    max_iter::Int = 20,
-)::Tuple{Vector{Float64},Bool,Int,Float64}
-    n = length(x)
-    residual = zeros(Float64, n)
-    J = spzeros(n, n)
-
-    for iter = 1:max_iter
-        fill!(residual, 0.0)
-        residual_fun!(residual, x)
-        res_norm = maximum(abs, residual)
-
-        if res_norm <= tol
-            return x, true, iter, res_norm
-        end
-
-        fill!(J.nzval, 0.0)
-        Jacobian_fun!(J, x)
-        delta_x = J \ (-residual)
-        x .+= delta_x
-
-        step_norm = maximum(abs, delta_x)
-        if step_norm <= tol
-            return x, true, iter, res_norm
-        end
-    end
-
-    fill!(residual, 0.0)
-    residual_fun!(residual, x)
-    return x, false, max_iter, maximum(abs, residual)
-end
-
-function advance_node_pressure_mass_flux!(ts::TransientSimulator, run_type::Symbol)
-    x_node = get_density.(Ref(ts), form_nodal_pressure_vector(ts)) #Ref(x) wraps x as a 0-dim scalar so that this is used as is in broadcasting
-    residual_fun! = (r, x) -> assemble_junction_residual!(ts, x, r)
-    Jacobian_fun! = (J, x) -> assemble_junction_Jacobian!(ts, x, J)
-
-    x_node, converged, iter, res_norm = solve_newton_basic!(x_node, residual_fun!, Jacobian_fun!)
-
-    converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
-
-    check_limits(ts, x_node)
-
-    # update nodal pressures in ts.ref using the density solution x_node
-    for node_id = 1:length(x_node)
-        p_val = get_pressure(ts, x_node[node_id])
-        ref(ts, :node, node_id)["pressure_previous"] = ref(ts, :node, node_id)["pressure"]
-        ref(ts, :node, node_id)["pressure"] = p_val
-        ref(ts, :node, node_id)["is_updated"] = true
-    end
-    
-
-    key_array = collect(keys(ref(ts, :pipe)))
-    _execute_task!(_compute_pipe_end_fluxes_densities!, ts, key_array, run_type)
-    return
-end
-
-function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symbol)
-    key_array = collect(keys(ref(ts, :pipe)))
-    _execute_task!(_advance_pipe_mass_flux_internal!, ts, key_array, run_type)
-    return
-end
-
-
-function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
-    key_array = sort(collect(keys(ref(ts, :node))))
-    pressure_vector = Vector{Float64}(undef, length(key_array))
-    for i in eachindex(key_array)
-        pressure_vector[i] = ref(ts, :node, key_array[i])["pressure"]
-    end
-    return pressure_vector
 end
 
 function save_snapshot(
@@ -284,8 +199,7 @@ function save_snapshot(
     output_data::OutputData,
     snapshot_path::AbstractString,
     snapshot_filename::AbstractString,
-    snapshot_count::Int64,
-)::Int64
+    snapshot_count::Int64)::Int64
     update_output_data_final_state_only!(ts, output_data)
     populate_solution_final_state_only!(ts, output_data)
     write_final_state(
@@ -296,45 +210,10 @@ function save_snapshot(
     return snapshot_count + 1
 end
 
-
-function check_limits(ts::TransientSimulator, x_node::Vector{Float64})
-
-    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
-    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
-    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
-    rho_max = get_density(ts, pressure_max)
-    delta_x_node = zeros(similar(x_node))
-    violated_nodes = Vector{Int64}()
-    for (index, x)  in enumerate(x_node)
-        if x < rho_min
-            push!(violated_nodes, index)
-            delta_x_node[index] = rho_min - x
-        elseif x > rho_max
-            push!(violated_nodes, index)
-            delta_x_node[index] = rho_max - x
-        end
-    end
-    
-    # check if any non-flow control compressor has ends i, j for which both i, j have delta_x_node nonzero.
-    # if so, then no load adjustment possible because this the compressor equation cannot be satisfied unless it is the unlikely instance where these values are compatible with compressor equation.
-
-    # if only one end of compressor, say i,  has an imposed density change, the compressor eqn now imposes a change at the other end  j too. this change  can be computed, but this means that at j, the new density after change must also be within limits. if not, then load adjustment is not possible. if yes, then load adjustment is possible with change at i and j. (this is step where this method could go wrong)
-
-    # the systematic way to do this is to set violated nodes as new slack nodes  with limiting densities. solve problem agan. if no violations, compute these new "slack injections" at violated nodes
-        
-    #  check if residual of compressor eqns for x_node_new = x_node + delta_x_node is non-zero. is achievable by load adjustment at violated nodes. This requires evaluating J * delta_x_node where J is the Jacobian of the system w.r.t nodal densities, and checking if the required change in injection at violated nodes is compatible with compressor constraints. If not compatible, then throw error that load adjustment cannot fix density violation. If compatible, then update nodal injections at violated nodes accordingly to fix density violation. Note that this load adjustment step is not guaranteed to work and is a heuristic to try to fix density violations when they occur.
-    # now evaluate J * delta_x_node
-
-    if !isempty(violated_nodes)
-        throw(DomainError("Density bound ($rho_min, $rho_max) violated at following node(s) $violated_nodes")
-        )
-    end
+function advance_current_time!(ts::TransientSimulator, tau::Real)
+    ts.ref[:current_time] += tau
     return
 end
 
-# problem with load reduction is that it is not local and does not guarantee success.
-# our aim is to reset nodal densities to the limit and check if this can be achieved by adjusting injections at violated nodes. how so ?
-# suppose n nodes exceed bounds..WLOG lower bound. If you set them all to rho_min, then in the discrete system you solved, 
-# you want equations at these nodes to be satisfied  with compensatory effect of change in nodal injection (load reduction).
-# That is, you evaluate J delta_rho in general.  Note that almost all eqns are linear, so most rows of J sre const. For the linear eqns, J delta_rho represents the required change in injection for given changes in nodal density. JHowever, the problem here is that if some of these changes happen at nodes incident by a compressor, then you must have 
-# p(rho_i + delta_rho_i) = alpha * p(rho_j + delta_rho_j). If you are given the increments at both ends, and  proposed density changes are compatible with compressor then load reduction is possible. else not. Alternatively, density changes at one end of the compressor imply a change at other end too. 
+
+

@@ -1,19 +1,70 @@
 
 
-#TODO
 
-# do load adjustment for flow control at nodes
-# problem is that we will need to reset all the violated densities, treat them as slacks and solve the junction problem again. this means new Jacobian, new equations. then infer slack injection at these new slacks to get the adjusted load.  However, if in this process new junctions show violation, then ?
+function assemble_junction_residual!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    residual_node::AbstractArray,
+    method::Symbol = get(params(ts), :method, :explicit_staggered_grid),
+)
+    return assemble_junction_residual!(ts, x_node, residual_node, Val(method))
+end
 
-function assemble_junction_residual!(ts::TransientSimulator, x_node::AbstractArray, residual_node::AbstractArray)
+function assemble_junction_residual!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    residual_node::AbstractArray,
+    ::Val{:explicit_staggered_grid},
+)
     assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts, x_node, residual_node)
     assemble_residual_for_nodes_WITH_eqn_nos!(ts, x_node, residual_node)
     return
 end
 
-function assemble_junction_Jacobian!(ts::TransientSimulator, x_node::AbstractArray, Jacobian::SparseMatrixCSC{Float64,Int64})
+function assemble_junction_residual!(
+    ::TransientSimulator,
+    ::AbstractArray,
+    ::AbstractArray,
+    ::Val{method},
+) where {method}
+    throw(
+        ArgumentError(
+            "Method :$method does not implement junction residual assembly. Supported methods: $(_supported_methods_str())",
+        ),
+    )
+end
+
+function assemble_junction_Jacobian!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    Jacobian::SparseMatrixCSC{Float64,Int64},
+    method::Symbol = get(params(ts), :method, :explicit_staggered_grid),
+)
+    return assemble_junction_Jacobian!(ts, x_node, Jacobian, Val(method))
+end
+
+function assemble_junction_Jacobian!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    Jacobian::SparseMatrixCSC{Float64,Int64},
+    ::Val{:explicit_staggered_grid},
+)
     assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts, x_node, Jacobian)
     assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts, x_node, Jacobian)
+    return
+end
+
+function assemble_junction_Jacobian!(
+    ::TransientSimulator,
+    ::AbstractArray,
+    ::SparseMatrixCSC{Float64,Int64},
+    ::Val{method},
+) where {method}
+    throw(
+        ArgumentError(
+            "Method :$method does not implement junction Jacobian assembly. Supported methods: $(_supported_methods_str())",
+        ),
+    )
 end
 
 function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
@@ -96,37 +147,11 @@ function assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_nod
 end
 
 
-"""
-    Assembles all pipe contributions to a node
-"""
-function _assemble_pipe_contributions_to_node(
-    node_id::Int64,
-    withdrawal::Real,
-    ts::TransientSimulator,
-)::Tuple{<:Real,<:Real}
-    out_p = ref(ts, :outgoing_pipes, node_id)
-    in_p = ref(ts, :incoming_pipes, node_id)
-    jac_term = 0.0
-    rhs_term = -1.0 * withdrawal # in input data, withdrawal is positive, but we want inflow positive
-    pipe = ref(ts, :pipe)
 
-    for p in out_p
-        dx = pipe[p]["dx"] # can adjust with dx/2 for ghost point if needed
-        jac_term += dx * pipe[p]["area"] / params(ts, :dt)
-        rhs_term -= pipe[p]["fr_minus_mass_flux"] * pipe[p]["area"]
-    end
-    for p in in_p
-        dx = pipe[p]["dx"] # can adjust with dx/2 for ghost point if needed
-        jac_term += dx * pipe[p]["area"] / params(ts, :dt)
-        rhs_term += pipe[p]["to_minus_mass_flux"] * pipe[p]["area"]
-    end
-    return jac_term, rhs_term
-end
 
 function _assemble_flow_control_compressor_contribution_to_node(
     node_id::Int64,
-    ts::TransientSimulator,
-)::Real
+    ts::TransientSimulator)::Real
     out_c = ref(ts, :outgoing_compressors, node_id)
     in_c = ref(ts, :incoming_compressors, node_id)
     rhs_term = 0.0
@@ -146,86 +171,48 @@ function _assemble_flow_control_compressor_contribution_to_node(
     return rhs_term
 end
 
-"""
-    Advance the internal pipe densities using mass balance equation.
-`` \\rho^{t+1}_i = \\rho^{t}_i + \\frac{\\Delta t}{\\Delta x} \\cdot \\left( \\phi^{t+}_{i} - \\phi^{t+}_{i+1} \\right)``
-`` \\text{where, } t^+ = t + \\frac {\\Delta t} 2.``
-"""
-function _advance_pipe_density_internal!(ts::TransientSimulator, pipe_id::Int64)
-    rho = ref(ts, :pipe, pipe_id)["density_profile"]
-    phi = ref(ts, :pipe, pipe_id)["mass_flux_profile"]
-    n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
-    dx = ref(ts, :pipe, pipe_id)["dx"]
-    dt = params(ts, :dt)
-    rho[2:(n-1)] = rho[2:(n-1)] + (dt / dx) * (phi[2:(n-1)] - phi[3:n])
+
+
+
+
+function check_limits(ts::TransientSimulator, x_node::Vector{Float64})
+
+    pressure_min = params(ts, :minimum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_min = (pressure_min > 0) ? get_density(ts, pressure_min) : 0
+    pressure_max = params(ts, :maximum_pressure_limit) / nominal_values(ts, :pressure)
+    rho_max = get_density(ts, pressure_max)
+    delta_x_node = zeros(length(x_node))
+    violated_nodes = Vector{Int64}()
+    for (index, x)  in enumerate(x_node)
+        if x < rho_min
+            push!(violated_nodes, index)
+            delta_x_node[index] = rho_min - x
+        elseif x > rho_max
+            push!(violated_nodes, index)
+            delta_x_node[index] = rho_max - x
+        end
+    end
+    
+    # check if any non-flow control compressor has ends i, j for which both i, j have delta_x_node nonzero.
+    # if so, then no load adjustment possible because this the compressor equation cannot be satisfied unless it is the unlikely instance where these values are compatible with compressor equation.
+
+    # if only one end of compressor, say i,  has an imposed density change, the compressor eqn now imposes a change at the other end  j too. this change  can be computed, but this means that at j, the new density after change must also be within limits. if not, then load adjustment is not possible. if yes, then load adjustment is possible with change at i and j. (this is step where this method could go wrong)
+
+    # the systematic way to do this is to set violated nodes as new slack nodes  with limiting densities. solve problem agan. if no violations, compute these new "slack injections" at violated nodes
+        
+    #  check if residual of compressor eqns for x_node_new = x_node + delta_x_node is non-zero. is achievable by load adjustment at violated nodes. This requires evaluating J * delta_x_node where J is the Jacobian of the system w.r.t nodal densities, and checking if the required change in injection at violated nodes is compatible with compressor constraints. If not compatible, then throw error that load adjustment cannot fix density violation. If compatible, then update nodal injections at violated nodes accordingly to fix density violation. Note that this load adjustment step is not guaranteed to work and is a heuristic to try to fix density violations when they occur.
+    # now evaluate J * delta_x_node
+
+    if !isempty(violated_nodes)
+        throw(DomainError("Density bound ($rho_min, $rho_max) violated at following node(s) $violated_nodes")
+        )
+    end
     return
 end
 
-"""
-    Function to compute \$\\phi^t_i\$ using densities
-"""
-function _invert_quadratic(a::Real, y::Real)::Real
-    # can also write as 2 * y / (1 + sqrt( 1 + 4 * a * abs(y) ) )
-    return sign(y) * (-1.0 + sqrt(1.0 + 4.0 * a * abs(y))) / (2.0 * a)
-end
-
-"""
-    Advance pipe internal mass fluxes using momentum balance equation
-``` a = \\frac{\\Delta t \\cdot \\beta}{\\rho^{t+1}_i + \\rho^{t+1}_{i+1}} ```
-``` y = \\phi^t_i - \\frac{\\Delta t}{\\Delta x} \\cdot \\left( p^{t+1}_i - p^{t+1}_{i-1}\\right) - a \\cdot \\phi^t_i \\cdot |\\phi^t_i| ```
-``` \\phi^{t+1}_i = \\operatorname{_invert_quadratic}(a, y) ```
-"""
-function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int64)
-    rho = ref(ts, :pipe, pipe_id)["density_profile"]
-    phi = ref(ts, :pipe, pipe_id)["mass_flux_profile"]
-    n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
-    c = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
-    beta =
-        ref(ts, :pipe, pipe_id, "friction_factor") /
-        (2 * ref(ts, :pipe, pipe_id, "diameter"))
-    a_vec = params(ts, :dt) * beta ./ (rho[2:n] + rho[1:(n-1)])
-    y_vec =
-        phi[2:n] -
-        (c * params(ts, :dt) / ref(ts, :pipe, pipe_id, "dx")) *
-        (get_pressure(ts, rho[2:n]) - get_pressure(ts, rho[1:(n-1)])) -
-        a_vec .* phi[2:n] .* abs.(phi[2:n])
-
-
-    phi[2:n] = _invert_quadratic.(a_vec, y_vec)
-    # update field
-    ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] = phi[2]
-    ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] = phi[n]
-    return
-end
-
-"""
-    Compute fluxes and densities at both ends of the pipe
-"""
-function _compute_pipe_end_fluxes_densities!(ts::TransientSimulator, pipe_id::Int64)
-    dx = ref(ts, :pipe, pipe_id)["dx"]  # can adjust with dx/2 for ghost point if needed
-    dt = params(ts, :dt)
-    n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
-    from_node_id = ref(ts, :pipe, pipe_id)["fr_node"]
-    rho_prev = get_density(ts, ref(ts, :node, from_node_id)["pressure_previous"])
-    rho = get_density(ts, ref(ts, :node, from_node_id)["pressure"])
-    # at (n + 1/2) level
-    ref(ts, :pipe, pipe_id)["fr_mass_flux"] =
-        ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] + (rho - rho_prev) * (dx/dt)
-    ref(ts, :pipe, pipe_id)["mass_flux_profile"][1] =
-        ref(ts, :pipe, pipe_id)["fr_mass_flux"]
-    # at (n + 1) level
-    ref(ts, :pipe, pipe_id)["density_profile"][1] = rho
-    to_node_id = ref(ts, :pipe, pipe_id)["to_node"]
-    rho_prev = get_density(ts, ref(ts, :node, to_node_id)["pressure_previous"])
-    rho = get_density(ts, ref(ts, :node, to_node_id)["pressure"])
-    #at (n + 1/2) level
-    ref(ts, :pipe, pipe_id)["to_mass_flux"] =
-        ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] + (rho_prev - rho) * (dx/dt)
-    ref(ts, :pipe, pipe_id)["mass_flux_profile"][n+1] =
-        ref(ts, :pipe, pipe_id)["to_mass_flux"]
-    # at (n + 1) level
-    ref(ts, :pipe, pipe_id)["density_profile"][n] = rho
-    return
-end
-
-
+# problem with load reduction is that it is not local and does not guarantee success.
+# our aim is to reset nodal densities to the limit and check if this can be achieved by adjusting injections at violated nodes. how so ?
+# suppose n nodes exceed bounds..WLOG lower bound. If you set them all to rho_min, then in the discrete system you solved, 
+# you want equations at these nodes to be satisfied  with compensatory effect of change in nodal injection (load reduction).
+# That is, you evaluate J delta_rho in general.  Note that almost all eqns are linear, so most rows of J sre const. For the linear eqns, J delta_rho represents the required change in injection for given changes in nodal density. JHowever, the problem here is that if some of these changes happen at nodes incident by a compressor, then you must have 
+# p(rho_i + delta_rho_i) = alpha * p(rho_j + delta_rho_j). If you are given the increments at both ends, and  proposed density changes are compatible with compressor then load reduction is possible. else not. Alternatively, density changes at one end of the compressor imply a change at other end too. 

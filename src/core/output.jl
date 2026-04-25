@@ -216,10 +216,14 @@ function update_output_data!(ts::TransientSimulator, state::OutputState, data::O
         L = pipe["length"]
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
-        x_mid = x_rho[1:(n-1)] .+ dx/2.0
-        # this is what needs to be done to replicate
-        # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
-        x_phi = [0.0, x_mid..., L]
+        if params(ts, :method) == :explicit_staggered_grid
+            x_mid = x_rho[1:(n-1)] .+ dx/2.0
+            # this is what needs to be done to replicate
+            # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
+            x_phi = [0.0, x_mid..., L]
+        else
+            x_phi = x_rho
+        end
         rho = pipe["density_profile"] # len n
         pressure = [get_pressure(ts, val) for val in rho]
         phi = pipe["mass_flux_profile"] # len n+1
@@ -248,10 +252,14 @@ function update_output_data_final_state_only!(ts::TransientSimulator, data::Outp
         L = pipe["length"]
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
-        x_mid = x_rho[1:(n-1)] .+ dx/2.0
-        # this is what needs to be done to replicate
-        # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
-        x_phi = [0.0, x_mid..., L]
+        if params(ts, :method) == :explicit_staggered_grid
+            x_mid = x_rho[1:(n-1)] .+ dx/2.0
+            # this is what needs to be done to replicate
+            # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
+            x_phi = [0.0, x_mid..., L]
+        else
+            x_phi = x_rho
+        end
         rho = pipe["density_profile"] # len n
         pressure = [get_pressure(ts, val) for val in rho]
         phi = pipe["mass_flux_profile"] # len n+1

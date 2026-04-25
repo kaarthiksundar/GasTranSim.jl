@@ -1,20 +1,29 @@
 using GasTranSim
 using GLMakie
 
-save_figures = false
+save_figures = true
+
 
 base_path = split(Base.active_project(), "Project.toml")[1]
 folder = base_path * "data/8-node/"
 output_plot = base_path * "output/plots/"
 output_json = base_path * "output/solution/"
 tmp = base_path * "tmp/"
+method = :implicit_parabolic
+# method = :explicit_staggered_grid
 
-ts = initialize_simulator(folder)
-run_simulator!(ts; showprogress = true)
+ts = initialize_simulator(folder; method=method)
+
+if method == :implicit_parabolic
+    ts.params[:base_dt] = 100 * ts.params[:base_dt]
+end
+
+run_simulator!(ts; method=method, showprogress = true)
 @info "First run completed"
 
 t = ts.sol["time_points"] / 3600.0 # hrs
 dt1 = params(ts, :dt) * nominal_values(ts, :time)
+
 
 cratio_1 = ts.sol["compressors"]["1"]["compression_ratio"]
 cratio_2 = ts.sol["compressors"]["2"]["compression_ratio"]
@@ -31,11 +40,13 @@ out_flow_node_3 = ts.sol["pipes"]["2"]["out_flow"] .- ts.sol["pipes"]["3"]["in_f
 # run Ideal Eos case 
 ts = initialize_simulator(
     folder;
+    method=method,
     eos = :ideal,
     case_name = "fine_time_step",
     case_types = [:params],
 )
-run_simulator!(ts)
+
+run_simulator!(ts; method=method)
 @info "Second run complete"
 
 t1 = ts.sol["time_points"] / 3600.0 # hrs
@@ -141,5 +152,5 @@ axislegend(
 )
 
 
-save_figures && save(output_plot * "8-node.png", f)
+save_figures && save(output_plot * "8-node-imp.png", f)
 save(tmp * "8-node.png", f)

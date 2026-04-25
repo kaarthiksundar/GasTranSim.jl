@@ -110,12 +110,12 @@ function control(
 end
 
 get_eos_coeffs(ts::TransientSimulator) = ts.pu_eos_coeffs(nominal_values(ts), params(ts))
-get_pressure(ts::TransientSimulator, density) =
+get_pressure(ts::TransientSimulator, density::Real) =
     ts.pu_density_to_pu_pressure(density, nominal_values(ts), params(ts))
-get_density(ts::TransientSimulator, pressure) =
+get_density(ts::TransientSimulator, pressure::Real) =
     ts.pu_pressure_to_pu_density(pressure, nominal_values(ts), params(ts))
 
-function get_pressure_prime(ts::TransientSimulator, density)
+function get_pressure_prime(ts::TransientSimulator, density::Real)
     b1, b2 = get_eos_coeffs(ts)
     if isapprox(b2, 0.0; atol = eps(Float64), rtol = 0.0)
         return density .* 0.0 .+ 1.0 / b1
@@ -123,7 +123,14 @@ function get_pressure_prime(ts::TransientSimulator, density)
     return inv.(sqrt.(b1 * b1 .+ 4.0 * b2 .* density))
 end
 
+function get_pressure_double_prime(ts::TransientSimulator, density::Real)
+    b1, b2 = get_eos_coeffs(ts)
+    if isapprox(b2, 0.0; atol = eps(Float64), rtol = 0.0)
+        return density .* 0.0
+    end
+    return -2.0 * b2 .* inv.((b1 * b1 .+ 4.0 * b2 .* density) .^ (3/2))
 
+end
 
 TOL = 1.0e-5
 
