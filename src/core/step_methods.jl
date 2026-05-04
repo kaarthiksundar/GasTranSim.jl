@@ -7,8 +7,18 @@ function step!(ts::TransientSimulator, ::Val{:explicit_staggered_grid}, run_type
     return
 end
 
+function step!(ts::TransientSimulator, ::Val{:explicit_staggered_grid_new}, run_type::Symbol)
+    explicit_staggered_grid_step_new!(ts, run_type)
+    return
+end
+
 function step!(ts::TransientSimulator, ::Val{:implicit_parabolic}, run_type::Symbol)
     implicit_parabolic_step!(ts, run_type)
+    return
+end
+
+function step!(ts::TransientSimulator, ::Val{:explicit_hyperbolic}, run_type::Symbol)
+    explicit_hyperbolic_step!(ts, run_type)
     return
 end
 

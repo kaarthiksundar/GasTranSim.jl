@@ -1,4 +1,4 @@
-methods =[:explicit_staggered_grid, :implicit_parabolic]
+methods =[:explicit_staggered_grid, :explicit_staggered_grid_new,:implicit_parabolic]
 for method in methods 
     @info("Testing method $method...\n")
     @testset "Simulation restart" begin

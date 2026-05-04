@@ -9,8 +9,10 @@ folder = base_path * "data/8-node/"
 output_plot = base_path * "output/plots/"
 output_json = base_path * "output/solution/"
 tmp = base_path * "tmp/"
-method = :implicit_parabolic
+# method = :implicit_parabolic
 # method = :explicit_staggered_grid
+method = :explicit_staggered_grid_new
+# method = :explicit_hyperbolic
 
 ts = initialize_simulator(folder; method=method)
 
@@ -152,5 +154,5 @@ axislegend(
 )
 
 
-save_figures && save(output_plot * "8-node-imp.png", f)
+save_figures && save(output_plot * "8-node-$method.png", f)
 save(tmp * "8-node.png", f)

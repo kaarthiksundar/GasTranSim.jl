@@ -16,11 +16,14 @@ tmp = base_path * "tmp/"
 """
 
 # Ideal EoS run
-method = :implicit_parabolic
+# method = :implicit_parabolic
+# method = :explicit_staggered_grid
+# method = :explicit_staggered_grid_new
+method = :explicit_hyperbolic
+
 
 
   
-# method = :explicit_staggered_grid
 
 ts = initialize_simulator(folder; method=method, eos = :ideal)
 run_simulator!(ts; method=method)
@@ -265,5 +268,5 @@ cnga = scatterlines!(
     marker = :star4,
 )
 
-(save_figures) && save(output_plot * "1-pipe-slow.png", f)
+(save_figures) && save(output_plot * "1-pipe-slow-$method.png", f)
 save(tmp * "1-pipe-slow.png", f)

@@ -2,12 +2,14 @@
 
 function explicit_staggered_grid_step!(ts::TransientSimulator, run_type::Symbol)
     advance_pipe_density_internal!(ts, run_type) # (n+1) level
-    advance_junction_pressures!(ts, run_type) # pressure (n+1), flux (n+1/2)
+    staggered_advance_junction_pressures!(ts, run_type) # pressure (n+1), flux (n+1/2)
     key_array = collect(keys(ref(ts, :pipe)))
     _execute_task!(_compute_pipe_end_fluxes_densities!, ts, key_array, run_type)
     advance_pipe_mass_flux_internal!(ts, run_type)
     return
 end
+
+
 
 function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:explicit_staggered_grid})
     for (key, pipe) in ref(ts, :pipe)
@@ -95,61 +97,15 @@ function advance_pipe_mass_flux_internal!(ts::TransientSimulator, run_type::Symb
     return
 end
 
-function form_nodal_pressure_vector(ts::TransientSimulator)::Vector{Float64}
-    key_array = sort(collect(keys(ref(ts, :node))))
-    pressure_vector = Vector{Float64}(undef, length(key_array))
-    for i in eachindex(key_array)
-        pressure_vector[i] = ref(ts, :node, key_array[i])["pressure"]
-    end
-    return pressure_vector
-end
 
-function solve_newton_basic!(
-    x::Vector{T},
-    residual_fun!::Function,
-    Jacobian_fun!::Function;
-    tol::Real = 1e-8,
-    max_iter::Int = 20) where {T<:Real}
-    n = length(x)
-    residual = zeros(T, n)
-    J = (T == Float64) ? spzeros(T, n, n) : zeros(T, n, n)
 
-    for iter = 1:max_iter
-        fill!(residual, zero(T))
-        residual_fun!(residual, x)
-        res_norm = maximum(abs, residual)
-
-        if res_norm <= tol
-            return x, true, iter, res_norm
-        end
-
-        if J isa SparseMatrixCSC
-            fill!(J.nzval, zero(T))
-        else
-            fill!(J, zero(T))
-        end
-        Jacobian_fun!(J, x)
-        delta_x = J \ (-residual)
-        x .+= delta_x
-
-        step_norm = maximum(abs, delta_x)
-        if step_norm <= tol
-            return x, true, iter, res_norm
-        end
-    end
-
-    fill!(residual, zero(T))
-    residual_fun!(residual, x)
-    return x, false, max_iter, maximum(abs, residual)
-end
-
-function advance_junction_pressures!(ts::TransientSimulator, _run_type::Symbol)
+function staggered_advance_junction_pressures!(ts::TransientSimulator, _run_type::Symbol)
     x_node = get_density.(Ref(ts), form_nodal_pressure_vector(ts))
-    residual_fun! = (r, x) -> assemble_junction_residual!(ts, x, r, :explicit_staggered_grid)
-    Jacobian_fun! = (J, x) -> assemble_junction_Jacobian!(ts, x, J, :explicit_staggered_grid)
+    residual_fun! = (r, x) -> assemble_junction_residual!(ts, x, r)
+    Jacobian_fun! = (J, x) -> assemble_junction_Jacobian!(ts, x, J)
 
-    x_node, converged, _, res_norm = solve_newton_basic!(x_node, residual_fun!, Jacobian_fun!)
-
+    x_node, converged, iter, res_norm = solve_newton_basic!(x_node, residual_fun!, Jacobian_fun!)
+    
     converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
 
     check_limits(ts, x_node)
@@ -197,6 +153,7 @@ end
 function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int64)
     rho = ref(ts, :pipe, pipe_id)["density_profile"]
     phi = ref(ts, :pipe, pipe_id)["mass_flux_profile"]
+
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     c = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
     beta =
@@ -211,7 +168,7 @@ function _advance_pipe_mass_flux_internal!(ts::TransientSimulator, pipe_id::Int6
 
 
     phi[2:n] = _invert_quadratic.(a_vec, y_vec)
-    # update field
+    #update field
     ref(ts, :pipe, pipe_id)["fr_minus_mass_flux"] = phi[2]
     ref(ts, :pipe, pipe_id)["to_minus_mass_flux"] = phi[n]
     return
@@ -247,6 +204,8 @@ function _compute_pipe_end_fluxes_densities!(ts::TransientSimulator, pipe_id::In
     return
 end
 
+
+
 """
     Assembles all pipe contributions to a node
 """
@@ -272,3 +231,109 @@ function _assemble_pipe_contributions_to_node(
     end
     return jac_term, rhs_term
 end
+
+
+
+function assemble_junction_residual!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    residual_node::AbstractArray,
+)
+    assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts, x_node, residual_node)
+    assemble_residual_for_nodes_WITH_eqn_nos!(ts, x_node, residual_node)
+    return
+end
+
+
+function assemble_junction_Jacobian!(
+    ts::TransientSimulator,
+    x_node::AbstractArray,
+    Jacobian::SparseMatrixCSC{Float64,Int64},
+)
+    assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts, x_node, Jacobian)
+    assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts, x_node, Jacobian)
+    return
+end
+
+
+function assemble_residual_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
+    for (ci, compressor) in  get(ref(ts), :compressor, Dict())
+
+        to_node = compressor["to_node"]
+        from_node = compressor["fr_node"]
+        ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
+        if ctrl_type == c_ratio_control
+            residual_node[ci] = get_pressure(ts, x_node[to_node]) - ctrl_val * get_pressure(ts, x_node[from_node]) 
+        elseif ctrl_type == discharge_pressure_control
+            residual_node[ci] = x_node[to_node] - get_density(ts, ctrl_val)
+        elseif ctrl_type == flow_control
+            # no contribution to Jacobian since flow is known
+            continue
+        end
+    end
+    return
+end
+
+# assemble compressor contribution to Jacobian 
+function assemble_Jacobian_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
+    for (ci, compressor) in   get(ref(ts), :compressor, Dict())
+
+        to_node = compressor["to_node"]
+        from_node = compressor["fr_node"]
+        ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
+        if ctrl_type == c_ratio_control
+            J[ci, from_node] = -ctrl_val * get_pressure_prime(ts, x_node[from_node])
+            J[ci, to_node]  = get_pressure_prime(ts, x_node[to_node]) 
+        elseif ctrl_type == discharge_pressure_control
+            J[ci, to_node] = 1.0
+        elseif ctrl_type == flow_control
+            # no contribution to Jacobian since flow is known
+            continue
+        end
+    end
+    return
+end
+
+
+function assemble_residual_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64})
+    for (node_id, node) in ref(ts, :node)
+
+        eqn_num = ref(ts, :node, node_id)["eqn_number"]
+        if  isnan(eqn_num)
+            continue
+        end
+        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
+        if ctrl_type == pressure_control
+            residual_node[eqn_num] = x_node[node_id]- get_density(ts, ctrl_val)
+            continue
+        elseif ctrl_type == flow_control
+            jac_term, rhs_pipe_term = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
+            rhs_compressor_term = 
+            _assemble_for_flow_control_compressors(node_id, ts)
+            residual_node[eqn_num] += jac_term * x_node[node_id]  - jac_term * get_density(ts, ref(ts, :node, node_id, "pressure")) - rhs_pipe_term - rhs_compressor_term 
+            continue
+        end
+    end
+    return
+end
+
+function assemble_Jacobian_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
+    for (node_id, node) in ref(ts, :node)
+
+        eqn_num = ref(ts, :node, node_id)["eqn_number"]
+        if  isnan(eqn_num)
+            continue
+        end
+        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
+        if ctrl_type == pressure_control
+            J[eqn_num, node_id] = 1.0
+            continue
+        elseif ctrl_type == flow_control
+            jac_term, _ = _assemble_pipe_contributions_to_node(node_id, ctrl_val, ts)
+            J[eqn_num, node_id] += jac_term
+            continue
+        end
+    end
+    return
+end
+

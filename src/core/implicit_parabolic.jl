@@ -1,5 +1,5 @@
 function implicit_parabolic_step!(ts::TransientSimulator, run_type::Symbol)
-    implicit_advance_junction_pressures!(ts, run_type) # pressure (n+1), flux (n+1/2)
+    advance_junction_pressures!(ts, :implicit_parabolic, run_type) # pressure (n+1), flux (n+1/2)
     # update density and mass_flux profile
     # update end fluxes
     return
@@ -78,12 +78,11 @@ function initialize_pipe_state!(ts::TransientSimulator, ::Val{:implicit_paraboli
     return
 end
 
-function solve_pipe_state!(
+function _solve_pipe_state_parabolic!(
     ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
-    rho_to::T,
-)::Vector{T} where {T<:Real}
+    rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     x = zeros(T, 2 * n)
     x[1:n] = T.(ref(ts, :pipe, pipe_id)["density_profile"])
@@ -99,14 +98,14 @@ function solve_pipe_state!(
         rho_old,
         rho_from,
         rho_to;
-        inertial_flag = zero(T),
+        inertial_flag = inertial_flag,
     )
     Jacobian_fun! = (J, x) -> _pipe_jacobian!(
         J,
         ts,
         pipe_id,
         x;
-        inertial_flag = zero(T),
+        inertial_flag = inertial_flag,
     )
 
 
@@ -196,20 +195,6 @@ function _pipe_residual!(
         ref(ts, :pipe, pipe_id, "sin_incline") .* rho / (nominal_values(ts, :froude_num))^2
 
     return r
-end
-
-# Convenience allocating version
-function _pipe_residual(
-    ts::TransientSimulator,
-    pipe_id::Int64,
-    rho::Vector{Float64},
-    phi::Vector{Float64},
-    rho_old::Vector{Float64},
-    rho_from::Float64,
-    rho_to::Float64;
-    kwargs...)
-    r = zeros(Float64, 2length(rho))
-    return pipe_residual!(r, ts, pipe_id, rho, phi, rho_old, rho_from, rho_to; kwargs...)
 end
 
 
@@ -346,6 +331,7 @@ function implicit_advance_junction_pressures!(ts::TransientSimulator, _run_type:
     return
 end
 
+#=
 function assemble_network_problem!(ts::TransientSimulator, x::Vector{Float64}, r::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
 
     _assemble_for_nodes_WITHOUT_eqn_nos!(ts, x, r, J)
@@ -500,3 +486,5 @@ function NR_solve!(
     problem_fun!(residual, J, x)
     return x, false, max_iter, maximum(abs, residual)
 end
+
+=#

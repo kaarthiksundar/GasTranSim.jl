@@ -216,7 +216,7 @@ function update_output_data!(ts::TransientSimulator, state::OutputState, data::O
         L = pipe["length"]
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
-        if params(ts, :method) == :explicit_staggered_grid
+        if params(ts, :method) in [:explicit_staggered_grid, :explicit_staggered_grid_new]
             x_mid = x_rho[1:(n-1)] .+ dx/2.0
             # this is what needs to be done to replicate
             # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 

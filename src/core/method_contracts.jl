@@ -1,4 +1,4 @@
-const _SUPPORTED_METHODS = (:explicit_staggered_grid,:implicit_parabolic)
+const _SUPPORTED_METHODS = (:explicit_staggered_grid, :explicit_staggered_grid_new, :implicit_parabolic, :explicit_hyperbolic)
 
 supported_methods() = collect(_SUPPORTED_METHODS)
 
@@ -25,15 +25,7 @@ function validate_method_contract!(method::Symbol)
         push!(missing, "initialize_pipe_state!(ts, ::Val{$method})")
     hasmethod(step!, Tuple{TransientSimulator,Val{method},Symbol}) ||
         push!(missing, "step!(ts, ::Val{$method}, run_type)")
-    # hasmethod(assemble_junction_residual!, Tuple{TransientSimulator,AbstractArray,AbstractArray,Val{method}}) ||
-    #     push!(missing, "assemble_junction_residual!(ts, x_node, residual, ::Val{$method})")
-    # hasmethod(
-    #     assemble_junction_Jacobian!,
-    #     Tuple{TransientSimulator,AbstractArray,SparseMatrixCSC{Float64,Int64},Val{method}},
-    # ) || push!(
-    #     missing,
-    #     "assemble_junction_Jacobian!(ts, x_node, J, ::Val{$method})",
-    # )
+    
 
     isempty(missing) && return
     throw(
