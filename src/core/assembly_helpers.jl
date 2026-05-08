@@ -15,6 +15,7 @@ function advance_junction_pressures!(ts::TransientSimulator, method::Symbol,  _r
     problem_fun! = (r, J, x) -> assemble_network_problem!(ts, method, x, r, J)
     
     x_node, converged, iter, res_norm = NR_solve!(x_node, problem_fun!)
+    # println("iter, $iter")
     
     converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
 
@@ -106,18 +107,21 @@ function _assemble_all_pipes!(ts::TransientSimulator, method::Symbol,  x::Vector
         dt = params(ts, :dt)
         area = ref(ts, :pipe, pipe_id)["area"]
 
-        mu = area * dx / dt
 
         end_flow_func = bdry_vals -> solve_pipe_state!(ts, method, pipe_id,bdry_vals[1], bdry_vals[2])
         end_flows = end_flow_func([rho_from, rho_to])
         if method == :explicit_hyperbolic
-            sensitivity_mat = [mu 0.0;0.0 -mu]
+            c_fr = sqrt(get_pressure_prime(ts, rho_from))
+            c_to = sqrt(get_pressure_prime(ts, rho_to))
+            mu1 = dt / dx 
+            sensitivity_mat = [(mu1 * c_fr * c_fr  + c_fr) * area 0.0; 0.0  -c_to * area]
         elseif method == :explicit_staggered_grid_new
-            sensitivity_mat = [mu 0.0;0.0 -mu]
+            mu2 = dx / dt
+            sensitivity_mat = [mu2 * area 0.0;0.0 -mu2 * area]
         else
             sensitivity_mat = ForwardDiff.jacobian(end_flow_func, [rho_from, rho_to])
         end
-        # @show end_flows, sensitivity_mat
+        # @show sensitivity_mat
         _assemble_pipe_solve_results!(ts, fr_node, to_node, end_flows, sensitivity_mat, r, J)
     end
 
@@ -204,6 +208,7 @@ function NR_solve!(
         problem_fun!(residual, J, x)
         res_norm = maximum(abs, residual)
         # println(iter, ":", residual)
+        # display(Matrix(J))
         if res_norm <= tol
             return x, true, iter, res_norm
         end

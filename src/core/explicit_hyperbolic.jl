@@ -12,10 +12,12 @@ function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:explicit_hyperboli
             for (key, pipe) in ref(ts, :pipe)
                 # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
                 # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
-                 
+                
+                # reduce Courant number further
+                c_number = params(ts, :courant_number) / 2.0
                 c_inv = nominal_values(ts, :mach_num)
                 num_segments =
-                    c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :base_dt)
+                    c_inv * ( pipe["length"] * c_number ) / params(ts, :base_dt)
                 if num_segments < 2
                     throw(CFLException(string(key)))
                 end
@@ -92,6 +94,31 @@ function initialize_pipe_state!(ts::TransientSimulator, ::Val{:explicit_hyperbol
     return
 end
 
+# function prepare_arrays!(ts::TransientSimulator)
+
+#     for (pipe_id, pipe) in ref(ts, :pipe)
+#         ref(ts, :pipe, pipe_id)["rho"] = copy(ref(ts, :pipe, pipe_id)["density_profile"])
+#         ref(ts, :pipe, pipe_id)["phi"] = copy(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
+#     end
+
+#     return
+# end
+function _characteristic_potential(ts::TransientSimulator, rho::Real)::Real
+    rho_array = LinRange(0, rho, 100)
+    delta_rho = rho / 100
+    
+    sum = 0.0
+    for i = 1: length(rho_array)
+        if  (i== 1) || (i == length(rho_array))
+            sum +=  sqrt(get_pressure_prime(ts, rho_array[i]))
+        else
+            sum += 2.0 * sqrt(get_pressure_prime(ts, rho_array[i]))
+        end
+    end
+
+    return sum * (delta_rho/2.0)
+end
+
 function _maccormack_step!(ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
@@ -101,18 +128,16 @@ function _maccormack_step!(ts::TransientSimulator,
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     @assert n > 2 "McCormack step requires at least 3 spatial points"
 
-    rho = T.(ref(ts, :pipe, pipe_id)["density_profile"]) #T. makes it a copy
-    phi = T.(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
-    dx = T(ref(ts, :pipe, pipe_id)["dx"])
-    dt = T(params(ts, :dt))
-    nondim = T(nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2)
-    beta = T(
-        ref(ts, :pipe, pipe_id, "friction_factor") /
-        (2 * ref(ts, :pipe, pipe_id, "diameter")),
-    )
-    grav_coeff = T(
-        ref(ts, :pipe, pipe_id, "sin_incline") / (nominal_values(ts, :froude_num))^2,
-    )
+    
+    rho = copy(ref(ts, :pipe, pipe_id)["density_profile"])
+    phi = copy(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
+    dx = ref(ts, :pipe, pipe_id)["dx"]
+    dt = params(ts, :dt)
+    nondim = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
+    beta = ref(ts, :pipe, pipe_id, "friction_factor") /
+        (2 * ref(ts, :pipe, pipe_id, "diameter"))
+    grav_coeff = ref(ts, :pipe, pipe_id, "sin_incline") / (nominal_values(ts, :froude_num))^2
+    
 
     # Sources at current state.
     S_rho = zeros(T, n)
@@ -151,22 +176,31 @@ function _maccormack_step!(ts::TransientSimulator,
     rho[n] = rho_to
 
     # Extrapolate edge fluxes.
-    phi[1] = 2 * phi[2] - phi[3]
-    phi[n] = 2 * phi[n-1] - phi[n-2]
+    pot_1 = _characteristic_potential(ts, rho[1])
+    pot_2 = _characteristic_potential(ts, rho[2])
+    pot_3 = _characteristic_potential(ts, rho[3])
+    pot_n = _characteristic_potential(ts, rho[n])
+    pot_n_minus_1 = _characteristic_potential(ts, rho[n-1])
+    pot_n_minus_2 = _characteristic_potential(ts, rho[n-2])
+
+
+    phi[1] = 2 * (phi[2] - pot_2) - (phi[3] - pot_3) + pot_1
+    phi[n] = 2 * (phi[n-1] + pot_n_minus_1) - (phi[n-2] + pot_n_minus_2) - pot_n
 
     if T == Float64
         ref(ts, :pipe, pipe_id)["rho"] = rho
         ref(ts, :pipe, pipe_id)["phi"] = phi
     end
 
-    return rho, phi
+    return
 end
 
 function _solve_pipe_state_maccormack!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
 
     area = T(ref(ts, :pipe, pipe_id)["area"])
 
-    _, phi = _maccormack_step!(ts, pipe_id, rho_from, rho_to; inertial_flag = inertial_flag)
+    _maccormack_step!(ts, pipe_id, rho_from, rho_to; inertial_flag = inertial_flag)
+    phi = ref(ts, :pipe, pipe_id)["phi"]
 
     end_flows = T[area * phi[1], area * phi[end]]
     

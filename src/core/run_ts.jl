@@ -100,6 +100,7 @@ function run_simulator!(
         #     println(step, ":", ts.ref[:current_time])
         # end
         step!(ts, method, run_type)
+        # println("completed step $step")
         solve_compressor_flows!(ts, lin_system)
         calculate_slack_injections!(ts)
         #  if current_time is one where output needs to be saved, check and do now
