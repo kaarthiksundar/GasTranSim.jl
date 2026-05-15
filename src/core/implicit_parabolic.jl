@@ -8,17 +8,8 @@ end
 
 function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:implicit_parabolic})
     for (key, pipe) in ref(ts, :pipe)
-        # CFL condition c*dt/dx <= 0.9 => dx >= c*dt/0.9
-        # with nondim dt, dx, we have nondim_dt/ nondim_dx < = 0.9 * mach_no
-        
-        # c_inv = nominal_values(ts, :mach_num)
-        # num_segments =
-        #     c_inv * (pipe["length"] * params(ts, :courant_number)) / params(ts, :base_dt)
-        # if num_segments < 1
-        #     throw(CFLException(string(key)))
-        # end
-        # n = floor(Int64, num_segments) + 1
-        n= 61
+        pipe_segments = get(params(ts), :pipe_segments, 20)
+        n = segments + 1
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n - 1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)
@@ -55,6 +46,7 @@ function initialize_pipe_state!(ts::TransientSimulator, ::Val{:implicit_paraboli
                     density_at_last_sq * (i - 1) * dL + density_at_first_sq * (n - i) * dL,
                 ) for i = 1:n
             ]
+            
             pipe["fr_minus_mass_flux"] = initial_mass_flux # dx
             pipe["to_minus_mass_flux"] = initial_mass_flux # L-dx
             pipe["fr_mass_flux"] = initial_mass_flux # 0
@@ -117,6 +109,8 @@ function _solve_pipe_state_parabolic!(
     if T == Float64
         ref(ts, :pipe, pipe_id)["rho"] = x[1:n]
         ref(ts, :pipe, pipe_id)["phi"] = x[n+1:2*n]
+        ref(ts, :pipe, pipe_id)["fr_mass_flux"] = x[n+1]
+        ref(ts, :pipe, pipe_id)["to_mass_flux"] = x[2*n]
     end
 
     end_flows = T[area * x[n+1], area * x[2*n]]

@@ -17,9 +17,10 @@ tmp = base_path * "tmp/"
 
 # Ideal EoS run
 # method = :implicit_parabolic
+method = :implicit_hyperbolic
 # method = :explicit_staggered_grid
 # method = :explicit_staggered_grid_new
-method = :explicit_hyperbolic
+# method = :explicit_hyperbolic
 
 
 
@@ -78,7 +79,7 @@ outlet_pressure_cnga = node_solution["2"]["pressure"]
 outlet_density_cnga =
     nominal_density * get_density.(Ref(ts_cnga), outlet_pressure_cnga / nominal_pressure)
 
-area = ref(ts, :pipe, 1, "area")
+area = ref(ts_cnga, :pipe, 1, "area")
 inlet_mass_flux_cnga = pipe_solution["1"]["in_flow"] / area
 inlet_velocity_cnga = inlet_mass_flux_cnga ./ inlet_density_cnga
 outlet_mass_flux_cnga = pipe_solution["1"]["out_flow"] / area
@@ -87,6 +88,39 @@ println(outlet_mass_flux_cnga)
 outlet_velocity_cnga = outlet_mass_flux_cnga ./ outlet_density_cnga
 
 # Plot the results
+
+function padded_range(vals...; pad_frac = 0.05)
+    lo = minimum(vcat(vals...))
+    hi = maximum(vcat(vals...))
+    span = max(hi - lo, eps(Float64))
+    pad = pad_frac * span
+    return (lo - pad, hi + pad)
+end
+
+ylims_pressure = padded_range(
+    inlet_pressure / 1e6,
+    outlet_pressure / 1e6,
+    inlet_pressure_cnga / 1e6,
+    outlet_pressure_cnga / 1e6,
+)
+ylims_density = padded_range(
+    inlet_density,
+    outlet_density,
+    inlet_density_cnga,
+    outlet_density_cnga,
+)
+ylims_mass_flux = padded_range(
+    inlet_mass_flux,
+    outlet_mass_flux,
+    inlet_mass_flux_cnga,
+    outlet_mass_flux_cnga,
+)
+ylims_velocity = padded_range(
+    inlet_velocity,
+    outlet_velocity,
+    inlet_velocity_cnga,
+    outlet_velocity_cnga,
+)
 
 function add_legend(ax, data, key)
     axislegend(ax, data, key, position = :rt, orientation = :horizontal)
@@ -99,7 +133,7 @@ gb = f[2, 1] = GridLayout()
 gc = f[3, 1] = GridLayout()
 gd = f[4, 1] = GridLayout()
 
-axmain = Axis(ga[1, 1], title = "Inlet pressure (MPa)")
+axmain = Axis(ga[1, 1], title = "Inlet pressure (MPa)", limits = (nothing, nothing, ylims_pressure[1], ylims_pressure[2]))
 ideal = scatterlines!(
     axmain,
     t,
@@ -119,7 +153,7 @@ cnga = scatterlines!(
 )
 add_legend(axmain, [ideal, cnga], ["ideal", "non-ideal"])
 
-axmain = Axis(ga[1, 2], title = "Outlet pressure (MPa)")
+axmain = Axis(ga[1, 2], title = "Outlet pressure (MPa)", limits = (nothing, nothing, ylims_pressure[1], ylims_pressure[2]))
 ideal = scatterlines!(
     axmain,
     t,
@@ -138,7 +172,7 @@ cnga = scatterlines!(
     marker = :star4,
 )
 
-axmain = Axis(gb[1, 1], title = rich("Inlet density (kgm", superscript("-3"), ")"))
+axmain = Axis(gb[1, 1], title = rich("Inlet density (kgm", superscript("-3"), ")"), limits = (nothing, nothing, ylims_density[1], ylims_density[2]))
 ideal = scatterlines!(
     axmain,
     t,
@@ -157,7 +191,7 @@ cnga = scatterlines!(
     marker = :star4,
 )
 
-axmain = Axis(gb[1, 2], title = rich("Outlet density (kgm", superscript("-3"), ")"))
+axmain = Axis(gb[1, 2], title = rich("Outlet density (kgm", superscript("-3"), ")"), limits = (nothing, nothing, ylims_density[1], ylims_density[2]))
 ideal = scatterlines!(
     axmain,
     t,
@@ -179,6 +213,7 @@ cnga = scatterlines!(
 axmain = Axis(
     gc[1, 1],
     title = rich("Inlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"),
+    limits = (nothing, nothing, ylims_mass_flux[1], ylims_mass_flux[2]),
     yticks = [150, 250, 350],
 )
 ideal = scatterlines!(
@@ -202,6 +237,7 @@ cnga = scatterlines!(
 axmain = Axis(
     gc[1, 2],
     title = rich("Outlet mass flux (kgm", superscript("-2"), "s", superscript("-1"), ")"),
+    limits = (nothing, nothing, ylims_mass_flux[1], ylims_mass_flux[2]),
     yticks = [100, 250, 400],
 )
 ideal = scatterlines!(
@@ -226,6 +262,7 @@ axmain = Axis(
     gd[1, 1],
     title = rich("Inlet velocity (ms", superscript("-1"), ")"),
     xlabel = "time (hrs.)",
+    limits = (nothing, nothing, ylims_velocity[1], ylims_velocity[2]),
 )
 ideal = scatterlines!(
     axmain,
@@ -249,6 +286,7 @@ axmain = Axis(
     gd[1, 2],
     title = rich("Outlet velocity (ms", superscript("-1"), ")"),
     xlabel = "time (hrs.)",
+    limits = (nothing, nothing, ylims_velocity[1], ylims_velocity[2]),
 )
 ideal = scatterlines!(
     axmain,

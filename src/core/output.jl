@@ -49,10 +49,9 @@ function initialize_output_state(ts::TransientSimulator)::OutputState
     end
 
     for i in keys(get(ref(ts), :pipe, []))
-        mass_flux_profile = ref(ts, :pipe, i, "mass_flux_profile")
         pipe[i] = Dict(
-            "fr_mass_flux" => [mass_flux_profile[1]],
-            "to_mass_flux" => [mass_flux_profile[end]],
+            "fr_mass_flux" => [ref(ts, :pipe, i, "fr_mass_flux")],
+            "to_mass_flux" => [ref(ts, :pipe, i, "to_mass_flux")],
         )
     end
     for i in keys(get(ref(ts), :compressor, []))
@@ -216,7 +215,11 @@ function update_output_data!(ts::TransientSimulator, state::OutputState, data::O
         L = pipe["length"]
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
-        if params(ts, :method) in [:explicit_staggered_grid, :explicit_staggered_grid_new]
+        if params(ts, :method) == :implicit_hyperbolic
+            x_centers = collect(LinRange(dx / 2.0, L - dx / 2.0, n))
+            x_rho = x_centers
+            x_phi = x_centers
+        elseif params(ts, :method) in [:explicit_staggered_grid, :explicit_staggered_grid_new]
             x_mid = x_rho[1:(n-1)] .+ dx/2.0
             # this is what needs to be done to replicate
             # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 
@@ -252,7 +255,11 @@ function update_output_data_final_state_only!(ts::TransientSimulator, data::Outp
         L = pipe["length"]
         area = pipe["area"]
         x_rho = LinRange(0, L, n)
-        if params(ts, :method) == :explicit_staggered_grid
+        if params(ts, :method) == :implicit_hyperbolic
+            x_centers = collect(LinRange(dx / 2.0, L - dx / 2.0, n))
+            x_rho = x_centers
+            x_phi = x_centers
+        elseif params(ts, :method) == :explicit_staggered_grid
             x_mid = x_rho[1:(n-1)] .+ dx/2.0
             # this is what needs to be done to replicate
             # x_phi = [-(dx/2), x_mid..., L+(dx/2)] 

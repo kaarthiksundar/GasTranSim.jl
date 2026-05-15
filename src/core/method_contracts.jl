@@ -1,4 +1,4 @@
-const _SUPPORTED_METHODS = (:explicit_staggered_grid, :explicit_staggered_grid_new, :implicit_parabolic, :explicit_hyperbolic)
+const _SUPPORTED_METHODS = (:explicit_staggered_grid, :explicit_staggered_grid_new, :implicit_parabolic, :explicit_hyperbolic, :implicit_hyperbolic)
 
 supported_methods() = collect(_SUPPORTED_METHODS)
 

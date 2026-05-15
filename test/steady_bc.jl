@@ -1,9 +1,23 @@
-methods =[:explicit_hyperbolic, :explicit_staggered_grid, :explicit_staggered_grid_new,:implicit_parabolic]
+methods =[:implicit_hyperbolic, :explicit_hyperbolic, :explicit_staggered_grid, :explicit_staggered_grid_new,:implicit_parabolic]
+
+
+
 for method in methods
+    
+    if method == :implicit_hyperbolic
+        pipe_segs = 150
+    end
+    if method == :implicit_parabolic
+        pipe_segs = 60
+    end
+
     @info("Testing method $method...\n") 
     @testset "8-node steady BC" begin
         folder = "./data/8-node-steady/"
-        ts = initialize_simulator(folder; method=method)
+        ts = initialize_simulator(folder; method=method, pipe_segments=pipe_segs)
+        if method == :implicit_hyperbolic
+            ts.params[:base_dt] = 5 * ts.params[:base_dt]
+        end
         if method == :implicit_parabolic
             ts.params[:base_dt] = 100 * ts.params[:base_dt]
         end
@@ -14,7 +28,10 @@ for method in methods
             error = maximum(abs.(pressure .- pressure[1])) / pressure[1]
             @test error ≈ 0.0 atol=1e-2
         end
-        ts = initialize_simulator(folder; method=method, eos = :simple_cnga)
+        ts = initialize_simulator(folder; method=method, pipe_segments=pipe_segs, eos = :simple_cnga)
+        if method == :implicit_hyperbolic
+            ts.params[:base_dt] = 5 * ts.params[:base_dt]
+        end
         if method == :implicit_parabolic
             ts.params[:base_dt] = 100 * ts.params[:base_dt]
         end
@@ -26,7 +43,10 @@ for method in methods
             @test error <= 0.05
         end
 
-        ts = initialize_simulator(folder; method=method, eos = :full_cnga)
+        ts = initialize_simulator(folder; method=method, pipe_segments=pipe_segs, eos = :full_cnga)
+        if method == :implicit_hyperbolic
+            ts.params[:base_dt] = 5 * ts.params[:base_dt]
+        end
         if method == :implicit_parabolic
             ts.params[:base_dt] = 100 * ts.params[:base_dt]
         end

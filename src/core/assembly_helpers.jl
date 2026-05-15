@@ -8,6 +8,22 @@ function precompute_block!(ts::TransientSimulator, precompute_function::Function
     return
 end
 
+function characteristic_potential(ts::TransientSimulator, rho::T)::T where {T<:Real}
+    nquad = 100
+    delta_rho = rho / T(nquad)
+    acc = zero(T)
+    for i in 0:nquad
+        w = (i == 0 || i == nquad) ? one(T) : T(2)
+        rho_i = T(i) * delta_rho
+        acc += w * sqrt(get_pressure_prime(ts, rho_i))
+    end
+    return acc * (delta_rho / T(2))
+end
+
+function characteristic_potential_prime(ts::TransientSimulator, rho::T)::T where {T<:Real}
+    return sqrt(get_pressure_prime(ts, rho))
+end
+
 
 function advance_junction_pressures!(ts::TransientSimulator, method::Symbol,  _run_type::Symbol)
     x_node = get_density.(Ref(ts), form_nodal_pressure_vector(ts))
@@ -32,13 +48,13 @@ function advance_junction_pressures!(ts::TransientSimulator, method::Symbol,  _r
     # update mass flux and density profiles in pipes
     for (pipe_id, pipe) in ref(ts, :pipe)
         pipe["density_profile"] = pipe["rho"]
-        pipe["mass_flux_profile"] = pipe["phi"]
-        pipe["fr_mass_flux"] = pipe["phi"][1]
-        pipe["to_mass_flux"] = pipe["phi"][end]     
+        pipe["mass_flux_profile"] = pipe["phi"]   
     end
 
     return
 end
+
+
 
 function assemble_network_problem!(ts::TransientSimulator, method::Symbol, x::Vector{Float64}, r::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
 
@@ -111,8 +127,8 @@ function _assemble_all_pipes!(ts::TransientSimulator, method::Symbol,  x::Vector
         end_flow_func = bdry_vals -> solve_pipe_state!(ts, method, pipe_id,bdry_vals[1], bdry_vals[2])
         end_flows = end_flow_func([rho_from, rho_to])
         if method == :explicit_hyperbolic
-            c_fr = sqrt(get_pressure_prime(ts, rho_from))
-            c_to = sqrt(get_pressure_prime(ts, rho_to))
+            c_fr = characteristic_potential_prime(ts, rho_from)
+            c_to = characteristic_potential_prime(ts, rho_to)
             mu1 = dt / dx 
             sensitivity_mat = [(mu1 * c_fr * c_fr  + c_fr) * area 0.0; 0.0  -c_to * area]
         elseif method == :explicit_staggered_grid_new
@@ -134,7 +150,8 @@ function solve_pipe_state!(ts::TransientSimulator, method::Symbol, pipe_id::Int6
 
     if method == :implicit_parabolic
         end_flows = _solve_pipe_state_parabolic!(ts, pipe_id, rho_from, rho_to, inertial_flag)
-
+    elseif method == :implicit_hyperbolic
+        end_flows = _solve_pipe_state_hyperbolic!(ts, pipe_id, rho_from, rho_to, inertial_flag)
     elseif method == :explicit_hyperbolic
         end_flows = _solve_pipe_state_maccormack!(ts, pipe_id, rho_from, rho_to, inertial_flag)
     elseif method == :explicit_staggered_grid_new
@@ -247,12 +264,17 @@ function solve_newton_basic!(
     residual = zeros(T, n)
     J = (T == Float64) ? spzeros(T, n, n) : zeros(T, n, n)
 
+    # Force at least one Newton update for AD runs
+    min_iters = (T <: ForwardDiff.Dual) ? 2 : 1
+
     for iter = 1:max_iter
         fill!(residual, zero(T))
         residual_fun!(residual, x)
         res_norm = maximum(abs, residual)
+        # println(residual)
+        # println("Iter: $iter, Residual norm: $res_norm")
 
-        if res_norm <= tol
+        if iter >= min_iters && res_norm <= tol
             return x, true, iter, res_norm
         end
 
@@ -262,11 +284,12 @@ function solve_newton_basic!(
             fill!(J, zero(T))
         end
         Jacobian_fun!(J, x)
+        # println("Jacobian nonzeros: ", J)
         delta_x = J \ (-residual)
         x .+= delta_x
 
         step_norm = maximum(abs, delta_x)
-        if step_norm <= tol
+        if iter >= min_iters && step_norm <= tol
             return x, true, iter, res_norm
         end
     end

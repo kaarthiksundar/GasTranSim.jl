@@ -20,11 +20,15 @@ function initialize_simulator(
     data::Dict{String,Any};
     eos::Symbol = :ideal,
     method::Symbol = :explicit_staggered_grid,
-    # method::Symbol = :implicit_parabolic,
+    pipe_segments::Union{Nothing,Int} = nothing,
 )::TransientSimulator
     validate_method_contract!(method)
     params, nominal_values = process_data!(data)
     params[:method] = method
+    if !isnothing(pipe_segments)
+        pipe_segments < 1 && throw(ArgumentError("pipe_segments must be >= 1"))
+        params[:pipe_segments] = pipe_segments
+    end
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(
         data,

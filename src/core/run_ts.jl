@@ -99,8 +99,13 @@ function run_simulator!(
         # if step % 1000 == 0
         #     println(step, ":", ts.ref[:current_time])
         # end
+        # if step == 1
+        #     println(ts.ref[:pipe][1]["density_profile"])
+        # end
         step!(ts, method, run_type)
-        # println("completed step $step")
+        # if step % 1000 == 0
+        #     println("completed step $step")
+        # end
         solve_compressor_flows!(ts, lin_system)
         calculate_slack_injections!(ts)
         #  if current_time is one where output needs to be saved, check and do now

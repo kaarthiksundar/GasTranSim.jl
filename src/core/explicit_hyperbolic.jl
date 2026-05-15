@@ -123,7 +123,7 @@ function _maccormack_step!(ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
     rho_to::T;
-    inertial_flag::T = zero(T)) where {T<:Real}
+    inertial_flag::T = zero(T))::Tuple{Vector{Float64}, Vector{Float64}} where {T<:Real}
 
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     @assert n > 2 "McCormack step requires at least 3 spatial points"
@@ -176,31 +176,34 @@ function _maccormack_step!(ts::TransientSimulator,
     rho[n] = rho_to
 
     # Extrapolate edge fluxes.
-    pot_1 = _characteristic_potential(ts, rho[1])
-    pot_2 = _characteristic_potential(ts, rho[2])
-    pot_3 = _characteristic_potential(ts, rho[3])
-    pot_n = _characteristic_potential(ts, rho[n])
-    pot_n_minus_1 = _characteristic_potential(ts, rho[n-1])
-    pot_n_minus_2 = _characteristic_potential(ts, rho[n-2])
+    pot_1 = characteristic_potential(ts, rho[1])
+    pot_2 = characteristic_potential(ts, rho[2])
+    pot_3 = characteristic_potential(ts, rho[3])
+    pot_n = characteristic_potential(ts, rho[n])
+    pot_n_minus_1 = characteristic_potential(ts, rho[n-1])
+    pot_n_minus_2 = characteristic_potential(ts, rho[n-2])
 
 
     phi[1] = 2 * (phi[2] - pot_2) - (phi[3] - pot_3) + pot_1
     phi[n] = 2 * (phi[n-1] + pot_n_minus_1) - (phi[n-2] + pot_n_minus_2) - pot_n
 
-    if T == Float64
-        ref(ts, :pipe, pipe_id)["rho"] = rho
-        ref(ts, :pipe, pipe_id)["phi"] = phi
-    end
+    
 
-    return
+    return rho, phi
 end
 
 function _solve_pipe_state_maccormack!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
 
     area = T(ref(ts, :pipe, pipe_id)["area"])
 
-    _maccormack_step!(ts, pipe_id, rho_from, rho_to; inertial_flag = inertial_flag)
-    phi = ref(ts, :pipe, pipe_id)["phi"]
+    rho, phi = _maccormack_step!(ts, pipe_id, rho_from, rho_to; inertial_flag = inertial_flag)
+
+    if T == Float64
+        ref(ts, :pipe, pipe_id)["rho"] = rho
+        ref(ts, :pipe, pipe_id)["phi"] = phi
+        ref(ts, :pipe, pipe_id)["fr_mass_flux"] = phi[1]
+        ref(ts, :pipe, pipe_id)["to_mass_flux"] = phi[end]
+    end
 
     end_flows = T[area * phi[1], area * phi[end]]
     

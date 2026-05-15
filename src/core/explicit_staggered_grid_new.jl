@@ -179,6 +179,11 @@ function _solve_pipe_state_staggered_grid!(ts::TransientSimulator,pipe_id::Int64
     area = T(ref(ts, :pipe, pipe_id)["area"])
     _compute_pipe_end_fluxes!(ts, pipe_id, rho_from, rho_to)
     phi = ref(ts, :pipe, pipe_id)["phi"]
+    
+    if T == Float64
+        ref(ts, :pipe, pipe_id)["fr_mass_flux"] = phi[1]
+        ref(ts, :pipe, pipe_id)["to_mass_flux"] = phi[end]
+    end
 
     end_flows = T[area * phi[1], area * phi[end]]
     
