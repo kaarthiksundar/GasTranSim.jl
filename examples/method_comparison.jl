@@ -8,6 +8,9 @@ folder = base_path * "data/1-pipe-slow-transients/"
 output_plot = base_path * "output/plots/"
 tmp = base_path * "tmp/"
 
+eos = :ideal
+# eos = :simple_cnga
+
 methods = [
     :explicit_staggered_grid,
     :explicit_staggered_grid_new,
@@ -162,5 +165,5 @@ ax8 = Axis(
 )
 plot_panel!(ax8, :outlet_velocity)
 
-(save_figures) && save(output_plot * "method-comparison-ideal.png", f)
-save(tmp * "method-comparison-ideal.png", f)
+(save_figures) && save(output_plot * "method-comparison-$eos.png", f)
+save(tmp * "method-comparison-$eos.png", f)
