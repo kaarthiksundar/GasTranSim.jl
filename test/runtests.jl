@@ -11,7 +11,7 @@ include("output_checkpointing.jl")
 
 GasTranSim.set_logging_level!(:Debug)
 
-# include("sim_restart.jl")
+include("sim_restart.jl")
 
 include("steady_bc.jl")
 

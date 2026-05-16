@@ -9,7 +9,7 @@ end
 function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:implicit_parabolic})
     for (key, pipe) in ref(ts, :pipe)
         pipe_segments = get(params(ts), :pipe_segments, 20)
-        n = segments + 1
+        n = pipe_segments + 1
         ref(ts, :pipe, key)["num_discretization_points"] = n
         ref(ts, :pipe, key)["dx"] = pipe["length"] / (n - 1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, n)

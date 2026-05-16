@@ -114,7 +114,8 @@ function _solve_pipe_state_hyperbolic!(
     
     converged || throw(DomainError(res_norm, "Newton solver did not converge for pipe $pipe_id"))
 
-    phi_from, phi_to = get_bry_flux_char_extrapolation(ts, rho_from, rho_to, x[1], x[n], x[n+1], x[n+n])
+    # phi_from, phi_to = get_bry_flux_char_extrapolation(ts, rho_from, rho_to, x[1], x[n], x[n+1], x[n+n])
+    phi_from, phi_to = get_bdry_flux_2nd_order_char_extrapolation(ts, rho_from, rho_to, x[1], x[2], x[n-1], x[n], x[n+1], x[n+2], x[n+n-1], x[n+n])
 
     if T == Float64
         ref(ts, :pipe, pipe_id)["rho"] = x[1:n]
@@ -136,8 +137,40 @@ function get_bry_flux_char_extrapolation(ts::TransientSimulator, rho_from::T, rh
     pot_1 = characteristic_potential(ts, rho_1)
     pot_to = characteristic_potential(ts, rho_to)
     pot_n = characteristic_potential(ts, rho_n)
-    phi_from = (phi_1 - pot_1) + pot_from
-    phi_to = (phi_n + pot_n) - pot_to
+    phi_from = (3 / 2) * (phi_1 - pot_1) - (1 / 2) * (phi_2 - pot_2) + pot_from
+    phi_to = (3 / 2) * (phi_n + pot_n) - (1 / 2) * (phi_n_minus_1 + pot_n_minus_1) - pot_to
+
+    # for Jacobian
+    # Bdry_left_mat = [T(0) T(0); -characteristic_potential_prime(ts, rho[1]) T(1)]
+    # Bdry_right_mat = [T(0) T(0); characteristic_potential_prime(ts, rho[n]) T(1)]
+
+    
+    return phi_from, phi_to
+end
+
+function get_bdry_flux_2nd_order_char_extrapolation(ts::TransientSimulator, rho_from::T, rho_to::T, rho_1::T, rho_2::T, rho_n_minus_1::T, rho_n::T, phi_1::T, phi_2::T, phi_n_minus_1::T, phi_n::T)::Tuple{T, T} where {T<:Real}
+
+    pot_from = characteristic_potential(ts, rho_from)
+    pot_1 = characteristic_potential(ts, rho_1)
+    pot_2 = characteristic_potential(ts, rho_2)
+
+    pot_to = characteristic_potential(ts, rho_to)
+    pot_n = characteristic_potential(ts, rho_n)
+    pot_n_minus_1 = characteristic_potential(ts, rho_n_minus_1)
+
+    
+    phi_from = (3/2)*(phi_1 - pot_1) - (1/2)*(phi_2 - pot_2) + pot_from
+    phi_to = (3/2)*(phi_n + pot_n) - (1/2)*(phi_n_minus_1 + pot_n_minus_1) - pot_to
+
+    # for Jacobian
+    # Bdry_left_mat_1 = [T(0) T(0); -T(3/2) * characteristic_potential_prime(ts, rho[1]) T(3/2)]
+
+    # Bdry_left_mat_2 = [T(0) T(0); T(1/2) * characteristic_potential_prime(ts, rho[2]) T(-1/2)]
+
+    # Bdry_right_mat_n_minus_1 = [T(0) T(0); T(-1/2) * characteristic_potential_prime(ts, rho[n]) T(-1/2)]
+
+    # Bdry_right_mat_n = [T(0) T(0); T(3/2) * characteristic_potential_prime(ts, rho[n]) T(3/2)]
+
     
     return phi_from, phi_to
 end
@@ -188,8 +221,9 @@ function _pipe_residual_hyperbolic!(
 
     r_local = zeros(T, 2)
 
-    # Extrapolate edge fluxes.
-    phi_from, phi_to = get_bry_flux_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[n], phi[1], phi[n])
+    
+
+    phi_from, phi_to = get_bdry_flux_2nd_order_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[2], rho[n-1], rho[n], phi[1], phi[2], phi[n-1], phi[n])
 
 
     for i = 1 : n
@@ -335,10 +369,19 @@ function _pipe_jacobian_hyperbolic!(
     p_coeff = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
 
     # Extrapolate edge fluxes.
-    phi_from, phi_to = get_bry_flux_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[n], phi[1], phi[n])
 
-    Bdry_left_mat = [T(0) T(0); -characteristic_potential_prime(ts, rho[1]) T(1)]
-    Bdry_right_mat = [T(0) T(0); characteristic_potential_prime(ts, rho[n]) T(1)]
+    phi_from, phi_to = get_bdry_flux_2nd_order_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[2], rho[n-1], rho[n], phi[1], phi[2], phi[n-1], phi[n])
+
+    
+    
+    Bdry_left_mat_1 = [T(0) T(0); -T(3/2) * characteristic_potential_prime(ts, rho[1]) T(3/2)]
+
+    Bdry_left_mat_2 = [T(0) T(0); T(1/2) * characteristic_potential_prime(ts, rho[2]) T(-1/2)]
+
+    Bdry_right_mat_n_minus_1 = [T(0) T(0); T(-1/2) * characteristic_potential_prime(ts, rho[n]) T(-1/2)]
+
+    Bdry_right_mat_n = [T(0) T(0); T(3/2) * characteristic_potential_prime(ts, rho[n]) T(3/2)]
+
 
     for i = 1 : n
         
@@ -353,14 +396,16 @@ function _pipe_jacobian_hyperbolic!(
             u_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I)
             d_mat += mu * 0.5 * (s_right[i] + s_left[i]) * I
             # extra term due to boundary condition dependence on current state
-            d_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I) * Bdry_left_mat
+            d_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I) * Bdry_left_mat_1
+            u_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I) * Bdry_left_mat_2
         elseif i == n
             U_left = [rho[i-1], phi[i-1] ]
             U_right = [rho_to, phi_to]
             d_mat += mu * 0.5 * (s_right[i] + s_left[i]) * I
             l_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I)
             # extra term due to boundary condition dependence on current state
-            d_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I) * Bdry_right_mat
+            d_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I) * Bdry_right_mat_n
+            l_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I) * Bdry_right_mat_n_minus_1
         else
             U_left = [ rho[i-1], phi[i-1] ]
             U_right =[ rho[i+1], phi[i+1] ]

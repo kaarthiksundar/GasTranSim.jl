@@ -3,12 +3,12 @@ methods =[:implicit_hyperbolic, :explicit_hyperbolic, :explicit_staggered_grid, 
 
 
 for method in methods 
-
+    pipe_segs = nothing
     if method == :implicit_hyperbolic
-        pipe_segs = 100
+        pipe_segs = 150
     end
     if method == :implicit_parabolic
-        pipe_segs = 60
+        pipe_segs = 50
     end
 
     @info("Testing method $method...\n")
@@ -17,7 +17,7 @@ for method in methods
         # full run for 24 hours
         ts = initialize_simulator(folder; method= method, pipe_segments=pipe_segs, case_name = "full", case_types = [:params])
         if method == :implicit_hyperbolic
-            ts.params[:base_dt] = 20 * ts.params[:base_dt]
+            ts.params[:base_dt] = 100 * ts.params[:base_dt]
         end
         if method == :implicit_parabolic
             ts.params[:base_dt] = 100 * ts.params[:base_dt]
@@ -30,7 +30,7 @@ for method in methods
         # run for 0 to 12 hours 
         ts_a = initialize_simulator(folder; method=method, pipe_segments=pipe_segs, case_name = "first_half", case_types = [:params])
         if method == :implicit_hyperbolic
-            ts_a.params[:base_dt] = 20 * ts_a.params[:base_dt]
+            ts_a.params[:base_dt] = 100 * ts_a.params[:base_dt]
         end
         if method == :implicit_parabolic
             ts_a.params[:base_dt] = 100 * ts_a.params[:base_dt]   
@@ -45,7 +45,7 @@ for method in methods
         # run for 12 to 24 hours 
         ts_b = initialize_simulator(folder;method=method, pipe_segments=pipe_segs, case_name = "second_half", case_types = [:params, :ic])
         if method == :implicit_hyperbolic
-           ts_b.params[:base_dt] = 20 * ts_b.params[:base_dt]
+           ts_b.params[:base_dt] = 100 * ts_b.params[:base_dt]
         end
         if method == :implicit_parabolic
             ts_b.params[:base_dt] = 100 * ts_b.params[:base_dt]   
