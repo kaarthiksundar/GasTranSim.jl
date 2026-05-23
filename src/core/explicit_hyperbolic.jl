@@ -122,22 +122,21 @@ end
 function _maccormack_step!(ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
-    rho_to::T;
-    inertial_flag::T = zero(T))::Tuple{Vector{Float64}, Vector{Float64}} where {T<:Real}
+    rho_to::T)::Tuple{Vector{T}, Vector{T}} where {T<:Real}
 
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     @assert n > 2 "McCormack step requires at least 3 spatial points"
 
     
-    rho = copy(ref(ts, :pipe, pipe_id)["density_profile"])
-    phi = copy(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
+    rho = T.(ref(ts, :pipe, pipe_id)["density_profile"])
+    phi = T.(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
     dx = ref(ts, :pipe, pipe_id)["dx"]
     dt = params(ts, :dt)
     nondim = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
     beta = ref(ts, :pipe, pipe_id, "friction_factor") /
         (2 * ref(ts, :pipe, pipe_id, "diameter"))
     grav_coeff = ref(ts, :pipe, pipe_id, "sin_incline") / (nominal_values(ts, :froude_num))^2
-    
+    inertial_switch = params(ts, :inertial_flag) ? 1 : 0
 
     # Sources at current state.
     S_rho = zeros(T, n)
@@ -145,7 +144,7 @@ function _maccormack_step!(ts::TransientSimulator,
 
     # Fluxes at current state.
     F_rho = copy(phi)
-    F_phi = inertial_flag .* (phi .^ 2 ./ rho) .+ nondim .* get_pressure.(Ref(ts), rho)
+    F_phi = inertial_switch .* (phi .^ 2 ./ rho) .+ nondim .* get_pressure.(Ref(ts), rho)
 
     # Predictor.
     rho_p = copy(rho)
@@ -157,7 +156,7 @@ function _maccormack_step!(ts::TransientSimulator,
     S_rho_p = zeros(T, n)
     S_phi_p = -beta .* phi_p .* abs.(phi_p) ./ rho_p .+ grav_coeff .* rho_p
     F_rho_p = copy(phi_p)
-    F_phi_p = inertial_flag .* (phi_p .^ 2 ./ rho_p) .+ nondim .* get_pressure.(Ref(ts), rho_p)
+    F_phi_p = inertial_switch .* (phi_p .^ 2 ./ rho_p) .+ nondim .* get_pressure.(Ref(ts), rho_p)
 
     # Corrector (backward difference).
     rho[2:n-1] .= T(0.5) .* (
@@ -183,20 +182,22 @@ function _maccormack_step!(ts::TransientSimulator,
     pot_n_minus_1 = characteristic_potential(ts, rho[n-1])
     pot_n_minus_2 = characteristic_potential(ts, rho[n-2])
 
-
-    phi[1] = 2 * (phi[2] - pot_2) - (phi[3] - pot_3) + pot_1
-    phi[n] = 2 * (phi[n-1] + pot_n_minus_1) - (phi[n-2] + pot_n_minus_2) - pot_n
-
-    
+    if params(ts, :inertial_flag) == false
+        phi[1] = 2 * (phi[2]  - pot_2) - (phi[3]  - pot_3) + pot_1 
+        phi[n] = 2 * (phi[n-1]  + pot_n_minus_1) - (phi[n-2]  + pot_n_minus_2) - pot_n 
+    else
+        phi[1] = rho_from * (2 * (phi[2] / rho[1]  - pot_2) - (phi[3] / rho[3] - pot_3) + pot_1 )
+        phi[n] = rho_to * ( 2 * (phi[n-1] / rho[n-1] + pot_n_minus_1) - ( phi[n-2] / rho[n-2] + pot_n_minus_2) - pot_n )
+    end
 
     return rho, phi
 end
 
-function _solve_pipe_state_maccormack!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
+function _solve_pipe_state_maccormack!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T)::Vector{T} where {T<:Real}
 
     area = T(ref(ts, :pipe, pipe_id)["area"])
 
-    rho, phi = _maccormack_step!(ts, pipe_id, rho_from, rho_to; inertial_flag = inertial_flag)
+    rho, phi = _maccormack_step!(ts, pipe_id, rho_from, rho_to)
 
     if T == Float64
         ref(ts, :pipe, pipe_id)["rho"] = rho
@@ -210,5 +211,4 @@ function _solve_pipe_state_maccormack!(ts::TransientSimulator,pipe_id::Int64,rho
     return end_flows
 
 end
-
 

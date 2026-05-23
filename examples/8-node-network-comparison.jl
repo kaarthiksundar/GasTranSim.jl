@@ -47,7 +47,7 @@ results = Dict{Symbol,Dict{Symbol,Vector{Float64}}}()
 for method in methods
     pipe_segs = nothing
     if method == :implicit_hyperbolic
-        pipe_segs = 200
+        pipe_segs = 50
     end
 
     @info "Running method $method"
@@ -57,7 +57,7 @@ for method in methods
         ts.params[:base_dt] = 100 * ts.params[:base_dt]
     end
     if method == :implicit_hyperbolic
-        ts.params[:base_dt] = 10 * ts.params[:base_dt]
+        ts.params[:base_dt] = 50 * ts.params[:base_dt]
     end
 
     run_simulator!(ts; method = method, showprogress = true)

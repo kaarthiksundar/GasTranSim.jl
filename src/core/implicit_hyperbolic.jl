@@ -71,7 +71,7 @@ function _solve_pipe_state_hyperbolic!(
     ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
-    rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
+    rho_to::T)::Vector{T} where {T<:Real}
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     x = zeros(T, 2 * n)
     x[1:n] = T.(ref(ts, :pipe, pipe_id)["density_profile"])
@@ -81,7 +81,6 @@ function _solve_pipe_state_hyperbolic!(
     phi_old = T.(ref(ts, :pipe, pipe_id)["mass_flux_profile"])
     area = T(ref(ts, :pipe, pipe_id)["area"])
 
-    s_left, s_right = compute_rusanov_array(ts, rho_old, phi_old, inertial_flag)
 
     residual_fun! = (r, x) -> _pipe_residual_hyperbolic!(
         r,
@@ -90,22 +89,16 @@ function _solve_pipe_state_hyperbolic!(
         x,
         rho_old,
         phi_old,
-        s_left,
-        s_right,
         rho_from,
-        rho_to;
-        inertial_flag = inertial_flag,
+        rho_to
     )
     Jacobian_fun! = (J, x) -> _pipe_jacobian_hyperbolic!(
         J,
         ts,
         pipe_id,
         x,
-        s_left,
-        s_right,
         rho_from,
-        rho_to;
-        inertial_flag = inertial_flag,
+        rho_to
     )
 
 
@@ -133,19 +126,36 @@ end
 
 function get_bry_flux_char_extrapolation(ts::TransientSimulator, rho_from::T, rho_to::T, rho_1::T, rho_n::T, phi_1::T, phi_n::T)::Tuple{T, T} where {T<:Real}
 
+    
     pot_from = characteristic_potential(ts, rho_from)
     pot_1 = characteristic_potential(ts, rho_1)
     pot_to = characteristic_potential(ts, rho_to)
     pot_n = characteristic_potential(ts, rho_n)
-    phi_from = (3 / 2) * (phi_1 - pot_1) - (1 / 2) * (phi_2 - pot_2) + pot_from
-    phi_to = (3 / 2) * (phi_n + pot_n) - (1 / 2) * (phi_n_minus_1 + pot_n_minus_1) - pot_to
 
-    # for Jacobian
-    # Bdry_left_mat = [T(0) T(0); -characteristic_potential_prime(ts, rho[1]) T(1)]
-    # Bdry_right_mat = [T(0) T(0); characteristic_potential_prime(ts, rho[n]) T(1)]
+    if params(ts, :inertial_flag) == false
+        phi_from = phi_1  - pot_1 + pot_from
+        phi_to = phi_n   + pot_n - pot_to
+    else
+        phi_from = rho_from * (phi_1 / rho_1  - pot_1 + pot_from)
+        phi_to = rho_to * (phi_n / rho_n   + pot_n - pot_to)
+    end
+
+    return phi_from, phi_to
+end
+
+function get_bry_flux_matrices_for_char_extrapolation(ts::TransientSimulator, rho_from::T, rho_to::T, rho_1::T, rho_n::T,phi_1::T, phi_n::T)::Tuple{Matrix{T}, Matrix{T}} where {T<:Real}
 
     
-    return phi_from, phi_to
+    if params(ts, :inertial_flag) == false
+        Bdry_left_mat = [T(0) T(0); -characteristic_potential_prime(ts, rho_1)  T(1)]
+        Bdry_right_mat = [T(0) T(0);  characteristic_potential_prime(ts, rho_n)  T(1)]
+    else
+        # for Jacobian
+        Bdry_left_mat = [T(0) T(0); rho_from * ( -phi_1 / (rho_1 ^ 2) - characteristic_potential_prime(ts, rho_1))  rho_from * (1.0 / rho_1)]
+        Bdry_right_mat = [T(0) T(0); rho_to * ( -phi_n / (rho_n ^ 2) + characteristic_potential_prime(ts, rho_n) ) rho_to * ( 1.0 / rho_n)]
+    end
+
+    return Bdry_left_mat, Bdry_right_mat
 end
 
 function get_bdry_flux_2nd_order_char_extrapolation(ts::TransientSimulator, rho_from::T, rho_to::T, rho_1::T, rho_2::T, rho_n_minus_1::T, rho_n::T, phi_1::T, phi_2::T, phi_n_minus_1::T, phi_n::T)::Tuple{T, T} where {T<:Real}
@@ -159,20 +169,60 @@ function get_bdry_flux_2nd_order_char_extrapolation(ts::TransientSimulator, rho_
     pot_n_minus_1 = characteristic_potential(ts, rho_n_minus_1)
 
     
-    phi_from = (3/2)*(phi_1 - pot_1) - (1/2)*(phi_2 - pot_2) + pot_from
-    phi_to = (3/2)*(phi_n + pot_n) - (1/2)*(phi_n_minus_1 + pot_n_minus_1) - pot_to
 
-    # for Jacobian
-    # Bdry_left_mat_1 = [T(0) T(0); -T(3/2) * characteristic_potential_prime(ts, rho[1]) T(3/2)]
-
-    # Bdry_left_mat_2 = [T(0) T(0); T(1/2) * characteristic_potential_prime(ts, rho[2]) T(-1/2)]
-
-    # Bdry_right_mat_n_minus_1 = [T(0) T(0); T(-1/2) * characteristic_potential_prime(ts, rho[n]) T(-1/2)]
-
-    # Bdry_right_mat_n = [T(0) T(0); T(3/2) * characteristic_potential_prime(ts, rho[n]) T(3/2)]
-
+    if params(ts, :inertial_flag) == false
+        phi_from = (3/2) * (phi_1   - pot_1) - (1/2) * (phi_2  - pot_2) + pot_from 
+        phi_to = (3/2) * (phi_n  + pot_n) - (1/2) * (phi_n_minus_1  + pot_n_minus_1) - pot_to
+    else 
+        phi_from = rho_from * ( (3/2) * (phi_1 / rho_1   - pot_1) - (1/2) * (phi_2 / rho_2 - pot_2) + pot_from )
+        phi_to = rho_to * ( (3/2) * (phi_n / rho_n + pot_n) - (1/2) * (phi_n_minus_1 / rho_n_minus_1  + pot_n_minus_1) - pot_to ) 
+    end
     
+
     return phi_from, phi_to
+end
+
+function get_bdry_flux_matrices_for_2nd_order_char_extrapolation(ts::TransientSimulator, rho_from::T, rho_to::T, rho_1::T, rho_2::T, rho_n_minus_1::T, rho_n::T, phi_1::T, phi_2::T, phi_n_minus_1::T, phi_n::T)::Tuple{Matrix{T}, Matrix{T}, Matrix{T}, Matrix{T}} where {T<:Real}
+
+    Bdry_left_mat_1 = zeros(T, 2, 2)
+    Bdry_left_mat_2 = zeros(T, 2, 2)
+    Bdry_right_mat_n = zeros(T, 2, 2)
+    Bdry_right_mat_n_minus_1 = zeros(T, 2, 2)
+
+    if params(ts, :inertial_flag) == false
+        Bdry_left_mat_1 = [
+            T(0) T(0);
+            -T(3 / 2) * characteristic_potential_prime(ts, rho_1) T(3 / 2)
+        ]
+        Bdry_left_mat_2 = [
+            T(0) T(0);
+            T(1 / 2) * characteristic_potential_prime(ts, rho_2) -T(1 / 2)
+        ]
+        Bdry_right_mat_n_minus_1 = [
+            T(0) T(0);
+            -T(1 / 2) * characteristic_potential_prime(ts, rho_n_minus_1) -T(1 / 2)
+        ]
+        Bdry_right_mat_n = [
+            T(0) T(0);
+            T(3 / 2) * characteristic_potential_prime(ts, rho_n) T(3 / 2)
+        ]
+    else
+
+        Bdry_left_mat_1[2, 1] =  rho_from * T(3/2) * ( -phi_1 / ( rho_1 ^ 2 ) - characteristic_potential_prime(ts, rho_1) )
+        Bdry_left_mat_1[2, 2] = rho_from * T(3/2) * ( 1.0/ rho_1)
+
+
+        Bdry_left_mat_2[2, 1] = -rho_from * T(1/2) * ( -phi_2 / (rho_2 ^ 2 )  - characteristic_potential_prime(ts, rho_2) )
+        Bdry_left_mat_2[2, 2] = -rho_from * T(1/2) * ( 1.0 / rho_2 )
+
+        Bdry_right_mat_n_minus_1[2, 1] = -rho_to * T(1/2) * ( -phi_n_minus_1 / (rho_n_minus_1 ^ 2 )  + characteristic_potential_prime(ts, rho_n_minus_1) )
+        Bdry_right_mat_n_minus_1[2, 2] =  -rho_to * T(1/2) *  ( 1.0 /rho_n_minus_1)
+
+        Bdry_right_mat_n[2, 1] = rho_to * T(3/2) * ( -phi_n / (rho_n ^ 2 ) + characteristic_potential_prime(ts, rho_n) )
+        Bdry_right_mat_n[2, 2] = rho_to * T(3/2) * (  1.0 / rho_n )
+    end
+
+    return Bdry_left_mat_1, Bdry_left_mat_2, Bdry_right_mat_n_minus_1, Bdry_right_mat_n
 end
 
 
@@ -194,11 +244,8 @@ function _pipe_residual_hyperbolic!(
     x::Vector{T},
     rho_old::AbstractVector{T},
     phi_old::AbstractVector{T},
-    s_left::AbstractVector{T},
-    s_right::AbstractVector{T},
     rho_from::T,
-    rho_to::T;
-    inertial_flag::T) where {T<:Real}
+    rho_to::T) where {T<:Real}
 
     n = div(length(x) , 2)
 
@@ -234,75 +281,125 @@ function _pipe_residual_hyperbolic!(
         r_local += U - U_old 
         r_local += - dt * source(U, drag_coeff, g_coeff)
         if i == 1
-            r_local +=  mu * numerical_flux(ts, s_right[i], [rho[i+1], phi[i+1]], U, p_coeff, inertial_flag) 
-            r_local +=  -mu * numerical_flux(ts, s_left[i], U, [rho_from, phi_from], p_coeff, inertial_flag) 
-            
+            flux_i_plus_half  = numerical_flux(ts, U, [rho[i+1], phi[i+1]], p_coeff) 
+            flux_i_minus_half = numerical_flux(ts, [rho_from, phi_from], U, p_coeff) 
         elseif i == n
-            r_local +=  mu  * numerical_flux(ts, s_right[i], [rho_to, phi_to], U, p_coeff, inertial_flag) 
-            r_local +=  -mu * numerical_flux(ts, s_left[i], U, [rho[i-1], phi[i-1]], p_coeff, inertial_flag)
-        
+            flux_i_plus_half  = numerical_flux(ts, U, [rho_to, phi_to], p_coeff) 
+            flux_i_minus_half = numerical_flux(ts, [rho[i-1], phi[i-1]], U, p_coeff)    
         else
-            r_local +=  mu  * numerical_flux(ts, s_right[i], [ rho[i+1], phi[i+1] ], U, p_coeff, inertial_flag) 
-            r_local +=  -mu *  numerical_flux(ts, s_left[i], U, [rho[i-1], phi[i-1]], p_coeff, inertial_flag)
+            flux_i_plus_half  = numerical_flux(ts, U, [ rho[i+1], phi[i+1] ], p_coeff) 
+            flux_i_minus_half = numerical_flux(ts, [rho[i-1], phi[i-1]], U, p_coeff)
         end
+        r_local +=  mu * ( flux_i_plus_half - flux_i_minus_half )
         assemble_local_residual!(ts, r, r_local, i, n)
     end
     
     return r
 end
 
-function compute_rusanov_array(ts::TransientSimulator, rho_old::AbstractVector{T}, phi_old::AbstractVector{T}, inertial_flag::T)::Tuple{Vector{T}, Vector{T}} where {T<:Real}
 
-    n = length(rho_old)
-    rusanov_speeds_left = zeros(T, n)
-    rusanov_speeds_right = zeros(T, n)
-    for i in 1:n
-        U = [rho_old[i], phi_old[i]]
-        if i == 1
-            rusanov_speeds_left[i] = rusanov_speed(ts, U, U, inertial_flag)
-            rusanov_speeds_right[i] = rusanov_speed(ts, U, [rho_old[i+1], phi_old[i+1]], inertial_flag)
-        elseif i == n
-            rusanov_speeds_right[i] = rusanov_speed(ts, U, U, inertial_flag)
-            rusanov_speeds_left[i] = rusanov_speed(ts, [rho_old[i-1], phi_old[i-1]], U, inertial_flag)
-        else
-            rusanov_speeds_left[i] = rusanov_speed(ts, [rho_old[i-1], phi_old[i-1]], U, inertial_flag)
-            rusanov_speeds_right[i] = rusanov_speed(ts, U, [rho_old[i+1], phi_old[i+1]], inertial_flag)
-        end
+function rusanov_speed(ts::TransientSimulator, U_left::AbstractVector{T}, U_right::AbstractVector{T})::T where {T<:Real}
+    epsilon = T(1e-6)
+    vL = U_left[2] / U_left[1] # velocity on the left
+    vR = U_right[2] / U_right[1] # velocity on the right
+    cL = sqrt(get_pressure_prime(ts, U_left[1])) # speed of sound on the left
+    cR = sqrt(get_pressure_prime(ts, U_right[1])) # speed of sound on the right
+    if params(ts, :inertial_flag) == false
+        sL =  cL
+        sR =  cR
+    else
+        sL = smooth_abs(vL, epsilon) + cL
+        sR = smooth_abs(vR, epsilon) + cR
     end
-    return rusanov_speeds_left, rusanov_speeds_right
+
+    return smooth_max(sL, sR, epsilon)
 end
 
-function rusanov_speed(ts::TransientSimulator, U_plus::AbstractVector{T}, U_minus::AbstractVector{T}, inertial_flag::T)::T where {T<:Real}
-    vplus = U_plus[2] / U_plus[1] # velocity on the left
-    vminus = U_minus[2] / U_minus[1] # velocity on the right
-    cplus = sqrt(get_pressure_prime(ts, U_plus[1])) # speed of sound on the left
-    cminus = sqrt(get_pressure_prime(ts, U_minus[1])) # speed of sound on the right
-    splus = inertial_flag * abs(vplus) + cplus
-    sminus = inertial_flag * abs(vminus) + cminus
-    return max(splus, sminus)
+function smooth_max(a::T, b::T, epsilon::T)::T where {T<:Real}
+    return 0.5 * (a + b + sqrt((a - b)^2 + epsilon^2))
 end
 
+function smooth_abs(x::T, epsilon::T)::T where {T<:Real}
+    return sqrt(x^2 + epsilon^2)
+end
 
-function numerical_flux(ts::TransientSimulator, rusanov_speed::T, Uplus::Vector{T}, Uminus::Vector{T}, pressure_coeff::Float64, inertial_flag::T)::Vector{T} where {T<:Real}
+function rusanov_speed_derivatives(ts::TransientSimulator, U_left::AbstractVector{T}, U_right::AbstractVector{T})::Tuple{Vector{T}, Vector{T}} where {T<:Real}
     
-    f1 = flux(ts, Uplus, pressure_coeff, inertial_flag)
-    f2 = flux(ts, Uminus, pressure_coeff, inertial_flag)
+    epsilon = T(1e-6)
+    vL = U_left[2] / U_left[1] # velocity on the left
+    vR = U_right[2] / U_right[1] # velocity on the right
+    cL = sqrt(get_pressure_prime(ts, U_left[1])) # speed of sound on the left
+    cR = sqrt(get_pressure_prime(ts, U_right[1])) # speed of sound on the right
+
+    if params(ts, :inertial_flag) == false
+        sL = cL
+        sR = cR
+        t2_left = 0.0
+        t2_right = 0.0
+    else
+        sL = smooth_abs(vL, epsilon) + cL
+        sR = smooth_abs(vR, epsilon) + cR
+        t2_left = vL / ( U_left[1] * smooth_abs(vL, epsilon) )
+        t2_right = vR / ( U_right[1] * smooth_abs(vR, epsilon) )
+
+
+    end
+
+    wL  = T(1/2) * (1 + (sL - sR) / sqrt((sL - sR)^2 + epsilon^2) )
+    wR  = T(1/2) * (1 - (sL - sR) / sqrt((sL - sR)^2 + epsilon^2) )
+
+    ds_dU_left = zeros(T, 2)
+
+    t1_left = get_pressure_double_prime(ts, U_left[1]) / (2 * cL)
+    ds_dU_left[1] = wL * (t1_left - vL * t2_left)
+    ds_dU_left[2] = wL * t2_left
+
+    ds_dU_right = zeros(T, 2)
+    t1_right = get_pressure_double_prime(ts, U_right[1]) / (2 * cR)
+    ds_dU_right[1] = wR * (t1_right - vR * t2_right)
+    ds_dU_right[2] = wR * t2_right
     
-    return  (f1 + f2 - rusanov_speed * (Uplus - Uminus) ) / 2.0
+
+    return ds_dU_left, ds_dU_right
 end
 
-function flux(ts::TransientSimulator, U::Vector{T}, pressure_coeff::Float64, inertial_flag::T)::Vector{T} where {T<:Real}
+
+function numerical_flux(ts::TransientSimulator, U_left::Vector{T}, U_right::Vector{T}, pressure_coeff::Float64)::Vector{T} where {T<:Real}
+    
+    s = rusanov_speed(ts, U_left, U_right)
+
+    f1 = flux(ts, U_right, pressure_coeff)
+    f2 = flux(ts, U_left, pressure_coeff)
+    
+    return  (f1 + f2 - s * (U_right - U_left) ) / 2.0
+end
+
+
+function jacobian_numerical_flux(ts::TransientSimulator, U_left::Vector{T}, U_right::Vector{T}, pressure_coeff::Float64)::Tuple{ Matrix{T}, Matrix{T} } where {T<:Real}
+    J_1 = jacobian_flux(ts, U_left, pressure_coeff)
+    J_2 = jacobian_flux(ts, U_right, pressure_coeff)
+    s = rusanov_speed(ts, U_left, U_right)
+    ds_dU_left, ds_dU_right = rusanov_speed_derivatives(ts, U_left, U_right)
+
+    J_left = (J_1 + s * I - (U_right - U_left) * ds_dU_left') / 2.0
+    J_right = (J_2 - s * I - (U_right - U_left) * ds_dU_right') / 2.0
+    return J_left, J_right
+end
+
+function flux(ts::TransientSimulator, U::Vector{T}, pressure_coeff::Float64)::Vector{T} where {T<:Real}
+    inertial_switch = params(ts, :inertial_flag) ? 1 : 0
     var1  = U[2]
-    var2  = inertial_flag * (U[2]^2 / U[1]) + pressure_coeff * get_pressure(ts, U[1])
+    var2  = inertial_switch * (U[2]^2 / U[1]) + pressure_coeff * get_pressure(ts, U[1])
     return [var1, var2]
 end
 
-function jacobian_flux(ts::TransientSimulator, U::Vector{T}, pressure_coeff::Float64, inertial_flag::T)::Matrix{T} where {T<:Real}
+function jacobian_flux(ts::TransientSimulator, U::Vector{T}, pressure_coeff::Float64)::Matrix{T} where {T<:Real}
+    inertial_switch = params(ts, :inertial_flag) ? 1 : 0
     J = zeros(T, length(U), length(U))
     J[1, 1] = 0.0
     J[1, 2] = 1.0
-    J[2, 1] = pressure_coeff * get_pressure_prime(ts, U[1]) - inertial_flag * (U[2]^2 / (U[1]^2))
-    J[2, 2] = inertial_flag * (2.0 * U[2] / U[1])
+    J[2, 1] = pressure_coeff * get_pressure_prime(ts, U[1]) - inertial_switch * (U[2]^2 / (U[1]^2))
+    J[2, 2] = inertial_switch * (2.0 * U[2] / U[1])
     return J
 end
 
@@ -339,11 +436,8 @@ function _pipe_jacobian_hyperbolic!(
     ts::TransientSimulator,
     pipe_id::Int64,
     x::Vector{T},
-    s_left::AbstractVector{T},
-    s_right::AbstractVector{T},
     rho_from::T,
-    rho_to::T;
-    inertial_flag::T) where {T<:Real}
+    rho_to::T) where {T<:Real}
 
     n = div(length(x), 2)
     rho = x[1:n]
@@ -369,19 +463,9 @@ function _pipe_jacobian_hyperbolic!(
     p_coeff = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
 
     # Extrapolate edge fluxes.
-
     phi_from, phi_to = get_bdry_flux_2nd_order_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[2], rho[n-1], rho[n], phi[1], phi[2], phi[n-1], phi[n])
-
+    Bdry_left_mat_1, Bdry_left_mat_2, Bdry_right_mat_n_minus_1, Bdry_right_mat_n = get_bdry_flux_matrices_for_2nd_order_char_extrapolation(ts, rho_from, rho_to, rho[1], rho[2], rho[n-1], rho[n], phi[1], phi[2], phi[n-1], phi[n])
     
-    
-    Bdry_left_mat_1 = [T(0) T(0); -T(3/2) * characteristic_potential_prime(ts, rho[1]) T(3/2)]
-
-    Bdry_left_mat_2 = [T(0) T(0); T(1/2) * characteristic_potential_prime(ts, rho[2]) T(-1/2)]
-
-    Bdry_right_mat_n_minus_1 = [T(0) T(0); T(-1/2) * characteristic_potential_prime(ts, rho[n]) T(-1/2)]
-
-    Bdry_right_mat_n = [T(0) T(0); T(3/2) * characteristic_potential_prime(ts, rho[n]) T(3/2)]
-
 
     for i = 1 : n
         
@@ -393,26 +477,25 @@ function _pipe_jacobian_hyperbolic!(
         if i == 1
             U_right = [ rho[i+1], phi[i+1] ]
             U_left = [rho_from, phi_from]
-            u_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I)
-            d_mat += mu * 0.5 * (s_right[i] + s_left[i]) * I
-            # extra term due to boundary condition dependence on current state
-            d_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I) * Bdry_left_mat_1
-            u_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I) * Bdry_left_mat_2
+            J_i_plus_half_left, J_i_plus_half_right = jacobian_numerical_flux(ts, U, U_right, p_coeff)
+            J_i_minus_half_left, J_i_minus_half_right = jacobian_numerical_flux(ts, U_left, U, p_coeff)
+            d_mat += mu * (J_i_plus_half_left - J_i_minus_half_right -  J_i_minus_half_left * Bdry_left_mat_1)
+            u_mat +=  mu * (J_i_plus_half_right -  J_i_minus_half_left * Bdry_left_mat_2)
         elseif i == n
             U_left = [rho[i-1], phi[i-1] ]
             U_right = [rho_to, phi_to]
-            d_mat += mu * 0.5 * (s_right[i] + s_left[i]) * I
-            l_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I)
-            # extra term due to boundary condition dependence on current state
-            d_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I) * Bdry_right_mat_n
-            l_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I) * Bdry_right_mat_n_minus_1
+            J_i_plus_half_left, J_i_plus_half_right = jacobian_numerical_flux(ts, U, U_right, p_coeff)
+            J_i_minus_half_left, J_i_minus_half_right = jacobian_numerical_flux(ts, U_left, U, p_coeff)
+            d_mat += mu * (J_i_plus_half_left - J_i_minus_half_right +  J_i_plus_half_right * Bdry_right_mat_n)
+            l_mat +=  mu * (J_i_plus_half_right  * Bdry_right_mat_n_minus_1 -  J_i_minus_half_left)
         else
             U_left = [ rho[i-1], phi[i-1] ]
             U_right =[ rho[i+1], phi[i+1] ]
-            # Base terms (matching residual signs)
-            d_mat += mu * 0.5 * (s_right[i] + s_left[i]) * I
-            u_mat +=  mu * 0.5 * (jacobian_flux(ts, U_right, p_coeff, inertial_flag) - s_right[i] * I)
-            l_mat += -mu * 0.5 * (jacobian_flux(ts, U_left, p_coeff, inertial_flag) +  s_left[i] * I)
+            J_i_plus_half_left, J_i_plus_half_right = jacobian_numerical_flux(ts, U, U_right, p_coeff)
+            J_i_minus_half_left, J_i_minus_half_right = jacobian_numerical_flux(ts, U_left, U, p_coeff)
+            d_mat += mu * (J_i_plus_half_left - J_i_minus_half_right)
+            u_mat +=  mu * (J_i_plus_half_right)
+            l_mat +=  mu * (-J_i_minus_half_left)     
         end
         assemble_local_jacobian!(ts, J, d_mat, i, i, n)
         if i < n

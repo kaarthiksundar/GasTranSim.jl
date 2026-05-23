@@ -26,7 +26,7 @@ method = :implicit_hyperbolic
 
   
 
-ts = initialize_simulator(folder; method=method, eos = :ideal)
+ts = initialize_simulator(folder; method=method, eos = :ideal, inertial_flag =true)
 run_simulator!(ts; method=method)
 
 @info "ideal run completed"

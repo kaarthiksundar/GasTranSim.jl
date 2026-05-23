@@ -141,16 +141,15 @@ function _advance_pipe_mass_flux_non_boundary_points!(ts::TransientSimulator, pi
     return
 end
 
-function _compute_pipe_end_fluxes!(ts::TransientSimulator, pipe_id::Int64, rho_from::T, rho_to::T) where {T<:Real}
+function _compute_pipe_end_fluxes!(ts::TransientSimulator, pipe_id::Int64, rho_from::T, rho_to::T)::Tuple{T,T} where {T<:Real}
     dx = ref(ts, :pipe, pipe_id)["dx"]  # can do dx/2 for ghost point if needed
     dt = params(ts, :dt)
     from_node_id = ref(ts, :pipe, pipe_id)["fr_node"]
     rho_prev_from = get_density(ts, ref(ts, :node, from_node_id)["pressure"])
-
-    ref(ts, :pipe, pipe_id)["rho"][1] = rho_from
-    ref(ts, :pipe, pipe_id)["rho"][end] = rho_to
-    phi =  ref(ts, :pipe, pipe_id)["phi"]
-    rho = ref(ts, :pipe, pipe_id)["rho"]
+    rho = T.(ref(ts, :pipe, pipe_id)["rho"])
+    phi = T.(ref(ts, :pipe, pipe_id)["phi"])
+    rho[1] = rho_from
+    rho[end] = rho_to
 
 
     phi[1] =
@@ -160,7 +159,11 @@ function _compute_pipe_end_fluxes!(ts::TransientSimulator, pipe_id::Int64, rho_f
     #at (n + 1/2) level
     phi[end] =
         phi[end-1] + (rho_prev_to - rho[end]) * (dx/dt)
-    return
+    if T == Float64
+        ref(ts, :pipe, pipe_id)["rho"] = rho
+        ref(ts, :pipe, pipe_id)["phi"] = phi
+    end
+    return phi[1], phi[end]
 end
 
 function advance_non_boundary_points!(ts::TransientSimulator)
@@ -174,18 +177,17 @@ function advance_non_boundary_points!(ts::TransientSimulator)
 
     return
 end
-function _solve_pipe_state_staggered_grid!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
+function _solve_pipe_state_staggered_grid!(ts::TransientSimulator,pipe_id::Int64,rho_from::T,rho_to::T)::Vector{T} where {T<:Real}
 
     area = T(ref(ts, :pipe, pipe_id)["area"])
-    _compute_pipe_end_fluxes!(ts, pipe_id, rho_from, rho_to)
-    phi = ref(ts, :pipe, pipe_id)["phi"]
+    phi_from, phi_to = _compute_pipe_end_fluxes!(ts, pipe_id, rho_from, rho_to)
     
     if T == Float64
-        ref(ts, :pipe, pipe_id)["fr_mass_flux"] = phi[1]
-        ref(ts, :pipe, pipe_id)["to_mass_flux"] = phi[end]
+        ref(ts, :pipe, pipe_id)["fr_mass_flux"] = phi_from
+        ref(ts, :pipe, pipe_id)["to_mass_flux"] = phi_to
     end
 
-    end_flows = T[area * phi[1], area * phi[end]]
+    end_flows = T[area * phi_from, area * phi_to]
     
     return end_flows
 

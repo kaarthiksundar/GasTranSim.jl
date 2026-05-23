@@ -1,21 +1,24 @@
 methods =[:implicit_hyperbolic, :explicit_hyperbolic, :explicit_staggered_grid, :explicit_staggered_grid_new,:implicit_parabolic]
+# methods = [:implicit_parabolic]
+
+
 
 
 
 for method in methods 
     pipe_segs = nothing
     if method == :implicit_hyperbolic
-        pipe_segs = 150
+        pipe_segs = 60
     end
     if method == :implicit_parabolic
-        pipe_segs = 50
+        pipe_segs = 60
     end
 
     @info("Testing method $method...\n")
     @testset "Simulation restart" begin
         folder = "./data/8-node/"
         # full run for 24 hours
-        ts = initialize_simulator(folder; method= method, pipe_segments=pipe_segs, case_name = "full", case_types = [:params])
+        ts = initialize_simulator(folder; method= method, inertial_flag=false, pipe_segments=pipe_segs, case_name = "full", case_types = [:params])
         if method == :implicit_hyperbolic
             ts.params[:base_dt] = 100 * ts.params[:base_dt]
         end

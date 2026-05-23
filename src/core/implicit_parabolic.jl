@@ -74,7 +74,7 @@ function _solve_pipe_state_parabolic!(
     ts::TransientSimulator,
     pipe_id::Int64,
     rho_from::T,
-    rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
+    rho_to::T)::Vector{T} where {T<:Real}
     n = ref(ts, :pipe, pipe_id)["num_discretization_points"]
     x = zeros(T, 2 * n)
     x[1:n] = T.(ref(ts, :pipe, pipe_id)["density_profile"])
@@ -89,15 +89,13 @@ function _solve_pipe_state_parabolic!(
         x,
         rho_old,
         rho_from,
-        rho_to;
-        inertial_flag = inertial_flag,
+        rho_to
     )
     Jacobian_fun! = (J, x) -> _pipe_jacobian!(
         J,
         ts,
         pipe_id,
-        x;
-        inertial_flag = inertial_flag,
+        x
     )
 
 
@@ -137,8 +135,7 @@ function _pipe_residual!(
     x::Vector{T},
     rho_old::Vector{T},
     rho_from::T,
-    rho_to::T;
-    inertial_flag::T) where {T<:Real}
+    rho_to::T) where {T<:Real}
 
     n = div(length(x) , 2)
 
@@ -180,11 +177,12 @@ function _pipe_residual!(
         (2 * ref(ts, :pipe, pipe_id, "diameter"))
     nondim = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
     phi_fun = phi .* abs.(phi)
+    inertial_switch = params(ts, :inertial_flag) ? 1 : 0
     
 
     r[n+1:2n] .=
         nondim .* c2 .* rho_x .+
-        inertial_flag .* conv_term .+
+        inertial_switch .* conv_term .+
         beta .* phi_fun ./ rho .-
         ref(ts, :pipe, pipe_id, "sin_incline") .* rho / (nominal_values(ts, :froude_num))^2
 
@@ -202,8 +200,7 @@ function _pipe_jacobian!(
     J::AbstractMatrix{T},
     ts::TransientSimulator,
     pipe_id::Int64,
-    x::Vector{T};
-    inertial_flag::T) where {T<:Real}
+    x::Vector{T}) where {T<:Real}
 
     n = div(length(x), 2)
     rho = x[1:n]
@@ -238,13 +235,14 @@ function _pipe_jacobian!(
     c2 = get_pressure_prime.(Ref(ts), rho)
     c2p = get_pressure_double_prime.(Ref(ts), rho)
     nondim = nominal_values(ts, :euler_num) / (nominal_values(ts, :mach_num))^2
+    inertial_switch = params(ts, :inertial_flag) ? 1 : 0
     
 
 
     # helper for conv-term contributions from g_k = phi_k^2 / rho_k
     function add_conv_g!(row::Int, k::Int, coeff::Real)
-        J[row, rho_col(k)] += inertial_flag * coeff * (-(phi[k]^2) / (rho[k]^2))
-        J[row, phi_col(k)] += inertial_flag * coeff * (2.0 * phi[k] / rho[k])
+        J[row, rho_col(k)] += inertial_switch * coeff * (-(phi[k]^2) / (rho[k]^2))
+        J[row, phi_col(k)] += inertial_switch * coeff * (2.0 * phi[k] / rho[k])
     end
 
     for i in 1:n
@@ -325,160 +323,3 @@ function implicit_advance_junction_pressures!(ts::TransientSimulator, _run_type:
     return
 end
 
-#=
-function assemble_network_problem!(ts::TransientSimulator, x::Vector{Float64}, r::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-
-    _assemble_for_nodes_WITHOUT_eqn_nos!(ts, x, r, J)
-    _assemble_for_nodes_WITH_eqn_nos!(ts, x, r, J)
-    _assemble_all_pipes!(ts, x, r, J)
-
-    return
-end
-
-
-
-function _assemble_all_pipes!(ts::TransientSimulator, x::Vector{Float64}, r::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-
-    for (pipe_id, pipe) in ref(ts, :pipe)
-        to_node = pipe["to_node"]
-        fr_node = pipe["fr_node"]
-        rho_to = x[to_node]
-        rho_from = x[fr_node]
-
-        end_flow_func = bdry_vals -> solve_pipe_state!(ts, pipe_id,bdry_vals[1], bdry_vals[2])
-        end_flows = end_flow_func([rho_from, rho_to])
-        sensitivity_mat = ForwardDiff.jacobian(end_flow_func, [rho_from, rho_to])
-
-        _assemble_pipe_solve_results!(ts, fr_node, to_node, end_flows, sensitivity_mat, r, J)
-    end
-
-    return
-end
-
-function _assemble_pipe_solve_results!(ts::TransientSimulator, fr_node::Int64, to_node::Int64, end_flows::Vector{Float64}, sensitivity_mat::AbstractArray,r::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-    flow_at_fr_end, flow_at_to_end = end_flows
-    s_from_from, s_from_to = sensitivity_mat[1,:]
-    s_to_from, s_to_to = sensitivity_mat[2,:]
-        # now assemble these into r and J
-    eq_num_fr =  ref(ts, :node, fr_node)["eqn_number"]
-    if !isnan(eq_num_fr) && ref(ts, :node, fr_node)["is_slack"] == 0
-        r[eq_num_fr] += -flow_at_fr_end # positive dir serves as withdrawal from end
-        J[eq_num_fr, fr_node] += -s_from_from
-        J[eq_num_fr, to_node] += -s_from_to
-    end
-
-    eq_num_to =  ref(ts, :node, to_node)["eqn_number"]
-    if !isnan(eq_num_to) && ref(ts, :node, to_node)["is_slack"] == 0
-        r[eq_num_to] += flow_at_to_end # positive dir serves as injection into end
-        J[eq_num_to, fr_node] += s_to_from
-        J[eq_num_to, to_node] += s_to_to
-    end
-    return
-end
-
-
-function _assemble_for_nodes_WITHOUT_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-    for (ci, compressor) in  get(ref(ts), :compressor, Dict())
-
-        to_node = compressor["to_node"]
-        from_node = compressor["fr_node"]
-        ctrl_type, ctrl_val = control(ts, :compressor, ci, ref(ts, :current_time))
-        if ctrl_type == c_ratio_control
-            residual_node[ci] = get_pressure(ts, x_node[to_node]) - ctrl_val * get_pressure(ts, x_node[from_node]) 
-            J[ci, from_node] = -ctrl_val * get_pressure_prime(ts, x_node[from_node])
-            J[ci, to_node]  = get_pressure_prime(ts, x_node[to_node]) 
-        elseif ctrl_type == discharge_pressure_control
-            residual_node[ci] = x_node[to_node] - get_density(ts, ctrl_val)
-            J[ci, to_node] = 1.0
-        elseif ctrl_type == flow_control
-            # no contribution to Jacobian since flow is known
-            continue
-        end
-    end
-    return
-end
-
-    
-
-function _assemble_for_nodes_WITH_eqn_nos!(ts::TransientSimulator, x_node::Vector{Float64}, residual_node::Vector{Float64}, J::SparseMatrixCSC{Float64,Int64})
-    for (node_id, node) in ref(ts, :node)
-
-        eqn_num = ref(ts, :node, node_id)["eqn_number"]
-        if  isnan(eqn_num)
-            continue
-        end
-        ctrl_type, ctrl_val = control(ts, :node, node_id, ref(ts, :current_time))
-        if ctrl_type == pressure_control
-            residual_node[eqn_num] = x_node[node_id]- get_density(ts, ctrl_val)
-            J[eqn_num, node_id] = 1.0
-            continue
-        elseif ctrl_type == flow_control
-            
-            rhs_compressor_term = _assemble_for_flow_control_compressors(node_id, ts)
-            residual_node[eqn_num] += -ctrl_val + rhs_compressor_term  #ctrl_val is  a withdrawal
-            continue
-        end
-    end
-    return
-end
-
-function _assemble_for_flow_control_compressors(
-    node_id::Int64,
-    ts::TransientSimulator)::Real
-    out_c = ref(ts, :outgoing_compressors, node_id)
-    in_c = ref(ts, :incoming_compressors, node_id)
-    rhs_term = 0.0
-    t = ref(ts, :current_time)
-    for ci in in_c
-        ctr, cmpr_val = control(ts, :compressor, ci, t)
-        if ctr == flow_control
-            rhs_term += cmpr_val # inflow positive
-        end
-    end
-    for co in out_c
-        ctr, cmpr_val = control(ts, :compressor, co, t)
-        if ctr == flow_control
-            rhs_term += (-1.0 * cmpr_val) # outflow negative
-        end
-    end
-    return rhs_term
-end
-
-
-
-function NR_solve!(
-    x::Vector{Float64},
-    problem_fun!::Function;
-    tol::Float64 = 1e-6,
-    max_iter::Int = 100)::Tuple{Vector{Float64},Bool,Int,Float64}
-
-    n = length(x)
-    residual = zeros(Float64, n)
-    J = spzeros(n, n)
-
-    for iter = 1:max_iter
-        fill!(residual, 0.0)
-        fill!(J.nzval, 0.0)
-
-        problem_fun!(residual, J, x)
-        res_norm = maximum(abs, residual)
-        # println(iter, ":", res_norm)
-        if res_norm <= tol
-            return x, true, iter, res_norm
-        end
-
-        delta_x = J \ (-residual)
-        x .+= delta_x
-
-        step_norm = maximum(abs, delta_x)
-        if step_norm <= tol
-            return x, true, iter, res_norm
-        end
-    end
-
-    fill!(residual, 0.0)
-    problem_fun!(residual, J, x)
-    return x, false, max_iter, maximum(abs, residual)
-end
-
-=#

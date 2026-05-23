@@ -21,14 +21,27 @@ function initialize_simulator(
     eos::Symbol = :ideal,
     method::Symbol = :explicit_staggered_grid,
     pipe_segments::Union{Nothing,Int} = nothing,
+    inertial_flag::Bool = false,
 )::TransientSimulator
+
     validate_method_contract!(method)
     params, nominal_values = process_data!(data)
     params[:method] = method
+    params[:inertial_flag] = inertial_flag
+
+    if !(method in [:implicit_hyperbolic, :implicit_parabolic])
+        @info "Note that if pipe inclination is non-zero, then currently used CFL restriction may not be sufficient to ensure stability. Use of an the implicit schemes or reducing the base_dt may be necessary."
+    end
+
+    if method in [:explicit_staggered_grid, :explicit_staggered_grid_new] && params[:inertial_flag] == true
+        @error "Inertial term is currently not implemented for explicit staggered grid methods."
+    end
+
     if !isnothing(pipe_segments)
-        pipe_segments < 1 && throw(ArgumentError("pipe_segments must be >= 1"))
+        pipe_segments < 3 && throw(ArgumentError("pipe_segments must be >= 3"))
         params[:pipe_segments] = pipe_segments
     end
+
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(
         data,

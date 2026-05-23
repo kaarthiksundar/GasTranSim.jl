@@ -12,16 +12,20 @@ function characteristic_potential(ts::TransientSimulator, rho::T)::T where {T<:R
     nquad = 100
     delta_rho = rho / T(nquad)
     acc = zero(T)
-    for i in 0:nquad
-        w = (i == 0 || i == nquad) ? one(T) : T(2)
-        rho_i = T(i) * delta_rho
-        acc += w * sqrt(get_pressure_prime(ts, rho_i))
+    # use mid pt rule to avoid  zero density
+    for i in 0:(nquad - 1)
+        rho_i = (T(i) + T(0.5)) * delta_rho
+        integrand = params(ts, :inertial_flag) ?
+            sqrt(get_pressure_prime(ts, rho_i)) / rho_i :
+            sqrt(get_pressure_prime(ts, rho_i))
+        acc += integrand
     end
-    return acc * (delta_rho / T(2))
+    return acc * delta_rho
 end
 
 function characteristic_potential_prime(ts::TransientSimulator, rho::T)::T where {T<:Real}
-    return sqrt(get_pressure_prime(ts, rho))
+    derivative =  params(ts, :inertial_flag) ? sqrt(get_pressure_prime(ts, rho)) / rho : sqrt(get_pressure_prime(ts, rho))
+    return derivative
 end
 
 
@@ -129,11 +133,15 @@ function _assemble_all_pipes!(ts::TransientSimulator, method::Symbol,  x::Vector
         if method == :explicit_hyperbolic
             c_fr = characteristic_potential_prime(ts, rho_from)
             c_to = characteristic_potential_prime(ts, rho_to)
-            mu1 = dt / dx 
-            sensitivity_mat = [(mu1 * c_fr * c_fr  + c_fr) * area 0.0; 0.0  -c_to * area]
+            sensitivity_mat = [c_fr * area 0.0; 0.0 -c_to * area]
+            sensitivity_mat2 = ForwardDiff.jacobian(end_flow_func, [rho_from, rho_to])
+            @assert norm(sensitivity_mat - sensitivity_mat2) < 1e-3 "Analytical sensitivity does not match AD sensitivity for explicit hyperbolic method. Check implementation of characteristic potential and its derivative."
         elseif method == :explicit_staggered_grid_new
             mu2 = dx / dt
             sensitivity_mat = [mu2 * area 0.0;0.0 -mu2 * area]
+            sensitivity_mat2 = ForwardDiff.jacobian(end_flow_func, [rho_from, rho_to])
+            @assert norm(sensitivity_mat - sensitivity_mat2) < 1e-4 "Analytical sensitivity does not match AD sensitivity for explicit staggered grid method. Check implementation of staggered grid update and its linearization."
+
         else
             sensitivity_mat = ForwardDiff.jacobian(end_flow_func, [rho_from, rho_to])
         end
@@ -145,17 +153,17 @@ function _assemble_all_pipes!(ts::TransientSimulator, method::Symbol,  x::Vector
 end
 
 
-function solve_pipe_state!(ts::TransientSimulator, method::Symbol, pipe_id::Int64,rho_from::T,rho_to::T,inertial_flag = zero(T))::Vector{T} where {T<:Real}
+function solve_pipe_state!(ts::TransientSimulator, method::Symbol, pipe_id::Int64,rho_from::T,rho_to::T)::Vector{T} where {T<:Real}
 
 
     if method == :implicit_parabolic
-        end_flows = _solve_pipe_state_parabolic!(ts, pipe_id, rho_from, rho_to, inertial_flag)
+        end_flows = _solve_pipe_state_parabolic!(ts, pipe_id, rho_from, rho_to)
     elseif method == :implicit_hyperbolic
-        end_flows = _solve_pipe_state_hyperbolic!(ts, pipe_id, rho_from, rho_to, inertial_flag)
+        end_flows = _solve_pipe_state_hyperbolic!(ts, pipe_id, rho_from, rho_to)
     elseif method == :explicit_hyperbolic
-        end_flows = _solve_pipe_state_maccormack!(ts, pipe_id, rho_from, rho_to, inertial_flag)
+        end_flows = _solve_pipe_state_maccormack!(ts, pipe_id, rho_from, rho_to)
     elseif method == :explicit_staggered_grid_new
-        end_flows =  _solve_pipe_state_staggered_grid!(ts,pipe_id,rho_from,rho_to,inertial_flag)
+        end_flows =  _solve_pipe_state_staggered_grid!(ts,pipe_id,rho_from,rho_to)
     end
 
     return end_flows
