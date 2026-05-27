@@ -27,6 +27,11 @@ function step!(ts::TransientSimulator, ::Val{:implicit_hyperbolic}, run_type::Sy
     return
 end
 
+function step!(ts::TransientSimulator, ::Val{:imex_hyperbolic}, run_type::Symbol)
+    imex_hyperbolic_step!(ts, run_type)
+    return
+end
+
 function step!(::TransientSimulator, ::Val{method}, ::Symbol) where {method}
     throw(
         ArgumentError(

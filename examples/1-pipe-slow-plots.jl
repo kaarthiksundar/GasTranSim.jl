@@ -18,6 +18,7 @@ tmp = base_path * "tmp/"
 # Ideal EoS run
 # method = :implicit_parabolic
 method = :implicit_hyperbolic
+# method = :imex_hyperbolic
 # method = :explicit_staggered_grid
 # method = :explicit_staggered_grid_new
 # method = :explicit_hyperbolic
@@ -26,7 +27,10 @@ method = :implicit_hyperbolic
 
   
 
-ts = initialize_simulator(folder; method=method, eos = :ideal, inertial_flag =true)
+ts = initialize_simulator(folder; method=method, eos = :simple_cnga, inertial_flag =false)
+if method in [:imex_hyperbolic, :implicit_hyperbolic]
+        ts.params[:base_dt] = 100 * ts.params[:base_dt]
+end
 run_simulator!(ts; method=method)
 
 @info "ideal run completed"

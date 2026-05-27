@@ -9,7 +9,7 @@ function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:implicit_hyperboli
     for (key, pipe) in ref(ts, :pipe)
         num_cvs = get(params(ts), :pipe_segments, 20)
         ref(ts, :pipe, key)["num_discretization_points"] = num_cvs
-        ref(ts, :pipe, key)["dx"] = pipe["length"] / num_cvs
+        ref(ts, :pipe, key)["dx"] = pipe["length"] / (num_cvs + 1)
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, num_cvs)
         ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64,num_cvs)
 
@@ -315,13 +315,13 @@ function rusanov_speed(ts::TransientSimulator, U_left::AbstractVector{T}, U_righ
     return smooth_max(sL, sR, epsilon)
 end
 
-function smooth_max(a::T, b::T, epsilon::T)::T where {T<:Real}
-    return 0.5 * (a + b + sqrt((a - b)^2 + epsilon^2))
-end
+# function smooth_max(a::T, b::T, epsilon::T)::T where {T<:Real}
+#     return 0.5 * (a + b + sqrt((a - b)^2 + epsilon^2))
+# end
 
-function smooth_abs(x::T, epsilon::T)::T where {T<:Real}
-    return sqrt(x^2 + epsilon^2)
-end
+# function smooth_abs(x::T, epsilon::T)::T where {T<:Real}
+#     return sqrt(x^2 + epsilon^2)
+# end
 
 function rusanov_speed_derivatives(ts::TransientSimulator, U_left::AbstractVector{T}, U_right::AbstractVector{T})::Tuple{Vector{T}, Vector{T}} where {T<:Real}
     
@@ -419,11 +419,11 @@ function jacobian_source(U::Vector{T}, drag_coeff::Float64, grav_coeff::Float64)
     return J
 end
 
-function assemble_local_residual!(ts::TransientSimulator, r::Vector{T}, r_local::Vector{T}, index::Int64, offset::Int64) where {T<:Real}
-    r[index] += r_local[1]
-    r[index + offset] += r_local[2]
-    return
-end
+# function assemble_local_residual!(ts::TransientSimulator, r::Vector{T}, r_local::Vector{T}, index::Int64, offset::Int64) where {T<:Real}
+#     r[index] += r_local[1]
+#     r[index + offset] += r_local[2]
+#     return
+# end
 
 """
 Build Jacobian J = d r / d x for x = [rho; phi], where
@@ -508,10 +508,10 @@ function _pipe_jacobian_hyperbolic!(
     return J
 end
 
-function assemble_local_jacobian!(ts::TransientSimulator, J::AbstractMatrix{T}, local_mat::AbstractMatrix{T}, row_num::Int64, col_num::Int64, offset::Int64) where {T<:Real}
-    J[row_num, col_num] += local_mat[1, 1]
-    J[row_num, col_num + offset] += local_mat[1, 2]
-    J[row_num + offset, col_num] += local_mat[2, 1]
-    J[row_num + offset, col_num + offset] += local_mat[2, 2]
-    return
-end
+# function assemble_local_jacobian!(ts::TransientSimulator, J::AbstractMatrix{T}, local_mat::AbstractMatrix{T}, row_num::Int64, col_num::Int64, offset::Int64) where {T<:Real}
+#     J[row_num, col_num] += local_mat[1, 1]
+#     J[row_num, col_num + offset] += local_mat[1, 2]
+#     J[row_num + offset, col_num] += local_mat[2, 1]
+#     J[row_num + offset, col_num + offset] += local_mat[2, 2]
+#     return
+# end

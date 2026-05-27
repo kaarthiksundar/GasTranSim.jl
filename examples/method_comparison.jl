@@ -17,6 +17,7 @@ methods = [
     :implicit_parabolic,
     :explicit_hyperbolic,
     :implicit_hyperbolic,
+    :imex_hyperbolic
 ]
 
 method_labels = Dict(
@@ -25,6 +26,7 @@ method_labels = Dict(
     :implicit_parabolic => "implicit_parabolic",
     :explicit_hyperbolic => "explicit_hyperbolic",
     :implicit_hyperbolic => "implicit_hyperbolic",
+    :imex_hyperbolic => "imex_hyperbolic",
 )
 
 method_colors = Dict(

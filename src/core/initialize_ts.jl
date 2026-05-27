@@ -29,12 +29,16 @@ function initialize_simulator(
     params[:method] = method
     params[:inertial_flag] = inertial_flag
 
-    if !(method in [:implicit_hyperbolic, :implicit_parabolic])
+    if !(method in [:implicit_hyperbolic, :implicit_parabolic, :imex_hyperbolic])
         @info "Note that if pipe inclination is non-zero, then currently used CFL restriction may not be sufficient to ensure stability. Use of an the implicit schemes or reducing the base_dt may be necessary."
     end
 
     if method in [:explicit_staggered_grid, :explicit_staggered_grid_new] && params[:inertial_flag] == true
         @error "Inertial term is currently not implemented for explicit staggered grid methods."
+    end
+
+    if method == :imex_hyperbolic && params[:inertial_flag] == false
+        @error "If no inertial term present, no point using IMEX scheme ."
     end
 
     if !isnothing(pipe_segments)

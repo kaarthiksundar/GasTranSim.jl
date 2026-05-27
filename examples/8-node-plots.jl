@@ -10,14 +10,15 @@ output_plot = base_path * "output/plots/"
 output_json = base_path * "output/solution/"
 tmp = base_path * "tmp/"
 # method = :implicit_parabolic
-method = :implicit_hyperbolic
+# method = :implicit_hyperbolic
+method = :imex_hyperbolic
 # method = :explicit_staggered_grid
 # method = :explicit_staggered_grid_new
 # method = :explicit_hyperbolic
 
-ts = initialize_simulator(folder; method=method)
+ts = initialize_simulator(folder; method=method, inertial_flag =true)
 
-if method in [:implicit_parabolic, :implicit_hyperbolic]
+if method in [:implicit_parabolic, :implicit_hyperbolic, :imex_hyperbolic]
     ts.params[:base_dt] = 100 * ts.params[:base_dt]
 end
 

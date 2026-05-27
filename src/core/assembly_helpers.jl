@@ -160,6 +160,8 @@ function solve_pipe_state!(ts::TransientSimulator, method::Symbol, pipe_id::Int6
         end_flows = _solve_pipe_state_parabolic!(ts, pipe_id, rho_from, rho_to)
     elseif method == :implicit_hyperbolic
         end_flows = _solve_pipe_state_hyperbolic!(ts, pipe_id, rho_from, rho_to)
+    elseif method == :imex_hyperbolic
+        end_flows = _solve_pipe_state_imex_hyperbolic!(ts, pipe_id, rho_from, rho_to)
     elseif method == :explicit_hyperbolic
         end_flows = _solve_pipe_state_maccormack!(ts, pipe_id, rho_from, rho_to)
     elseif method == :explicit_staggered_grid_new
@@ -348,3 +350,26 @@ end
 # you want equations at these nodes to be satisfied  with compensatory effect of change in nodal injection (load reduction).
 # That is, you evaluate J delta_rho in general.  Note that almost all eqns are linear, so most rows of J sre const. For the linear eqns, J delta_rho represents the required change in injection for given changes in nodal density. JHowever, the problem here is that if some of these changes happen at nodes incident by a compressor, then you must have 
 # p(rho_i + delta_rho_i) = alpha * p(rho_j + delta_rho_j). If you are given the increments at both ends, and  proposed density changes are compatible with compressor then load reduction is possible. else not. Alternatively, density changes at one end of the compressor imply a change at other end too. 
+
+
+function smooth_max(a::T, b::T, epsilon::T)::T where {T<:Real}
+    return 0.5 * (a + b + sqrt((a - b)^2 + epsilon^2))
+end
+
+function smooth_abs(x::T, epsilon::T)::T where {T<:Real}
+    return sqrt(x^2 + epsilon^2)
+end
+
+function assemble_local_residual!(ts::TransientSimulator, r::Vector{T}, r_local::Vector{T}, index::Int64, offset::Int64) where {T<:Real}
+    r[index] += r_local[1]
+    r[index + offset] += r_local[2]
+    return
+end
+
+function assemble_local_jacobian!(ts::TransientSimulator, J::AbstractMatrix{T}, local_mat::AbstractMatrix{T}, row_num::Int64, col_num::Int64, offset::Int64) where {T<:Real}
+    J[row_num, col_num] += local_mat[1, 1]
+    J[row_num, col_num + offset] += local_mat[1, 2]
+    J[row_num + offset, col_num] += local_mat[2, 1]
+    J[row_num + offset, col_num + offset] += local_mat[2, 2]
+    return
+end
