@@ -35,7 +35,7 @@ function advance_junction_pressures!(ts::TransientSimulator, method::Symbol,  _r
     problem_fun! = (r, J, x) -> assemble_network_problem!(ts, method, x, r, J)
     
     x_node, converged, iter, res_norm = NR_solve!(x_node, problem_fun!)
-    # println("iter, $iter")
+    # println("outer iter, $iter")
     
     converged || throw(DomainError(res_norm, "Newton solver did not converge for nodal densities"))
 

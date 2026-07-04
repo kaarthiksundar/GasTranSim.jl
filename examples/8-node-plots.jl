@@ -46,6 +46,7 @@ ts = initialize_simulator(
     folder;
     method=method,
     eos = :ideal,
+    inertial_flag=true,
     case_name = "fine_time_step",
     case_types = [:params],
 )

@@ -9,7 +9,7 @@ function initialize_pipe_grid!(ts::TransientSimulator, ::Val{:implicit_hyperboli
     for (key, pipe) in ref(ts, :pipe)
         num_cvs = get(params(ts), :pipe_segments, 20)
         ref(ts, :pipe, key)["num_discretization_points"] = num_cvs
-        ref(ts, :pipe, key)["dx"] = pipe["length"] / (num_cvs + 1)
+        ref(ts, :pipe, key)["dx"] = pipe["length"] / num_cvs
         ref(ts, :pipe, key)["density_profile"] = zeros(Float64, num_cvs)
         ref(ts, :pipe, key)["mass_flux_profile"] = zeros(Float64,num_cvs)
 
@@ -102,7 +102,10 @@ function _solve_pipe_state_hyperbolic!(
     )
 
 
-    x, converged, _, res_norm = solve_newton_basic!(x, residual_fun!, Jacobian_fun!, tol = 1e-6, max_iter = 100)
+    x, converged, iter, res_norm = solve_newton_basic!(x, residual_fun!, Jacobian_fun!, tol = 1e-6, max_iter = 100)
+
+    # println("Pipe took $iter iters")
+
 
     
     converged || throw(DomainError(res_norm, "Newton solver did not converge for pipe $pipe_id"))

@@ -10,6 +10,22 @@ output_plot = base_path * "output/plots/"
 output_json = base_path * "output/solution/"
 tmp = base_path * "tmp/"
 
+function print_run_diagnostics(ts::TransientSimulator, label::AbstractString)
+    base_dt = params(ts, :base_dt)
+    t0 = params(ts, :t_0)
+    tf = params(ts, :t_f)
+    est_steps = Int(ceil((tf - t0) / base_dt))
+    ncv = ref(ts, :pipe, 1, "num_discretization_points")
+    println("[$label] method=$(params(ts, :method)) base_dt=$(base_dt) ncv(pipe1)=$(ncv) est_steps=$(est_steps)")
+end
+
+function coarsen_time_step(ts::TransientSimulator, method::Symbol)
+    ts.params[:base_dt] = 100 * ts.params[:base_dt]
+    initialize_pipe_grid!(ts, method)
+    initialize_pipe_state!(ts, method)
+end
+
+
 """ 
     Note: Temp for ideal gas case set to 239.11 K, 
     nonideal 288.7K to match pressure and density
@@ -17,8 +33,8 @@ tmp = base_path * "tmp/"
 
 # Ideal EoS run
 # method = :implicit_parabolic
-method = :implicit_hyperbolic
-# method = :imex_hyperbolic
+# method = :implicit_hyperbolic
+method = :imex_hyperbolic
 # method = :explicit_staggered_grid
 # method = :explicit_staggered_grid_new
 # method = :explicit_hyperbolic
@@ -27,11 +43,13 @@ method = :implicit_hyperbolic
 
   
 
-ts = initialize_simulator(folder; method=method, eos = :simple_cnga, inertial_flag =false)
+ts = initialize_simulator(folder; method=method, eos = :ideal, inertial_flag =true)
 if method in [:imex_hyperbolic, :implicit_hyperbolic]
-        ts.params[:base_dt] = 100 * ts.params[:base_dt]
+    coarsen_time_step(ts, method)
 end
-run_simulator!(ts; method=method)
+print_run_diagnostics(ts, "ideal before run")
+ideal_runtime = @elapsed run_simulator!(ts; method=method)
+println("[ideal run] runtime_sec=$(round(ideal_runtime; digits=3))")
 
 @info "ideal run completed"
 
@@ -65,7 +83,9 @@ ts_cnga = initialize_simulator(
     case_name = "cnga",
     case_types = [:params],
 )
-run_simulator!(ts_cnga; method=method)
+print_run_diagnostics(ts_cnga, "cnga before run")
+cnga_runtime = @elapsed run_simulator!(ts_cnga; method=method)
+println("[cnga run] runtime_sec=$(round(cnga_runtime; digits=3))")
 @info "simple CNGA run completed"
 
 t_cnga = ts_cnga.sol["time_points"] / 3600.0 # hrs

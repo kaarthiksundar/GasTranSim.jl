@@ -38,8 +38,13 @@ function initialize_simulator(
     end
 
     if method == :imex_hyperbolic && params[:inertial_flag] == false
-        @error "If no inertial term present, no point using IMEX scheme ."
+        @error "If no inertial term present, no point using IMEX scheme. Overiding user choice and switching to implicit hyperbolic scheme. "
+        method = :implicit_hyperbolic
+        params[:method] = method
+        validate_method_contract!(method)
     end
+
+    @info "Using method $method"
 
     if !isnothing(pipe_segments)
         pipe_segments < 3 && throw(ArgumentError("pipe_segments must be >= 3"))
