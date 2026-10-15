@@ -26,6 +26,7 @@ struct StepState
     node_load_reduction::Dict{Int64,Float64}
     pipe_fr_mass_flux::Dict{Int64,Float64}
     pipe_to_mass_flux::Dict{Int64,Float64}
+    pipe_linepack::Dict{Int64,Float64}
     compressor_flow::Dict{Int64,Float64}
 end
 

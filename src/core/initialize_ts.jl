@@ -221,6 +221,8 @@ function initialize_pipe_state!(ts::TransientSimulator)
                     density_at_last_sq * (i - 1) * dL + density_at_first_sq * (n - i) * dL,
                 ) for i = 1:n
             ]
+            integral_density = sum((pipe["density_profile"][i] + pipe["density_profile"][i+1]) / 2.0 for i in 1:n-1) * L / (n-1)
+            pipe["linepack"] = area * integral_density
             pipe["fr_minus_mass_flux"] = initial_mass_flux # (dx/2)
             pipe["to_minus_mass_flux"] = initial_mass_flux # L-(dx/2)
             pipe["fr_mass_flux"] = initial_mass_flux # -(dx/2)
@@ -242,6 +244,8 @@ function initialize_pipe_state!(ts::TransientSimulator)
             pipe["fr_mass_flux"] = pipe["mass_flux_profile"][1]
             pipe["to_mass_flux"] = pipe["mass_flux_profile"][end]
             pipe["density_profile"][1:n] = [get_density(ts, pressure_spl(x)) for x in x_rho]
+            integral_density = sum((pipe["density_profile"][i] + pipe["density_profile"][i+1]) / 2.0 for i in 1:n-1) * L / (n-1)
+            pipe["linepack"] = area * integral_density
         end
     end
     return

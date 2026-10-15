@@ -22,9 +22,8 @@
 @inline get_one_atm_in_psi() = pascal_to_psi(101325)
 
 """
-Convering mmsfcd to kgps (standard volumetric flow rate to mass flow rate)
+Convering mmscf to kgps (standard volumetric flow rate to mass flow rate)
 """
-
 function get_mmscfd_to_kgps_conversion_factor(params::Dict{Symbol,Any})::Number
     standard_pressure = get_one_atm_in_pascal()
     R = get_universal_R(params)
@@ -37,8 +36,25 @@ function get_mmscfd_to_kgps_conversion_factor(params::Dict{Symbol,Any})::Number
     return density_at_standard_conditions * volumetric_flow_rate_in_si
 end
 
+"""
+Convering mmscf to kg (standard volume to mass )
+"""
+function get_mmscf_to_kg_conversion_factor(params::Dict{Symbol,Any})::Number
+    standard_pressure = get_one_atm_in_pascal()
+    R = get_universal_R(params)
+    standard_temperature = get_temperature(params)
+    cubic_ft_to_cubic_m = 0.028316846592
+    volume_in_si = cubic_ft_to_cubic_m * 1e6
+    molecular_mass_of_gas = get_gas_specific_gravity(params) * get_molecular_mass_of_air()
+    density_at_standard_conditions =
+        standard_pressure * molecular_mass_of_gas / standard_temperature / R
+    return density_at_standard_conditions * volume_in_si
+end
+
 get_kgps_to_mmscfd_conversion_factor(params::Dict{Symbol,Any})::Number =
     1 / get_mmscfd_to_kgps_conversion_factor(params)
+get_kg_to_mmscf_conversion_factor(params::Dict{Symbol,Any})::Number =
+    1 / get_mmscf_to_kg_conversion_factor(params)
 
 function get_data_units(rescale_functions)::Dict{Symbol,Any}
 

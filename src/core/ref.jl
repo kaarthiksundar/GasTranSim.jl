@@ -36,6 +36,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["to_mass_flux"] = NaN
         ref[name][id]["fr_minus_mass_flux"] = NaN
         ref[name][id]["to_minus_mass_flux"] = NaN
+        ref[name][id]["linepack"] = NaN
     end
 
     for (i, compressor) in get(data, "compressors", [])

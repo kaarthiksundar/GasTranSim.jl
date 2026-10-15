@@ -51,9 +51,11 @@ function initialize_output_state(ts::TransientSimulator)::OutputState
 
     for i in keys(get(ref(ts), :pipe, []))
         mass_flux_profile = ref(ts, :pipe, i, "mass_flux_profile")
+        linepack = ref(ts, :pipe, i, "linepack")
         pipe[i] = Dict(
             "fr_mass_flux" => [mass_flux_profile[1]],
             "to_mass_flux" => [mass_flux_profile[end]],
+            "linepack" => [linepack]
         )
     end
     for i in keys(get(ref(ts), :compressor, []))
@@ -69,6 +71,7 @@ function capture_step_state(ts::TransientSimulator)::StepState
     node_load_reduction = Dict{Int64,Float64}()
     pipe_fr_mass_flux = Dict{Int64,Float64}()
     pipe_to_mass_flux = Dict{Int64,Float64}()
+    pipe_linepack = Dict{Int64,Float64}()
     compressor_flow = Dict{Int64,Float64}()
 
     for i in keys(get(ref(ts), :node, []))
@@ -79,6 +82,7 @@ function capture_step_state(ts::TransientSimulator)::StepState
     for i in keys(get(ref(ts), :pipe, []))
         pipe_fr_mass_flux[i] = ref(ts, :pipe, i, "fr_mass_flux")
         pipe_to_mass_flux[i] = ref(ts, :pipe, i, "to_mass_flux")
+        pipe_linepack[i] = ref(ts, :pipe, i, "linepack")
     end
 
     for i in keys(get(ref(ts), :compressor, []))
@@ -92,6 +96,7 @@ function capture_step_state(ts::TransientSimulator)::StepState
         node_load_reduction,
         pipe_fr_mass_flux,
         pipe_to_mass_flux,
+        pipe_linepack,
         compressor_flow,
     )
 end
@@ -160,6 +165,16 @@ function _append_output_checkpoint!(
                 current_step.pipe_to_mass_flux[i],
             ),
         )
+        push!(
+            state.pipe[i]["linepack"],
+            _linear_interpolate(
+                output_time,
+                previous_step.pressure_time,
+                previous_step.pipe_linepack[i],
+                current_step.pressure_time,
+                current_step.pipe_linepack[i],
+            ),
+        )
     end
     for i in keys(get(ref(ts), :compressor, []))
         push!(
@@ -211,6 +226,7 @@ function update_output_data!(ts::TransientSimulator, state::OutputState, data::O
     for (i, pipe) in ref(ts, :pipe)
         data.pipe[i]["fr_mass_flux"] = copy(state.pipe[i]["fr_mass_flux"])
         data.pipe[i]["to_mass_flux"] = copy(state.pipe[i]["to_mass_flux"])
+        data.pipe[i]["linepack"] = copy(state.pipe[i]["linepack"])
 
         n = pipe["num_discretization_points"]
         dx = pipe["dx"]
@@ -289,6 +305,12 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         return pu * nominal_values(ts, :density)
     end
 
+    function linepack_convertor(pu)
+        kg_to_mmscf = get_kg_to_mmscf_conversion_factor(params(ts))
+        (units == 0) && (return pu * nominal_values(ts, :mass))
+        return pu * nominal_values(ts, :mass) * kg_to_mmscf
+    end
+
     time_convertor(pu) = pu * nominal_values(ts, :time)
 
     function length_convertor(pu)
@@ -331,8 +353,10 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         area = ref(ts, :pipe, key, "area")
         fr_flow = output.pipe[key]["fr_mass_flux"] .* area
         to_flow = output.pipe[key]["to_mass_flux"] .* area
+        linepack = output.pipe[key]["linepack"]
         sol["pipes"][i]["in_flow"] = flow_convertor.(fr_flow)
         sol["pipes"][i]["out_flow"] = flow_convertor.(to_flow)
+        sol["pipes"][i]["linepack"] = linepack_convertor.(linepack)
         fr_node = string(ref(ts, :pipe, key, "fr_node"))
         to_node = string(ref(ts, :pipe, key, "to_node"))
         sol["pipes"][i]["in_pressure"] = sol["nodes"][fr_node]["pressure"]

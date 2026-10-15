@@ -528,6 +528,11 @@ function _compute_pipe_end_fluxes_densities!(ts::TransientSimulator, pipe_id::In
         ref(ts, :pipe, pipe_id)["to_mass_flux"]
     # at (n + 1) level
     ref(ts, :pipe, pipe_id)["density_profile"][n] = rho
+    integral_density = sum(
+        (ref(ts, :pipe, pipe_id)["density_profile"][i] + 
+        ref(ts, :pipe, pipe_id)["density_profile"][i+1]) / 2.0 for i in 1:n-1
+        ) * ref(ts, :pipe, pipe_id)["length"] / (n-1)
+    ref(ts, :pipe, pipe_id)["linepack"] = ref(ts, :pipe, pipe_id)["area"] * integral_density
     return
 end
 

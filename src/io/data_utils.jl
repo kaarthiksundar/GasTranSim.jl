@@ -223,6 +223,8 @@ function process_data!(data::Dict{String,Any})
     else
         params[:nominal_time]
     end
+    nominal_values[:mass] = nominal_values[:density] * nominal_values[:area] * nominal_values[:length]
+    
     nominal_values[:euler_num] =
         nominal_values[:pressure] /
         (nominal_values[:density] * nominal_values[:sound_speed]^2)
