@@ -11,6 +11,7 @@ function OutputData(ts::TransientSimulator)::OutputData
         "nodal_pressure" => Dict{Int64,Any}(),
         "pipe_flow" => Dict{Int64,Any}(),
         "pipe_pressure" => Dict{Int64,Any}(),
+        "pipe_density" => Dict{Int64,Any}(),
         "compressor_flow" => Dict{Int64,Any}(),
     )
     for (i, _) in ref(ts, :node)
@@ -227,6 +228,7 @@ function update_output_data!(ts::TransientSimulator, state::OutputState, data::O
 
         data.final_state["pipe_flow"][i] = Spline1D(x_phi, flow, k = 1)
         data.final_state["pipe_pressure"][i] = Spline1D(x_rho, pressure, k = 1)
+        data.final_state["pipe_density"][i] = Spline1D(x_rho, rho, k = 1)
     end
     for i in keys(get(ref(ts), :compressor, []))
         data.compressor[i]["flow"] = copy(state.compressor[i]["flow"])
@@ -259,6 +261,7 @@ function update_output_data_final_state_only!(ts::TransientSimulator, data::Outp
 
         data.final_state["pipe_flow"][i] = Spline1D(x_phi, flow, k = 1)
         data.final_state["pipe_pressure"][i] = Spline1D(x_rho, pressure, k = 1)
+        data.final_state["pipe_density"][i] = Spline1D(x_rho, rho, k = 1)
     end
     for i in keys(get(ref(ts), :compressor, []))
         data.final_state["compressor_flow"][i] = ref(ts, :compressor, i, "flow")
@@ -280,6 +283,10 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         kgps_to_mmscfd = get_kgps_to_mmscfd_conversion_factor(params(ts))
         (units == 0) && (return pu * nominal_values(ts, :mass_flow))
         return pu * nominal_values(ts, :mass_flow) * kgps_to_mmscfd
+    end
+
+    function density_convertor(pu)
+        return pu * nominal_values(ts, :density)
     end
 
     time_convertor(pu) = pu * nominal_values(ts, :time)
@@ -313,6 +320,7 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
 
     sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
     sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
+    sol["final_state"]["initial_pipe_density"] = Dict{String,Any}()
 
     for (i, pipe) in get(data, "pipes", [])
         dx = params(ts, :output_dx)
@@ -333,6 +341,8 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         flow = [flow_spl(x) for x in distance]
         pressure_spl = output.final_state["pipe_pressure"][key]
         pressure = [pressure_spl(x) for x in distance]
+        density_spl = output.final_state["pipe_density"][key]
+        density = [density_spl(x) for x in distance]
         sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
             "distance" => length_convertor.(distance),
             "value" => flow_convertor.(flow),
@@ -340,6 +350,10 @@ function populate_solution!(ts::TransientSimulator, output::OutputData)
         sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
             "distance" => length_convertor.(distance),
             "value" => pressure_convertor.(pressure),
+        )
+        sol["final_state"]["initial_pipe_density"][i] = Dict{String,Any}(
+            "distance" => length_convertor.(distance), 
+            "value" => density_convertor.(density)
         )
     end
     sol["final_state"]["initial_compressor_flow"] = Dict{String,Any}()
@@ -394,10 +408,9 @@ function populate_solution_final_state_only!(ts::TransientSimulator, output::Out
             pressure_convertor(output.final_state["nodal_pressure"][key])
     end
 
-
-
     sol["final_state"]["initial_pipe_flow"] = Dict{String,Any}()
     sol["final_state"]["initial_pipe_pressure"] = Dict{String,Any}()
+    sol["final_state"]["initial_pipe_density"] = Dict{String,Any}()
 
     for (i, pipe) in get(data, "pipes", [])
         dx = params(ts, :output_dx)
@@ -409,6 +422,8 @@ function populate_solution_final_state_only!(ts::TransientSimulator, output::Out
         flow = [flow_spl(x) for x in distance]
         pressure_spl = output.final_state["pipe_pressure"][key]
         pressure = [pressure_spl(x) for x in distance]
+        density_spl = output.final_state["pipe_density"][key]
+        density = [density_spl(x) for x in distance]
         sol["final_state"]["initial_pipe_flow"][i] = Dict{String,Any}(
             "distance" => length_convertor.(distance),
             "value" => flow_convertor.(flow),
@@ -416,6 +431,10 @@ function populate_solution_final_state_only!(ts::TransientSimulator, output::Out
         sol["final_state"]["initial_pipe_pressure"][i] = Dict{String,Any}(
             "distance" => length_convertor.(distance),
             "value" => pressure_convertor.(pressure),
+        )
+        sol["final_state"]["initial_pipe_density"][i] = Dict{String,Any}(
+            "distance" => length_convertor.(distance), 
+            "value" => density_convertor.(density)
         )
     end
     sol["final_state"]["initial_compressor_flow"] = Dict{String,Any}()
